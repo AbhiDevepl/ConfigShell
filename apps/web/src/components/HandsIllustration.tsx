@@ -11,7 +11,7 @@ export function HandsIllustration() {
     <div className="relative w-full overflow-hidden select-none">
       <div className="relative w-full aspect-[16/11] sm:aspect-[16/7] md:aspect-[16/5] lg:aspect-[9/2]">
         <img
-          src="/creation_adam.jpg"
+          src="/BG.png"
           alt="A robotic cybernetic hand and a human hand reaching toward one another in the Creation of Adam pose, rendered as a black-and-white halftone illustration"
           className="absolute inset-0 h-full w-full object-cover object-[50%_60%] mix-blend-multiply contrast-[1.1] brightness-[0.99]"
           draggable={false}
