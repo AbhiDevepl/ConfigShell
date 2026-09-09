@@ -1,0 +1,82 @@
+# =============================================================================
+# linux-app-platform — monorepo .gitignore
+# Turborepo + pnpm workspaces (apps/*, packages/*)
+# Applies from the repository root to every workspace.
+# Patterns without a leading slash match at any depth (root, apps/*, packages/*).
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+node_modules/
+
+# -----------------------------------------------------------------------------
+# Build & generated output
+# -----------------------------------------------------------------------------
+dist/
+build/
+.turbo/
+coverage/
+.cache/
+.vite/
+generated/
+temp/
+tmp/
+
+# -----------------------------------------------------------------------------
+# Environment & secrets
+# -----------------------------------------------------------------------------
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# Keep the checked-in template (matched by .env.* above, so re-include it)
+!.env.example
+
+# -----------------------------------------------------------------------------
+# Logs
+# -----------------------------------------------------------------------------
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# -----------------------------------------------------------------------------
+# OS & editor files
+# -----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+
+.idea/
+
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# -----------------------------------------------------------------------------
+# TypeScript build artifacts
+# -----------------------------------------------------------------------------
+*.tsbuildinfo
+
+# -----------------------------------------------------------------------------
+# Local runtime & debug files
+# -----------------------------------------------------------------------------
+*.pid
+*.seed
+*.pid.lock
+
+# -----------------------------------------------------------------------------
+# Package-manager artifacts
+# This repo is pnpm-only: pnpm-lock.yaml is committed, other lockfiles are not.
+# package.json is never ignored by any rule above.
+# -----------------------------------------------------------------------------
+package-lock.json
+yarn.lock
+.pnpm-store/
+.pnpm-debug.log*

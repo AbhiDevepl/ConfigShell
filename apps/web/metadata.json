@@ -1,0 +1,6 @@
+{
+  "name": "NEXORA",
+  "description": "Bold Ideas That Start With Vision. We help modern brands craft digital stories that inspire action and drive results.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
