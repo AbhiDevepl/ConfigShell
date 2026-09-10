@@ -90,7 +90,7 @@ export function Header({ onOpenLogin, onOpenTryNow, onSelectNav }: HeaderProps) 
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="sm:hidden px-6 pt-2 pb-6 border-b border-black/10 bg-[#ebe8e2]/95 backdrop-blur-md animate-in fade-in slide-in-from-top-3">
+        <div className="sm:hidden px-6 pt-2 pb-6 border-b border-black/10 bg-[#fbf9ed]/95 backdrop-blur-md animate-in fade-in slide-in-from-top-3">
           <nav className="flex flex-col gap-3 py-3">
             {navLinks.map((item) => (
               <button

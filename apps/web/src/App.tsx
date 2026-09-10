@@ -22,8 +22,8 @@ export default function App() {
   const [selectedNav, setSelectedNav] = useState<string | null>(null);
 
   return (
-    <div className="relative min-h-screen w-full bg-[#ece9e2] text-black overflow-x-hidden flex flex-col justify-between selection:bg-black selection:text-white font-sans antialiased">
-      {/* Authentic halftone and screen tone grain overlay */}
+    <div className="relative min-h-screen w-full bg-[#fbf9ed] text-black overflow-x-hidden flex flex-col justify-between selection:bg-black selection:text-white font-sans antialiased">
+      {/* Ivory graph-paper grid background */}
       <BackgroundTexture />
 
       {/* Main Content Wrapper */}
