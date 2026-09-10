@@ -435,6 +435,6 @@ initial release.
 
 ## Author
 
-Created and maintained by **AbhiDevepl**.
+Created and maintained by **AbhiDevepl && tejjasdev**.
 
 GitHub: [https://github.com/AbhiDevepl](https://github.com/AbhiDevepl)
