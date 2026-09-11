@@ -45,15 +45,17 @@ export default function App() {
         <SiteHeader />
 
         <main className="mx-auto w-full max-w-5xl flex-1 px-6 pb-10 sm:px-8">
-          <section className="py-8">
-            <LinuxDetectionCard />
-            <h1 className="mt-5 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
-              Find and select Linux software, your way.
+          <section className="py-6">
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+              Install the Linux apps you actually need.
             </h1>
-            <p className="mt-3 max-w-xl text-sm text-muted-foreground">
-              Pick your distribution, browse applications, and build a selection. Nothing
-              installs automatically — you stay in control the whole way.
+            <p className="mt-1.5 max-w-md text-sm text-muted-foreground">
+              Pick a distro, choose apps, review your selection. Nothing installs
+              automatically.
             </p>
+            <div className="mt-4">
+              <LinuxDetectionCard />
+            </div>
           </section>
 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px] lg:items-start">

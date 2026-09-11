@@ -1,69 +1,201 @@
 # Application catalog
 
-## Current state: Phase 1 mock catalog (UI only)
+## Status
 
-There is no real catalog yet. What exists is a small, hand-written mock catalog at
-`apps/web/src/data/mockCatalog.ts`, built only so the browsing/search/selection UI in
-Phase 1 had something to render. Treat it as UI fixture data, not as a statement about what
-is actually installable on any distribution.
+**Implemented (Phase 2).** The catalog is a real, verified, structured dataset living in
+`packages/catalog`. It replaced the Phase 1 UI fixture (`apps/web/src/data/mockCatalog.ts`),
+which has been deleted — there is exactly one authoritative catalog, and the web app reads
+from it rather than owning any application data of its own.
 
-Current shape:
+What is **not** implemented: the installer resolver, terminal command generation, and
+anything that installs software. The catalog holds the structured metadata those later
+phases will consume; it does not act on it. See "Deliberate non-goals" below.
+
+## Location and consumption
+
+```
+packages/catalog          ← the catalog (single source of truth)
+  src/types.ts            ← data model
+  src/applications.ts     ← the verified entries
+  src/validate.ts         ← integrity checks
+  src/validate.test.ts    ← tests for the checks and the real data
+  src/index.ts            ← public API
+```
+
+The package is published to the workspace as `@linux-app-platform/catalog` and consumed by
+`apps/web` through a `workspace:*` dependency. It is TypeScript source with no build step:
+`main`/`types`/`exports` point directly at `src/index.ts`, and Vite and `tsc` both resolve
+it through the pnpm workspace symlink. That keeps the smallest correct setup — no `dist/`,
+no bundler config, no Turborepo pipeline needed just to read a list of applications.
+
+Consumers import only from the package root:
 
 ```ts
-type Category =
-  | 'Browsers'
-  | 'Code Editors'
-  | 'CLI Tools'
-  | 'Development'
-  | 'Utilities'
-  | 'Media'
-  | 'Communication';
+import { APPLICATIONS, CATEGORIES, type Application } from '@linux-app-platform/catalog';
+```
 
-interface MockApp {
-  id: string;
+## Schema
+
+```ts
+interface Application {
+  id: string;            // stable lowercase slug; UI selection state is keyed on it
   name: string;
+  description: string;   // one line; what it is, never an installability claim
   category: Category;
-  description: string;
+  homepage: string;      // official project/vendor URL (https)
+  installation: readonly InstallationSource[];
+}
+
+interface InstallationSource {
+  method: InstallMethod;        // 'apt' | 'dnf' | 'pacman' | 'flatpak' | 'snap' | 'official'
+  identifier: string;           // package name, Flatpak app ID, or Snap name
+  origin: RepositoryOrigin;     // 'distro' | 'vendor' | 'community'
+  distros?: readonly Distro[];  // required for apt/dnf/pacman, forbidden otherwise
+  url?: string;                 // where to get it / repo setup docs
 }
 ```
 
-Deliberately **not** present in the mock entries: package names, package-manager mappings,
-supported-distribution lists, icons/logos, homepage links, or version numbers. None of that
-has been verified against official sources, so none of it is claimed. The 17 entries in the
-mock catalog were picked only to give every category something to show in the UI (search,
-filtering, empty states); they are not a curated or vetted list.
+Fields from the original planned shape that are deliberately **not** implemented yet:
+`icon` (see "Icons") and any version field (see "Version policy"). They were left out
+rather than stubbed, because an empty field that looks meaningful is worse than an absent
+one.
 
-## Planned: the real catalog
+### `origin` — who actually packages it
 
-The real catalog (not yet started) is meant to be the single source of truth for
-application installation metadata, structured similarly to:
+This field exists because presence on Flathub or the Snap Store proves the identifier is
+real, not that the application's vendor stands behind it. Several official-looking
+reverse-DNS Flatpak IDs (`com.google.Chrome`, `com.brave.Browser`, `com.slack.Slack`,
+`dev.zed.Zed`) are third-party repackagings that Flathub itself marks unverified. A catalog
+that is meant to be *trusted* should not flatten that away.
 
-```
-id
-name
-description
-category
-icon
-homepage
-installation methods
-supported distributions
-package identifiers
-official source
-```
+| origin      | meaning                                                                           |
+| ----------- | --------------------------------------------------------------------------------- |
+| `distro`    | ships in a supported distribution's own repositories, or is published by that distribution's vendor (e.g. Canonical's Chromium snap) |
+| `vendor`    | published by the application's own project/vendor (their apt/dnf repo, their official Flatpak/Snap) |
+| `community` | packaged by a third party                                                          |
 
-Design constraints for when this is built:
+Nothing in Phase 2 *acts* on `origin`. It is recorded so the resolver and the UI can later
+prefer trusted sources, and so users can be told what they are actually installing.
 
-- Catalog data must stay a structured, curated source — not scattered across React
-  components (see `docs/architecture.md`).
-- Application entries track an installation identifier/source (e.g. `package: firefox`),
-  not manually maintained version numbers — the OS package manager or official source is
-  responsible for versions, not this catalog.
-- Package names and package-manager support must be verified against official sources
-  (official distro docs, official package repositories, Flathub, Snap) before being added
-  — never invented or assumed.
-- Terminal commands generated from catalog data (a later phase) must be deterministic and
-  inspectable, and only ever built from trusted catalog entries — never from arbitrary user
-  input.
+### `distros` — support is explicit, never assumed
 
-This section will be rewritten once real catalog work starts; until then, nothing above
-"Current state" should be treated as implemented.
+`distros` is required on `apt`/`dnf`/`pacman` and forbidden on `flatpak`/`snap`/`official`
+(which are distribution-agnostic by design). An application is **not** assumed to work
+everywhere just because it runs on Linux. Real consequences of that rule in the current
+data:
+
+- **VLC has no `dnf` entry** — it is not in Fedora's own repositories (codec licensing);
+  RPM Fusion is a third-party repo and does not qualify.
+- **Chrome, Brave, Cursor, Sublime Text, Postman, Slack and Zoom have no `pacman` entry** —
+  they are AUR-only, and the AUR is not an official Arch repository.
+- **Ubuntu is absent from Firefox's and Chromium's `distro` apt entries** — on current
+  Ubuntu those archive packages are transitional stubs that install the snap, not real debs.
+  Firefox is instead reachable on Ubuntu via Mozilla's own apt repo (`origin: 'vendor'`).
+- **Cursor, Postman and Zoom have no package-manager route at all** on any supported
+  distribution, and are reachable only through Flatpak/Snap/official download.
+
+One method may carry several sources when genuinely different routes exist — Docker lists
+both `docker-ce` (Docker's own repo, `vendor`) and `docker.io` (the distro-maintained
+build, `distro`). Uniqueness is enforced per `(method, identifier)`, not per method.
+
+## Categories
+
+The seven established categories are unchanged from Phase 1: **Browsers**, **Code
+Editors**, **CLI Tools**, **Development**, **Utilities**, **Media**, **Communication**.
+Every application belongs to exactly one. No new categories were added.
+
+## Supported distributions
+
+**Ubuntu**, **Debian**, **Fedora**, **Arch Linux**. The `Distro` union lives in this
+package and `apps/web/src/data/distros.ts` imports it, so the selector in the UI cannot
+drift from what catalog entries can declare support for.
+
+## Version policy
+
+**The catalog never records application version numbers.** No `Firefox 123.4`, no
+`VS Code 1.99`. Entries record *which package identifier or source to use*; the package
+manager or the vendor's own updater owns versions and updates. This is a project rule, not
+a Phase 2 convenience — a hand-maintained version field would be stale the week after it
+was written and would turn the catalog into a mirror of five package archives.
+
+## Verification requirements
+
+Every identifier in the catalog was checked against an authoritative source, in this
+preference order:
+
+1. Official application documentation
+2. The distribution's own package database — packages.ubuntu.com,
+   packages.fedoraproject.org, archlinux.org/packages
+3. The application's Flathub page
+4. The application's Snap Store page
+
+Rules that govern additions:
+
+- **Never invent an identifier or a URL.** If it cannot be confirmed, it does not go in.
+- **Absence means "not verified", never "not available."** Omitting a method is always the
+  correct fallback; guessing never is.
+- **The AUR does not count as `pacman`.** Only Arch's official core/extra/multilib repos do.
+- **Third-party community repos (RPM Fusion, random PPAs, `deb.griffo.io`) do not count**
+  as distro or vendor sources.
+- **No shell-script installers.** Vendor install scripts piped to a shell (Zed's
+  `curl … | sh`, for example) are deliberately not represented — the project does not
+  distribute arbitrary script URLs.
+- **Record provenance honestly** via `origin` rather than presenting a community
+  repackaging as vendor-official.
+
+## Icons
+
+Not implemented. No icon field exists. The web app renders a generic per-category Lucide
+icon as a safe placeholder, which avoids scraping logos, hotlinking untrusted remote
+images, making the UI depend on external image hosting, or taking on third-party
+trademark/licensing questions. Verified icon assets are future work and did not block the
+catalog.
+
+## Validation
+
+`validateCatalog(applications)` returns an array of human-readable problems (empty means
+valid) rather than throwing on the first one, so a bad entry cannot hide the entries after
+it. `assertValidCatalog` is the throwing wrapper. Checks:
+
+**Identity** — id is a lowercase slug; ids unique; names unique; name and description
+non-empty; category is one of the seven.
+
+**Sources** — homepage is a well-formed `https` URL with a dotted host; any source `url` is
+likewise.
+
+**Installation metadata** — no empty identifiers; no duplicate `(method, identifier)` pair
+within an application; method is one of the six; origin is one of the three; `apt`/`dnf`/
+`pacman` must list the distros they are verified for; `flatpak`/`snap`/`official` must not
+list distros; a package manager cannot be paired with a distribution that does not use it
+(no "dnf on Arch Linux").
+
+Run it with `pnpm --filter ./packages/catalog test` (Node's built-in test runner via
+`tsx`). The suite covers each rule above against synthetic entries *and* asserts the real
+catalog is valid, non-trivial, and that every category is populated.
+
+## Current contents
+
+As of Phase 2: **31 applications**, **116 verified installation sources**.
+
+| Category      | Apps |     | Method    | Sources |     | Origin      | Sources |
+| ------------- | ---- | --- | --------- | ------- | --- | ----------- | ------- |
+| Browsers      | 4    |     | `apt`     | 28      |     | `distro`    | 58      |
+| Code Editors  | 4    |     | `dnf`     | 22      |     | `vendor`    | 36      |
+| CLI Tools     | 6    |     | `pacman`  | 23      |     | `community` | 22      |
+| Development   | 4    |     | `flatpak` | 21      |     |             |         |
+| Utilities     | 4    |     | `snap`    | 20      |     |             |         |
+| Media         | 4    |     | `official`| 2       |     |             |         |
+| Communication | 5    |     |           |         |     |             |         |
+
+Native package-manager coverage (i.e. excluding Flatpak/Snap/official): 25/31 on Ubuntu,
+25/31 on Debian, 22/31 on Fedora, 23/31 on Arch Linux.
+
+The list is intentionally small. 31 verified entries are worth more than hundreds of
+half-checked ones, and every future addition carries the same verification cost.
+
+## Deliberate non-goals for this phase
+
+Not implemented, by design: the installer resolver, terminal command generation,
+clipboard install commands, any execution of any kind, a backend or database behind the
+catalog, and icon assets. The catalog is inert, descriptive data — see `docs/security.md`
+for why that matters and what guards it.

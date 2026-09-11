@@ -45,9 +45,38 @@ The website never executes anything — it ends at a command the user copies and
 their own terminal. Installer resolution and command generation are not part of Phase 1
 (see below).
 
-## Current implementation (as of Phase 1)
+## Current implementation (as of Phase 2)
 
-### `apps/web` — the only layer with real code right now
+Two layers of the long-term pipeline now exist, and the boundary between them is real:
+
+```
+UI  (apps/web)
+   ↓  imports @linux-app-platform/catalog
+Shared Application Catalog  (packages/catalog)
+   ↓
+Structured application metadata
+```
+
+The web app owns no application data. It reads `APPLICATIONS` from the catalog package and
+renders it; search, category filtering and selection all operate on catalog entries, keyed
+on `Application.id`. The Phase 1 fixture `apps/web/src/data/mockCatalog.ts` has been
+deleted, so there is exactly one source of truth. The `Distro` union is likewise defined in
+the catalog and imported by `apps/web/src/data/distros.ts`, which now only supplies the
+selector's presentation copy.
+
+Nothing downstream of the catalog exists yet: no installer resolver, no command generation,
+no execution. The catalog carries the structured metadata those layers will need
+(`method`, `identifier`, `origin`, `distros`) and stops there.
+
+### `packages/catalog` — the shared catalog
+
+TypeScript source, no build step; `apps/web` depends on it via `workspace:*` and both Vite
+and `tsc` resolve it through the pnpm symlink. Holds the data model, 31 verified
+applications, a dependency-free validation function, and its own test suite (Node's test
+runner via `tsx`). See `docs/catalog.md` for the schema, the verification rules, and what
+is deliberately absent.
+
+### `apps/web` — the UI layer
 
 Built primarily from **shadcn/ui** (Radix UI base) components under
 `src/components/ui/` (button, card, badge, checkbox, radio-group, input, toggle-group,
@@ -66,11 +95,10 @@ section before adding more components or touching the `@/*` import alias.
 - `src/hooks/useTheme.ts` — a dark-first light/dark toggle (`.dark` class on `<html>`,
   persisted to `localStorage`); the actual color tokens come from shadcn's own
   `src/index.css` output, not hand-rolled.
-- `src/data/distros.ts` — the four manually selectable distributions (Ubuntu, Debian,
-  Fedora, Arch Linux) with short factual descriptions (identity, not install claims).
-- `src/data/mockCatalog.ts` — a small, hand-written mock catalog used only to build and
-  exercise the browsing/search/selection UI. It is explicitly **not** the real catalog
-  (see `docs/catalog.md`) and carries no installation metadata.
+- `src/data/distros.ts` — presentation copy for the four selectable distributions. The
+  `Distro` union itself is imported from `@linux-app-platform/catalog`, not redefined.
+- Application data comes entirely from `@linux-app-platform/catalog`. There is no local
+  catalog file.
 - State (selected distro, selected application ids, search query, active category filter)
   lives in `App.tsx`/local component state — there is no global store, no backend calls,
   and no persistence. Nothing survives a page refresh.
@@ -83,15 +111,18 @@ Directory structure (`controllers/`, `services/`, `routes/`, `middleware/`, `val
 declared as a dependency). No API exists for the web app to call, and the web app does not
 attempt to call one yet.
 
-### `packages/ai`, `packages/catalog`, `packages/mcp`
+### `packages/ai`, `packages/mcp`
 
-Empty placeholders (a `.gitkeep` each). None of the current mock catalog logic has moved
-into `packages/catalog` — it's intentionally local to `apps/web/src/data` for Phase 1 UI
-development and has not been promoted to a shared package.
+Empty placeholders (a `.gitkeep` each) for the AI planning and MCP layers. No work started.
 
-## What Phase 1 deliberately does not include
+## What Phase 2 deliberately does not include
 
 Per the V1 phase plan: installer resolution (APT/DNF/Pacman/Flatpak/Snap), terminal command
 generation, clipboard install commands, any backend installation API, a database,
 authentication, AI, MCP, and the local agent. These are later phases/milestones, not
-missing pieces of Phase 1.
+missing pieces of Phase 2.
+
+The catalog now *describes* installation sources, which makes the next boundary worth
+stating precisely: turning an `InstallationSource` into a command is the resolver's job,
+and the resolver does not exist. Nothing in `packages/catalog` or `apps/web` builds,
+stores, or displays a shell command.

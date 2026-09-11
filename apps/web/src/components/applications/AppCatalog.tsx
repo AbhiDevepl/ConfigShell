@@ -4,7 +4,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { CATEGORIES, MOCK_CATALOG, type Category } from '@/data/mockCatalog';
+import { APPLICATIONS, CATEGORIES, type Category } from '@linux-app-platform/catalog';
 import { AppCard } from './AppCard';
 
 interface AppCatalogProps {
@@ -18,7 +18,7 @@ export function AppCatalog({ selectedIds, onToggle }: AppCatalogProps) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return MOCK_CATALOG.filter((app) => {
+    return APPLICATIONS.filter((app) => {
       const matchesCategory = activeCategory === 'All' || app.category === activeCategory;
       const matchesQuery =
         q.length === 0 ||
@@ -52,21 +52,23 @@ export function AppCatalog({ selectedIds, onToggle }: AppCatalogProps) {
         </div>
       </div>
 
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        value={activeCategory}
-        onValueChange={(value) => setActiveCategory((value || 'All') as Category | 'All')}
-        className="mt-4 flex-wrap justify-start"
-        aria-label="Filter by category"
-      >
-        <ToggleGroupItem value="All">All</ToggleGroupItem>
-        {CATEGORIES.map((category) => (
-          <ToggleGroupItem key={category} value={category}>
-            {category}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
+      <div className="mt-4 -mx-6 overflow-x-auto px-6 sm:mx-0 sm:overflow-visible sm:px-0">
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          value={activeCategory}
+          onValueChange={(value) => setActiveCategory((value || 'All') as Category | 'All')}
+          className="w-max flex-nowrap justify-start sm:w-full sm:flex-wrap"
+          aria-label="Filter by category"
+        >
+          <ToggleGroupItem value="All">All</ToggleGroupItem>
+          {CATEGORIES.map((category) => (
+            <ToggleGroupItem key={category} value={category}>
+              {category}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      </div>
 
       <p className="mt-3 text-sm text-muted-foreground" aria-live="polite">
         {filtered.length} application{filtered.length === 1 ? '' : 's'}

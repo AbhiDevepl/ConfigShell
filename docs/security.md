@@ -18,7 +18,7 @@ These hold at every phase, not just once the local agent or AI exist:
   perform system changes.
 - Security-sensitive operations should be logged and auditable.
 
-## Current state (Phase 1)
+## Current state (Phase 2)
 
 There is currently nothing to exploit in the sense these principles guard against: the web
 app (`apps/web`) is a static-content React SPA with no backend calls, no command
@@ -26,6 +26,43 @@ generation, and no execution of any kind. Distribution and application selection
 update in-memory UI state. The Express server scaffold (`apps/server`) has no live
 endpoints (and currently fails to start at all — see `docs/architecture.md`), so there is
 no server-side attack surface yet either.
+
+### The catalog as trusted data
+
+Phase 2 introduced `packages/catalog`, which is the "trusted catalog" the principles above
+refer to. Its security-relevant properties:
+
+- **It is inert data, not instructions.** Entries record *identifiers* (`docker-ce`,
+  `org.gimp.GIMP`) and *method names* (`apt`, `flatpak`) — never commands, flags, argument
+  strings, or shell fragments. There is no field a command could hide in, and nothing in
+  the repository concatenates one. A grep of the production bundle for `sudo` and for
+  `apt install` / `dnf install` / `pacman -S` / `flatpak install` / `snap install` returns
+  zero matches.
+- **It is compiled in, not fetched.** The catalog is a TypeScript module bundled at build
+  time. It is not loaded from a network endpoint at runtime, so there is no catalog-fetch
+  path to poison, intercept, or spoof.
+- **It is validated deterministically.** `validateCatalog` (dependency-free, in
+  `packages/catalog/src/validate.ts`) enforces unique ids, known categories, known
+  installation methods, known distributions, non-empty identifiers, no duplicate
+  `(method, identifier)` pairs, `https`-only URLs, and that a package manager is never
+  paired with a distribution that does not use it. The test suite asserts the real catalog
+  passes with zero errors, so a malformed or nonsensical entry fails CI rather than
+  reaching a future resolver.
+- **Provenance is recorded rather than flattened.** Each source carries
+  `origin: 'distro' | 'vendor' | 'community'`. Community repackagings on Flathub and the
+  Snap Store — including ones with official-looking reverse-DNS IDs such as
+  `com.google.Chrome` — are labelled as such instead of being presented as vendor-official.
+  This is a supply-chain distinction, and later phases are expected to surface or prefer on
+  it. Phase 2 records it; it does not yet act on it.
+- **Unverified means absent.** Identifiers that could not be confirmed against an
+  authoritative source were omitted rather than guessed, and vendor shell-script installers
+  (`curl … | sh`) are deliberately not represented at all — the project does not ship
+  arbitrary script URLs. See `docs/catalog.md`.
+
+The trust boundary to keep in mind going forward: catalog data is *curated input to a
+future resolver*, and it must never become a mechanism through which arbitrary strings
+reach a shell. Any future field that carries command-shaped content would break that and
+should be rejected in review.
 
 The one thing worth calling out even at this stage: `apps/web/src/hooks/useLinuxDetection.ts`
 reads only `navigator.userAgent` / `navigator.userAgentData` / `navigator.platform` — no

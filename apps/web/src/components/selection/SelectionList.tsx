@@ -2,10 +2,10 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Empty, EmptyDescription, EmptyTitle } from '@/components/ui/empty';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { MockApp } from '@/data/mockCatalog';
+import type { Application } from '@linux-app-platform/catalog';
 
 interface SelectionListProps {
-  selectedApps: MockApp[];
+  selectedApps: Application[];
   onRemove: (id: string) => void;
 }
 

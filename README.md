@@ -63,7 +63,7 @@ apps/
     │   │   ├── distro/       Distribution selector
     │   │   ├── applications/ App catalog, search/filter, cards
     │   │   └── selection/     Selection summary, sticky bottom bar
-    │   ├── data/          Mock catalog + distro list (Phase 1 placeholder data)
+    │   ├── data/          Distro selector copy (Distro type comes from the catalog)
     │   ├── hooks/         Browser-only Linux detection, light/dark theme
     │   └── lib/            shadcn's `cn` re-export
     ├── components.json  shadcn/ui config
@@ -74,7 +74,12 @@ apps/
 
 packages/
 ├── ai/            (placeholder)
-├── catalog/       (placeholder)
+├── catalog/       Verified application catalog — single source of truth
+│   └── src/
+│       ├── types.ts         Data model
+│       ├── applications.ts  The verified entries
+│       ├── validate.ts      Integrity checks
+│       └── index.ts         Public API
 ├── mcp/           (placeholder)
 ├── types/         (planned)
 └── ui/            (planned)
@@ -97,25 +102,32 @@ docs/
   a selection summary (sidebar on desktop, sheet + sticky bottom bar on mobile), and a
   dark/light theme toggle (dark by default). Built from shadcn primitives — button, card,
   badge, checkbox, radio-group, input, toggle-group, alert, sheet, empty, tooltip, etc.
-  (`apps/web/src/components/ui`). The catalog it browses
-  (`apps/web/src/data/mockCatalog.ts`) is a small **hand-written mock catalog** for UI
-  development only — not the real catalog, and it carries no installation metadata (no
-  package names, no package-manager mappings). Nothing on this page installs, executes, or
-  generates a command yet — the "Continue" button is intentionally inert.
+  (`apps/web/src/components/ui`). Nothing on this page installs, executes, or generates a
+  command — the "Continue" button is intentionally inert.
+- A **real, verified application catalog** (`packages/catalog`, **Phase 2**) — 31
+  applications across the seven categories, with 116 installation sources whose identifiers
+  were each checked against an authoritative source (the distribution's own package
+  database, Flathub, the Snap Store, or vendor documentation). It is the single source of
+  truth for application metadata; the web app consumes it via `@linux-app-platform/catalog`
+  and owns no application data of its own. Support is explicit per distribution rather than
+  assumed, unverified identifiers are omitted rather than guessed, no version numbers are
+  recorded, and each source is labelled `distro` / `vendor` / `community` so third-party
+  repackagings aren't presented as vendor-official. The catalog is inert descriptive data —
+  it contains **no commands** and nothing acts on it yet. See
+  [`docs/catalog.md`](docs/catalog.md).
 - An Express API server scaffold (`apps/server`) with routing, controller, service, and
   validator directories, all still empty. The server is not yet wired to serve the platform
   API, and its one file with code (`index.js`) currently fails to start — it imports
   `dotenv`, which isn't declared as a dependency.
-- Empty workspace packages (`packages/ai`, `packages/catalog`, `packages/mcp`) prepared
-  as homes for the AI, catalog, and MCP modules.
+- Empty workspace packages (`packages/ai`, `packages/mcp`) prepared as homes for the AI
+  and MCP modules.
 - Draft design documents in `docs/` describing the architecture, agent, catalog, MCP,
   and security plans (`docs/ai.md`, `docs/agent.md`, `docs/mcp.md` are currently empty).
 
-**What is not yet implemented (planned):** the real application catalog and its
-installation metadata, package-manager resolution (APT/DNF/Pacman/Flatpak/Snap), terminal
-command generation, system detection beyond "does the browser look like Linux",
-application details pages, AI features, the MCP server, the local Linux agent, database
-storage, and authentication.
+**What is not yet implemented (planned):** package-manager resolution (turning catalog
+metadata into an actual install plan), terminal command generation, system detection beyond
+"does the browser look like Linux", application details pages, application icons, AI
+features, the MCP server, the local Linux agent, database storage, and authentication.
 
 ---
 
@@ -171,7 +183,7 @@ Website → Linux detection state → Distribution selection → Application cat
 
 Status of each piece:
 
-- Linux application discovery — **implemented** (UI, mock catalog)
+- Linux application discovery — **implemented** (UI + verified catalog)
 - Manual distribution selection (Ubuntu / Debian / Fedora / Arch Linux) — **implemented**
 - Browser-only "looks like Linux" detection — **implemented** (exact distro is never
   inferred; see [Important distro detection rule](#important-distro-detection-rule))
@@ -180,8 +192,8 @@ Status of each piece:
 - Application selection + selection summary — **implemented**
 - Responsive interface — **implemented**
 - Dark/light theme toggle — **implemented** (dark by default)
-- Real, verified application catalog — **not started** (current catalog is a small mock,
-  UI-only, no installation metadata)
+- Real, verified application catalog — **implemented** (31 applications in
+  `packages/catalog`; metadata only, no installation logic)
 - Application details — **not started**
 - Installer resolution (APT/DNF/Pacman/Flatpak/Snap) — **not started**
 - Terminal command generation / copy-to-clipboard — **not started**
@@ -202,8 +214,8 @@ future local-agent capability, not a browser one.
 
 ### Application catalog categories
 
-The catalog is currently organized into the following categories (reflected in the Phase 1
-mock catalog at `apps/web/src/data/mockCatalog.ts`):
+The catalog (`packages/catalog/src/applications.ts`) is organized into the following
+categories:
 
 - Browsers
 - Code Editors
@@ -227,9 +239,13 @@ The product direction is:
 - Open-source oriented
 - Modern, but not a generic SaaS look
 
-The visual direction is a monochrome light editorial interface with Linux green used as an
-accent color. Full design guidance lives with the platform documentation rather than this
-README.
+The visual direction is a monochrome interface with a single restrained green accent (used
+for selection state, the primary action, and the logo mark) — no gradients, glassmorphism,
+or decorative color. Light mode uses a warm off-white background with white card surfaces;
+dark mode uses a deep neutral charcoal (not pure black) with slightly lighter card surfaces.
+The layout itself is intentionally utility-first and Ninite-inspired: a compact header, no
+marketing hero section, and the application list — not a landing page — as the homepage.
+Full design guidance lives with the platform documentation rather than this README.
 
 ---
 
@@ -388,6 +404,10 @@ pnpm --filter ./apps/web build
 
 # Type-check the web app
 pnpm --filter ./apps/web lint
+
+# Catalog: type-check and run the validation tests
+pnpm --filter ./packages/catalog lint
+pnpm --filter ./packages/catalog test
 
 # Server checks (lint + tests) — lint currently fails: no ESLint config exists
 pnpm --filter ./apps/server check

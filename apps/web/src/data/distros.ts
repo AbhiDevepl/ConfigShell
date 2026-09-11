@@ -1,15 +1,23 @@
 /**
- * Manually selectable Linux distributions for Phase 1.
+ * Presentation copy for the distribution selector.
+ *
+ * The set of supported distributions itself belongs to the catalog package —
+ * it has to match what catalog entries declare support for — so `Distro` is
+ * imported rather than redefined here. This file only adds the short,
+ * UI-facing descriptions. Those describe each distribution's identity; they
+ * are never installation claims.
  *
  * Browsers cannot reliably identify the exact distribution a visitor is
  * running (see `src/hooks/useLinuxDetection.ts`), so distribution choice is
- * always a manual, explicit selection — never inferred. Descriptions are
- * short, general, well-known facts about each distribution's identity —
- * not installation claims.
+ * always a manual, explicit selection — never inferred.
  */
 
+import type { Distro } from '@linux-app-platform/catalog';
+
+export type { Distro };
+
 export interface DistroInfo {
-  name: string;
+  name: Distro;
   description: string;
 }
 
@@ -19,5 +27,3 @@ export const DISTROS: DistroInfo[] = [
   { name: 'Fedora', description: 'Cutting-edge distribution backed by Red Hat.' },
   { name: 'Arch Linux', description: 'Minimal, rolling-release distribution for hands-on users.' },
 ];
-
-export type Distro = (typeof DISTROS)[number]['name'];

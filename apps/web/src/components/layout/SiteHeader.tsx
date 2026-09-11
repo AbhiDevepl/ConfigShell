@@ -1,3 +1,5 @@
+import { Github } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { ThemeToggle } from './ThemeToggle';
 
 export function SiteHeader() {
@@ -14,10 +16,20 @@ export function SiteHeader() {
           <span className="text-sm font-semibold tracking-tight">Linux App Platform</span>
         </div>
 
-        <div className="flex items-center gap-3">
-          <p className="hidden text-xs text-muted-foreground sm:block">
+        <div className="flex items-center gap-1">
+          <p className="hidden text-xs text-muted-foreground sm:block sm:mr-2">
             Discover Linux software. Nothing installs without your say.
           </p>
+          <Button type="button" variant="ghost" size="icon" asChild>
+            <a
+              href="https://github.com/AbhiDevepl/linux-app-platform"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="View source on GitHub"
+            >
+              <Github />
+            </a>
+          </Button>
           <ThemeToggle />
         </div>
       </div>

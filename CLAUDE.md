@@ -38,27 +38,39 @@ Before editing, check whether a file actually has content; many don't:
   input, toggle-group, separator, scroll-area, alert, sheet, empty, label, tooltip),
   composed under `components/{layout,detection,distro,applications,selection}/`. See
   "shadcn/ui setup" below before adding more components or new UI code.
-  Catalog data (`src/data/mockCatalog.ts`) is a small **hand-written mock catalog** for UI
-  development only — not the real catalog from `docs/catalog.md`, and it carries no
-  installation metadata (no package names, no package-manager mappings). There is no
-  command generation, no package-manager resolution, and no backend calls yet — see
-  `docs/architecture.md` for what's planned vs. implemented.
+  Application data comes from `@linux-app-platform/catalog` (see below); the web app holds
+  no catalog of its own, and `src/data/distros.ts` now only carries selector copy, with the
+  `Distro` type imported from the catalog. There is no command generation, no
+  package-manager resolution, and no backend calls yet — see `docs/architecture.md` for
+  what's planned vs. implemented.
   `apps/web/package.json`'s `name` field is still `react-example` (a scaffold leftover) —
   see the pnpm filter note under Commands below.
-- **`packages/ai`, `packages/catalog`, `packages/mcp`**: contain only a `.gitkeep` each —
-  placeholders for the AI planning, catalog, and MCP layers. None of the web app's mock
-  catalog logic has been moved into `packages/catalog` yet — it's Phase-1-local to
-  `apps/web/src/data`.
-- **`docs/*.md`** (`architecture.md`, `ai.md`, `agent.md`, `catalog.md`, `mcp.md`,
-  `security.md`): all currently empty files, despite being referenced from `README.md` as
-  the design documents. Don't expect to find written architecture decisions there yet —
-  `README.md` itself is the most current source of design intent.
+- **`packages/catalog`**: real, and as of Phase 2 the **single source of truth for
+  application metadata** — 31 verified applications, the data model, a dependency-free
+  validation function, and its own tests. Published to the workspace as
+  `@linux-app-platform/catalog` and consumed by `apps/web` via `workspace:*`. It is
+  TypeScript source with **no build step** (`main`/`types`/`exports` point straight at
+  `src/index.ts`); Vite and `tsc` both resolve it through the pnpm symlink, so don't add a
+  bundler/`dist` pipeline unless something actually needs one. `apps/web/src/data/
+  mockCatalog.ts` is **gone** — never reintroduce a second catalog in the web app. Read
+  `docs/catalog.md` before adding entries: identifiers must be verified against an
+  authoritative source, unverified ones are omitted rather than guessed, the AUR doesn't
+  count as `pacman`, and version numbers are never recorded.
+- **`packages/ai`, `packages/mcp`**: contain only a `.gitkeep` each — placeholders for the
+  AI planning and MCP layers.
+- **`docs/*.md`**: `architecture.md`, `catalog.md`, and `security.md` are now written and
+  are the source of truth for the current Phase 1 implementation state, the V1 flow
+  boundary, and the security model — read them before making architecture-adjacent
+  changes. `ai.md`, `agent.md`, and `mcp.md` are still empty placeholders (post-V1 layers
+  with no work started).
 - **`turbo.json`**: empty. Turborepo is a stated dependency but has no configured
   pipeline; there are no root `turbo` tasks to run.
 - **`apps/server` lint**: `package.json` defines `"lint": "eslint ."`, but ESLint is not a
   dependency anywhere in the repo and no ESLint config exists — this script currently
   fails until both are added.
-- **No tests exist yet** anywhere in the repo.
+- **Tests**: `packages/catalog` has the repo's only test suite (Node's built-in runner via
+  `tsx`: `pnpm --filter ./packages/catalog test`). `apps/web` and `apps/server` still have
+  no tests.
 - **`apps/web` typecheck (`tsc --noEmit`) needs `@types/react`/`@types/react-dom`**, added
   in Phase 1 — they were missing entirely before that (JSX/React props typechecked as
   effectively `any`, so `tsc --noEmit` looked clean but wasn't actually validating React
@@ -115,7 +127,7 @@ pnpm dev                         # == pnpm --filter ./apps/web dev  (web only, n
 pnpm build                       # == pnpm --filter ./apps/web build
 pnpm start                       # == pnpm --filter ./apps/web start
 pnpm lint                        # == pnpm --filter ./apps/web lint (tsc --noEmit, not ESLint)
-pnpm test                        # == pnpm --filter ./apps/server test (node --test)
+pnpm test                        # catalog tests (tsx --test), then apps/server (node --test, no files)
 ```
 
 Run each app directly when you need both, or need server-specific tasks. `apps/web`'s
@@ -127,6 +139,9 @@ pnpm --filter ./apps/web build          # production build -> apps/web/dist
 pnpm --filter ./apps/web preview        # preview the production build
 pnpm --filter ./apps/web start          # node server.js, serves apps/web/dist as a static SPA
 pnpm --filter ./apps/web lint           # tsc --noEmit (this is a type-check, not ESLint)
+
+pnpm --filter ./packages/catalog lint   # tsc --noEmit
+pnpm --filter ./packages/catalog test   # node test runner via tsx — validates the real catalog
 
 pnpm --filter ./apps/server dev         # nodemon index.js — currently crashes, see above
 pnpm --filter ./apps/server start       # node index.js — currently crashes, see above

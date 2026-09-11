@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import type { Category, MockApp } from '@/data/mockCatalog';
+import type { Application, Category } from '@linux-app-platform/catalog';
 
 // Safe, generic per-category placeholders — not brand logos. We don't have
 // verified rights or assets for real application icons yet (that's a later
@@ -19,7 +19,7 @@ const CATEGORY_ICON: Record<Category, ComponentType<{ className?: string }>> = {
 };
 
 interface AppCardProps {
-  app: MockApp;
+  app: Application;
   selected: boolean;
   onToggle: (id: string) => void;
 }
@@ -32,7 +32,7 @@ export function AppCard({ app, selected, onToggle }: AppCardProps) {
     <label
       htmlFor={inputId}
       className={cn(
-        'flex cursor-pointer flex-col gap-3 rounded-xl border p-4 transition-colors',
+        'flex cursor-pointer flex-col gap-3 rounded-xl border p-4 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background',
         selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border bg-card hover:border-foreground/25',
       )}
     >

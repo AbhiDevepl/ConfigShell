@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { MOCK_CATALOG } from '@/data/mockCatalog';
+import { APPLICATIONS } from '@linux-app-platform/catalog';
 import { SelectionList } from './SelectionList';
 
 interface SelectionSummaryProps {
@@ -12,7 +12,7 @@ interface SelectionSummaryProps {
 
 /** Desktop sidebar summary — hidden on small screens in favor of the sticky bottom bar. */
 export function SelectionSummary({ selectedIds, onRemove, onClear }: SelectionSummaryProps) {
-  const selectedApps = MOCK_CATALOG.filter((app) => selectedIds.has(app.id));
+  const selectedApps = APPLICATIONS.filter((app) => selectedIds.has(app.id));
 
   return (
     <Card className="hidden lg:block">

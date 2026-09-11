@@ -31,7 +31,7 @@ export function DistroSelector({ selected, onSelect }: DistroSelectorProps) {
               key={distro.name}
               htmlFor={inputId}
               className={cn(
-                'relative flex cursor-pointer flex-col gap-1 rounded-xl border p-3.5 transition-colors',
+                'relative flex cursor-pointer flex-col gap-1 rounded-xl border p-3.5 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background',
                 active
                   ? 'border-primary bg-primary/5 ring-1 ring-primary'
                   : 'border-border bg-card hover:border-foreground/25',

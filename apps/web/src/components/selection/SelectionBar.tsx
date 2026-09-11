@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { MOCK_CATALOG } from '@/data/mockCatalog';
+import { APPLICATIONS } from '@linux-app-platform/catalog';
 import { SelectionList } from './SelectionList';
 
 interface SelectionBarProps {
@@ -18,7 +18,7 @@ interface SelectionBarProps {
  * rather than faking a next step.
  */
 export function SelectionBar({ selectedIds, onRemove, onClear }: SelectionBarProps) {
-  const selectedApps = MOCK_CATALOG.filter((app) => selectedIds.has(app.id));
+  const selectedApps = APPLICATIONS.filter((app) => selectedIds.has(app.id));
   const count = selectedApps.length;
 
   return (
