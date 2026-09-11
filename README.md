@@ -54,8 +54,19 @@ apps/
 │   ├── services/
 │   ├── utils/
 │   └── validators/
-└── web/           React web app (scaffold)
+└── web/           React web app (shadcn/ui on Tailwind v4)
     ├── src/
+    │   ├── components/
+    │   │   ├── ui/           shadcn-generated primitives (button, card, checkbox, ...)
+    │   │   ├── layout/        Header, theme toggle
+    │   │   ├── detection/     Linux detection banner
+    │   │   ├── distro/       Distribution selector
+    │   │   ├── applications/ App catalog, search/filter, cards
+    │   │   └── selection/     Selection summary, sticky bottom bar
+    │   ├── data/          Mock catalog + distro list (Phase 1 placeholder data)
+    │   ├── hooks/         Browser-only Linux detection, light/dark theme
+    │   └── lib/            shadcn's `cn` re-export
+    ├── components.json  shadcn/ui config
     ├── public/
     ├── index.html
     ├── package.json
@@ -79,19 +90,31 @@ docs/
 
 **What exists today:**
 
-- A Vite + React + TypeScript + Tailwind CSS web application. The current `apps/web`
-  contains a placeholder landing page; the application-discovery UI has **not** been
-  built yet.
+- A Vite + React + TypeScript + Tailwind CSS + **shadcn/ui** (Radix UI base) web
+  application (`apps/web`) with a working **Phase 1 UI foundation**: a browser-only "does
+  this look like Linux" indicator, manual distribution selection (Ubuntu, Debian, Fedora,
+  Arch Linux), a searchable/filterable application browser, selectable application cards,
+  a selection summary (sidebar on desktop, sheet + sticky bottom bar on mobile), and a
+  dark/light theme toggle (dark by default). Built from shadcn primitives — button, card,
+  badge, checkbox, radio-group, input, toggle-group, alert, sheet, empty, tooltip, etc.
+  (`apps/web/src/components/ui`). The catalog it browses
+  (`apps/web/src/data/mockCatalog.ts`) is a small **hand-written mock catalog** for UI
+  development only — not the real catalog, and it carries no installation metadata (no
+  package names, no package-manager mappings). Nothing on this page installs, executes, or
+  generates a command yet — the "Continue" button is intentionally inert.
 - An Express API server scaffold (`apps/server`) with routing, controller, service, and
-  validator directories. The server is not yet wired to serve the platform API.
+  validator directories, all still empty. The server is not yet wired to serve the platform
+  API, and its one file with code (`index.js`) currently fails to start — it imports
+  `dotenv`, which isn't declared as a dependency.
 - Empty workspace packages (`packages/ai`, `packages/catalog`, `packages/mcp`) prepared
   as homes for the AI, catalog, and MCP modules.
-- Draft design documents in `docs/` describing the architecture, AI, agent, catalog, MCP,
-  and security plans.
+- Draft design documents in `docs/` describing the architecture, agent, catalog, MCP,
+  and security plans (`docs/ai.md`, `docs/agent.md`, `docs/mcp.md` are currently empty).
 
-**What is not yet implemented (planned):** the application catalog and its data, search
-and filtering, application details, system detection, application selection and
-installation-planning flow, AI features, the MCP server, the local Linux agent, database
+**What is not yet implemented (planned):** the real application catalog and its
+installation metadata, package-manager resolution (APT/DNF/Pacman/Flatpak/Snap), terminal
+command generation, system detection beyond "does the browser look like Linux",
+application details pages, AI features, the MCP server, the local Linux agent, database
 storage, and authentication.
 
 ---
@@ -137,33 +160,58 @@ system directly.
 
 ## Current V1 scope
 
-V1 is focused on the **web experience and platform foundation**:
+V1 is a **Ninite-style installer-command generator**, not an installer: it stops at
+generating a terminal command the user copies and runs themselves. The full V1 flow is:
 
-- Linux application discovery
-- Application catalog
-- Search
-- Category filtering
-- Application details
-- System detection interface
-- Application selection
-- Installation-plan / review flow
-- Responsive interface
+```
+Website → Linux detection state → Distribution selection → Application catalog
+→ Application selection → Installer resolution → Terminal command generation
+→ Copy to terminal → user runs it themselves
+```
 
-Some of these are partially scaffolded today; others are not yet started. V1 does **not**
-include real package installation, MCP, or AI-driven features — those are later milestones
-(see [Roadmap](#roadmap)).
+Status of each piece:
+
+- Linux application discovery — **implemented** (UI, mock catalog)
+- Manual distribution selection (Ubuntu / Debian / Fedora / Arch Linux) — **implemented**
+- Browser-only "looks like Linux" detection — **implemented** (exact distro is never
+  inferred; see [Important distro detection rule](#important-distro-detection-rule))
+- Search — **implemented**
+- Category filtering — **implemented**
+- Application selection + selection summary — **implemented**
+- Responsive interface — **implemented**
+- Dark/light theme toggle — **implemented** (dark by default)
+- Real, verified application catalog — **not started** (current catalog is a small mock,
+  UI-only, no installation metadata)
+- Application details — **not started**
+- Installer resolution (APT/DNF/Pacman/Flatpak/Snap) — **not started**
+- Terminal command generation / copy-to-clipboard — **not started**
+
+V1 does **not** include real package installation, arbitrary shell execution, MCP, AI, or
+a local agent — those are out of scope for V1 entirely (see
+[Important distro detection rule](#important-distro-detection-rule) and
+[Roadmap](#roadmap)).
+
+### Important distro detection rule
+
+Normal browser APIs cannot reliably identify which Linux distribution a visitor is
+running. `apps/web/src/hooks/useLinuxDetection.ts` only ever reports whether the browser
+*looks like* Linux (and explicitly excludes Android, which also reports "Linux" in its
+user agent) — never a specific distribution. Exact distribution is always a manual,
+explicit choice via the distribution selector. True system-level distro detection is a
+future local-agent capability, not a browser one.
 
 ### Application catalog categories
 
-The catalog is organized into the following categories:
+The catalog is currently organized into the following categories (reflected in the Phase 1
+mock catalog at `apps/web/src/data/mockCatalog.ts`):
 
 - Browsers
 - Code Editors
+- CLI Tools
 - Development
-- Terminals & Shells
 - Utilities
 - Media
-- Productivity
+- Communication
 
 ---
 
@@ -281,7 +329,7 @@ The full security model is described in [`docs/security.md`](docs/security.md).
 - Vite
 - TypeScript
 - Tailwind CSS
-- shadcn/ui *(intended — not yet installed)*
+- shadcn/ui (Radix UI base) — installed and in use as of Phase 1
 - Lucide React
 - Zustand *(intended — not yet installed)*
 
@@ -320,27 +368,29 @@ pnpm install
 ### Run the applications
 
 The repository is a pnpm workspace. Until the root-level workspace scripts are wired up,
-run individual packages directly:
+run individual packages directly. Note: `apps/web/package.json` names the package
+`react-example` (a scaffold leftover), so pnpm's name-based `--filter web` does **not**
+resolve — use the path-based filter instead:
 
 ```sh
 # Web app (Vite dev server, port 3000)
-pnpm --filter web dev
+pnpm --filter ./apps/web dev
 
-# API server (Express + nodemon)
-pnpm --filter server dev
+# API server (Express + nodemon) — currently fails to start; see "What exists today"
+pnpm --filter ./apps/server dev
 ```
 
 ### Build and check
 
 ```sh
 # Build the web app
-pnpm --filter web build
+pnpm --filter ./apps/web build
 
 # Type-check the web app
-pnpm --filter web lint
+pnpm --filter ./apps/web lint
 
-# Server checks (lint + tests)
-pnpm --filter server check
+# Server checks (lint + tests) — lint currently fails: no ESLint config exists
+pnpm --filter ./apps/server check
 ```
 
 > **Note on root workspace commands.** The monorepo scaffold (`pnpm-workspace.yaml` and

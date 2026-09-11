@@ -1,0 +1,45 @@
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { MOCK_CATALOG } from '@/data/mockCatalog';
+import { SelectionList } from './SelectionList';
+
+interface SelectionSummaryProps {
+  selectedIds: Set<string>;
+  onRemove: (id: string) => void;
+  onClear: () => void;
+}
+
+/** Desktop sidebar summary — hidden on small screens in favor of the sticky bottom bar. */
+export function SelectionSummary({ selectedIds, onRemove, onClear }: SelectionSummaryProps) {
+  const selectedApps = MOCK_CATALOG.filter((app) => selectedIds.has(app.id));
+
+  return (
+    <Card className="hidden lg:block">
+      <CardHeader className="flex-row items-center justify-between">
+        <CardTitle>Selected applications</CardTitle>
+        <span className="text-xs font-medium text-muted-foreground" aria-live="polite">
+          {selectedApps.length} selected
+        </span>
+      </CardHeader>
+
+      <CardContent>
+        <SelectionList selectedApps={selectedApps} onRemove={onRemove} />
+
+        {selectedApps.length > 0 && (
+          <>
+            <Separator className="my-3" />
+            <Button type="button" variant="ghost" size="sm" onClick={onClear}>
+              Clear all
+            </Button>
+          </>
+        )}
+
+        <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
+          Installation command generation isn't available yet — this is a preview of what
+          you've picked.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
