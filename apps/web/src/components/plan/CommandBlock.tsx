@@ -1,7 +1,8 @@
-import { Check, Copy, ShieldAlert, X } from 'lucide-react';
+import { Check, Copy, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useClipboard } from '@/hooks/useClipboard';
+import { OUTCOMES } from '@/lib/outcomes';
 import { cn } from '@/lib/utils';
 
 interface CommandBlockProps {
@@ -25,28 +26,40 @@ interface CommandBlockProps {
  */
 export function CommandBlock({ command, privileged, summary, note }: CommandBlockProps) {
   const { state, copy } = useClipboard();
+  const PrivilegedIcon = OUTCOMES.privileged.Icon;
 
   return (
     <div
       className={cn(
         'rounded-lg border bg-card',
-        privileged ? 'border-destructive/30' : 'border-border',
+        // Privileged is not an error, so it does not borrow the destructive
+        // colour — a failed request and a root command must not look alike.
+        privileged ? OUTCOMES.privileged.border : 'border-border',
       )}
     >
       {(summary || privileged) && (
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
           {summary && <p className="text-xs text-muted-foreground">{summary}</p>}
           {privileged && (
-            <Badge variant="destructive" className="shrink-0">
-              <ShieldAlert aria-hidden="true" className="size-3" />
-              Runs as root
+            <Badge
+              variant="outline"
+              className={cn('shrink-0', OUTCOMES.privileged.text, OUTCOMES.privileged.border)}
+            >
+              <PrivilegedIcon aria-hidden="true" className="size-3" />
+              {OUTCOMES.privileged.label}
             </Badge>
           )}
         </div>
       )}
 
       <div className="flex items-start gap-2 p-3">
-        <code className="min-w-0 flex-1 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap select-all">
+        {/*
+          `overflow-wrap: anywhere`, not `break-all`: a package identifier must
+          wrap as a unit. `break-all` split `org.mozilla.firefox` after its
+          first character on a narrow screen, which misrepresents the thing the
+          user is about to run.
+        */}
+        <code className="min-w-0 flex-1 font-mono text-xs leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere] select-all">
           {command}
         </code>
 
@@ -54,12 +67,14 @@ export function CommandBlock({ command, privileged, summary, note }: CommandBloc
           type="button"
           variant="ghost"
           size="icon-sm"
-          className="shrink-0"
+          // Comfortable thumb target on a phone, where this is the primary
+          // action; back to the compact icon size once there is a pointer.
+          className="size-11 shrink-0 sm:size-8"
           onClick={() => copy(command)}
           aria-label={`Copy command: ${command}`}
         >
           {state === 'copied' ? (
-            <Check aria-hidden="true" className="text-primary" />
+            <Check aria-hidden="true" className={OUTCOMES.installable.text} />
           ) : state === 'failed' ? (
             <X aria-hidden="true" className="text-destructive" />
           ) : (

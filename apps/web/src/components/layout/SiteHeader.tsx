@@ -11,7 +11,7 @@ export function SiteHeader() {
             aria-hidden="true"
             className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground"
           >
-            L
+            C
           </span>
           <span className="text-sm font-semibold tracking-tight">ConfigShell</span>
         </div>

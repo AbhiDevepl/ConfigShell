@@ -4,8 +4,6 @@ import {
   CheckCircle2,
   Copy,
   ExternalLink,
-  HandMetal,
-  Info,
   Loader2,
   RefreshCw,
   ShieldAlert,
@@ -20,6 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { useClipboard } from '@/hooks/useClipboard';
 import type { PlanStatus } from '@/hooks/useSetupPlan';
 import type { ApiRequestError, SetupPlan } from '@/lib/api';
+import { OUTCOMES, PLAN_STATUS } from '@/lib/outcomes';
 import { CommandBlock } from './CommandBlock';
 
 interface PlanViewProps {
@@ -139,7 +138,7 @@ function PlanError({
 
 function PlanBody({ plan }: { plan: SetupPlan }) {
   const { state: copyAllState, copy: copyAll } = useClipboard();
-  const { commands, manualSteps, unavailable, summary } = plan;
+  const { commands, manualSteps, unavailable } = plan;
   const script = commands.map((c) => c.command).join('\n');
 
   if (commands.length === 0 && manualSteps.length === 0 && unavailable.length === 0) {
@@ -158,7 +157,7 @@ function PlanBody({ plan }: { plan: SetupPlan }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <PlanSummary summary={summary} />
+      <PlanSummary plan={plan} />
 
       {commands.length > 0 && (
         <section aria-labelledby="commands-heading">
@@ -229,31 +228,58 @@ function PlanBody({ plan }: { plan: SetupPlan }) {
   );
 }
 
-function PlanSummary({ summary }: { summary: SetupPlan['summary'] }) {
-  const items = [
-    { label: 'Installable', value: summary.installable, tone: 'text-primary' },
-    { label: 'Manual', value: summary.manual, tone: 'text-foreground' },
-    { label: 'No route', value: summary.unavailable, tone: 'text-muted-foreground' },
-    { label: 'Need root', value: summary.privilegedCommands, tone: 'text-foreground' },
+function PlanSummary({ plan }: { plan: SetupPlan }) {
+  const { summary } = plan;
+  const status = PLAN_STATUS[plan.status];
+  const StatusIcon = status.Icon;
+
+  /*
+   * Four counts, four outcomes, one presentation map. Each tile carries its
+   * label and icon as well as its colour, so the distinction does not depend
+   * on seeing the colour.
+   */
+  const tiles = [
+    { outcome: 'installable' as const, value: summary.installable },
+    { outcome: 'manual' as const, value: summary.manual },
+    { outcome: 'unavailable' as const, value: summary.unavailable },
+    { outcome: 'privileged' as const, value: summary.privilegedCommands },
   ];
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          {summary.selected} application{summary.selected === 1 ? '' : 's'} selected
+        <CardTitle className="flex items-center gap-2">
+          <StatusIcon aria-hidden="true" className={`size-4 shrink-0 ${status.tone}`} />
+          {status.title}
         </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          {summary.selected} application{summary.selected === 1 ? '' : 's'} selected ·{' '}
+          {summary.installable} with a command · {summary.manual} manual ·{' '}
+          {summary.unavailable} with no route
+        </p>
       </CardHeader>
       <CardContent>
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {items.map((item) => (
-            <div key={item.label} className="rounded-lg bg-muted/50 px-3 py-2">
-              <dt className="text-xs text-muted-foreground">{item.label}</dt>
-              <dd className={`mt-0.5 text-lg font-semibold tabular-nums ${item.tone}`}>
-                {item.value}
-              </dd>
-            </div>
-          ))}
+          {tiles.map(({ outcome, value }) => {
+            const { label, Icon, text } = OUTCOMES[outcome];
+            return (
+              <div key={outcome} className="rounded-lg bg-muted/50 px-3 py-2">
+                <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Icon aria-hidden="true" className={`size-3.5 shrink-0 ${text}`} />
+                  {label}
+                </dt>
+                {/* A zero is not a warning: an amber "0 runs as root" draws
+                    the eye to the absence of a thing worth noticing. */}
+                <dd
+                  className={`mt-0.5 text-lg font-semibold tabular-nums ${
+                    value === 0 ? 'text-muted-foreground' : text
+                  }`}
+                >
+                  {value}
+                </dd>
+              </div>
+            );
+          })}
         </dl>
       </CardContent>
     </Card>
@@ -276,14 +302,17 @@ function VerificationNote() {
 }
 
 function ManualSteps({ steps }: { steps: SetupPlan['manualSteps'] }) {
+  const ManualIcon = OUTCOMES.manual.Icon;
+
   return (
     <section aria-labelledby="manual-heading">
       <h3 id="manual-heading" className="flex items-center gap-1.5 text-sm font-medium">
-        <HandMetal aria-hidden="true" className="size-4" />
+        <ManualIcon aria-hidden="true" className={`size-4 ${OUTCOMES.manual.text}`} />
         You'll need to install these yourself
       </h3>
       <p className="mt-1 text-xs text-muted-foreground">
         There is no safe command to generate for these, so ConfigShell does not invent one.
+        Follow the vendor's own instructions.
       </p>
 
       <ul className="mt-3 flex flex-col gap-2">
@@ -291,11 +320,19 @@ function ManualSteps({ steps }: { steps: SetupPlan['manualSteps'] }) {
           <li key={step.applicationId} className="rounded-lg border border-border bg-card p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-medium">{step.applicationName}</p>
-              <Badge variant="outline">
-                {step.reason === 'repository-setup-required'
-                  ? 'Needs a vendor repository'
-                  : 'Vendor download only'}
-              </Badge>
+              <span className="flex flex-wrap items-center gap-1.5">
+                {/* The outcome first, then why — never only the reason, which
+                    on its own reads like a note on something installable. */}
+                <Badge variant="outline" className={OUTCOMES.manual.text}>
+                  <ManualIcon aria-hidden="true" className="size-3" />
+                  {OUTCOMES.manual.label}
+                </Badge>
+                <Badge variant="outline">
+                  {step.reason === 'repository-setup-required'
+                    ? 'Needs a vendor repository'
+                    : 'Vendor download only'}
+                </Badge>
+              </span>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
               {step.reason === 'repository-setup-required'
@@ -318,16 +355,28 @@ function ManualSteps({ steps }: { steps: SetupPlan['manualSteps'] }) {
 }
 
 function UnavailableList({ entries }: { entries: SetupPlan['unavailable'] }) {
+  const UnavailableIcon = OUTCOMES.unavailable.Icon;
+
   return (
     <section aria-labelledby="unavailable-heading">
       <h3 id="unavailable-heading" className="flex items-center gap-1.5 text-sm font-medium">
-        <Info aria-hidden="true" className="size-4" />
+        <UnavailableIcon aria-hidden="true" className={`size-4 ${OUTCOMES.unavailable.text}`} />
         No verified route for this distribution
       </h3>
+      <p className="mt-1 text-xs text-muted-foreground">
+        ConfigShell has no verified source for these here, so it shows no command rather
+        than one that would fail.
+      </p>
       <ul className="mt-3 flex flex-col gap-2">
         {entries.map((entry) => (
           <li key={entry.applicationId} className="rounded-lg border border-dashed border-border p-3">
-            <p className="text-sm font-medium">{entry.applicationName}</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium">{entry.applicationName}</p>
+              <Badge variant="outline" className={OUTCOMES.unavailable.text}>
+                <UnavailableIcon aria-hidden="true" className="size-3" />
+                {OUTCOMES.unavailable.label}
+              </Badge>
+            </div>
             <p className="mt-1 text-xs text-muted-foreground">{entry.explanation}</p>
           </li>
         ))}

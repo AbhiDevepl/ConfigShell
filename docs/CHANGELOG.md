@@ -28,6 +28,14 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 
 ### Added
 
+- **Plan outcomes are visible in the UI.** The setup plan now states, at the top, whether
+  every selected application produced a command — and the four things that can happen to a
+  selection (installable, manual step, unavailable, runs as root) each carry a text label
+  and an icon as well as a colour, so none of them is distinguishable by colour alone.
+  Unavailable applications now show the outcome next to the reason instead of the reason
+  alone. Four `--outcome-*` theme tokens back this, defined for light and dark, with every
+  value measured against the surface it sits on (lowest is 4.7:1, AA).
+
 - **`status` on the setup plan** — `complete`, `partial` or `none`, saying whether every
   selected application resolved to a command. A mixed selection is a partial success, not a
   failure, and the plan is returned in full either way. Previously a client had to derive

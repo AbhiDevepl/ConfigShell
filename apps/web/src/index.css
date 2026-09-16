@@ -21,6 +21,10 @@
     --color-chart-3: var(--chart-3);
     --color-chart-2: var(--chart-2);
     --color-chart-1: var(--chart-1);
+    --color-outcome-installable: var(--outcome-installable);
+    --color-outcome-manual: var(--outcome-manual);
+    --color-outcome-unavailable: var(--outcome-unavailable);
+    --color-outcome-privileged: var(--outcome-privileged);
     --color-ring: var(--ring);
     --color-input: var(--input);
     --color-border: var(--border);
@@ -67,6 +71,21 @@
     --border: #e5e5e5;
     --input: #e5e5e5;
     --ring: oklch(0.45 0.09 152 / 0.5);
+
+    /*
+     * Plan outcomes. One token per thing that can happen to a selected
+     * application, so the meaning lives here rather than being re-picked as a
+     * utility class in each component.
+     *
+     * Contrast is measured against --muted (the worst case: the darkest light
+     * surface these sit on), not assumed: 6.1 / 5.6 / 5.2 / 5.3 : 1, all AA.
+     * `unavailable` is deliberately NOT an alias of --muted-foreground, which
+     * is 4.08:1 there and would put a new token below AA on arrival.
+     */
+    --outcome-installable: oklch(0.45 0.09 152);
+    --outcome-manual: oklch(0.48 0.14 250);
+    --outcome-unavailable: oklch(0.5 0 0);
+    --outcome-privileged: oklch(0.5 0.12 75);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -102,6 +121,12 @@
     --border: #272b33;
     --input: #272b33;
     --ring: oklch(0.68 0.11 152 / 0.5);
+
+    /* Measured against --muted (#1b1f26): 6.0 / 6.7 / 6.4 / 8.1 : 1, all AA. */
+    --outcome-installable: oklch(0.68 0.11 152);
+    --outcome-manual: oklch(0.72 0.13 250);
+    --outcome-unavailable: oklch(0.708 0 0);
+    --outcome-privileged: oklch(0.78 0.12 75);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);

@@ -34,7 +34,7 @@ and no assertion library — `node:test` and `node:assert/strict`.
 | `packages/installer` | 73 | Every application resolved on every distribution; the cross-ecosystem contract matrix (apt/dnf/pacman/zypper); plan ordering and determinism; golden command output per package manager; the canonical setup plan — status, counts, validation failure modes, byte-identical determinism, hostile catalog entries |
 | `packages/mcp` | 52 | The tool surface; **interoperability with the official MCP client** over the real protocol and over a spawned stdio process; hostile arguments |
 | `apps/server` | 53 | The real Express app over an ephemeral port: every endpoint, every rejection path, single-port production serving |
-| `apps/web` | 12 | The API client's contract, and structural safety invariants |
+| `apps/web` | 20 | The API client's contract, structural safety invariants, and plan rendering for every outcome (server-rendered, no DOM runner) |
 | `packages/contract-tests` | 12 | **Cross-adapter**: the HTTP API and the MCP server must answer the same question the same way — including a whole-object comparison of the setup plan |
 
 **They test real data and the real application**, not fixtures and mocks. The catalog suite
