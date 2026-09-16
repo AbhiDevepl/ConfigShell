@@ -1,4 +1,4 @@
-# Linux App Platform
+# ConfigShell
 
 An open-source, AI-native Linux software discovery and management platform.
 
