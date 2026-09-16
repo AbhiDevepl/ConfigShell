@@ -67,9 +67,9 @@ The website never executes anything — it ends at a command the user copies and
 their own terminal. Installer resolution and command generation are not part of Phase 1
 (see below).
 
-## Current implementation (as of Phase 2)
+## Current implementation
 
-Two layers of the long-term pipeline now exist, and the boundary between them is real:
+The catalog, the deterministic core, and a read-only API over it all exist:
 
 ```mermaid
 flowchart LR
@@ -77,17 +77,38 @@ flowchart LR
         WEB["apps/web<br/>React + Vite + shadcn/ui"]
     end
     subgraph build["Build time"]
-        CATALOG["packages/catalog<br/>APPLICATIONS, types, validateCatalog"]
+        CATALOG["packages/catalog<br/>APPLICATIONS, Environment, validateCatalog"]
     end
-    SERVER["apps/server<br/>Express scaffold — no endpoints"]
+    INSTALLER["packages/installer<br/>resolve → buildPlan → renderPlan"]
+    SERVER["apps/server<br/>read-only planning API"]
 
     CATALOG -- "workspace:* import, bundled at build" --> WEB
-    WEB -. "no requests — not wired up" .-> SERVER
+    CATALOG --> INSTALLER
+    INSTALLER --> SERVER
+    CATALOG --> SERVER
+    WEB -. "not wired up yet" .-> INSTALLER
 ```
 
-The catalog is *compiled into* the web bundle; it is not fetched at runtime. There is no
-client/server communication in the product today — the dashed edge above does not exist in
-code.
+The catalog is *compiled into* the web bundle; it is not fetched at runtime. The web app
+still makes **no network requests** — it does not call the API, and it does not yet render a
+setup plan or a command. Wiring the installer into the interface is unstarted work.
+
+### The three stages, and why they are separate
+
+```
+resolve()      (application, environment)  →  which source, and why
+buildPlan()    (resolutions, environment)  →  ordered steps, as DATA
+renderPlan()   (plan)                      →  command strings
+```
+
+This split is the security model rather than tidiness. `renderPlan` is the **only** code in
+the repository that knows `apt` means `apt-get install`; everything before it is structured
+data that cannot contain a shell fragment. That keeps the dangerous step small enough to
+test exhaustively, and it is what lets a future CLI or MCP server reuse resolution and
+planning without inheriting command generation.
+
+It is also why the core lives in a package rather than in `apps/web` or `apps/server`. Both
+are consumers. Neither owns the logic, and neither may reimplement it.
 
 The web app owns no application data. It reads `APPLICATIONS` from the catalog package and
 renders it; search, category filtering and selection all operate on catalog entries, keyed
@@ -135,18 +156,48 @@ section before adding more components or touching the `@/*` import alias.
   lives in `App.tsx`/local component state — there is no global store, no backend calls,
   and no persistence. Nothing survives a page refresh.
 
-### `apps/server` — scaffold only, serves nothing
+### `apps/server` — the planning API
 
-The directory structure (`controllers/`, `services/`, `routes/`, `middleware/`,
-`validators/`, `utils/`, `config/`) exists, but the only files with code are `index.js` —
-which starts an Express app with no routes registered — and `config/env.js` /
-`config/index.js`, which read and validate `PORT` and `NODE_ENV` and fail startup loudly on
-an invalid value. Everything else is 0 bytes.
+A read-only HTTP surface over the catalog and the installer: health, catalog
+browse/search/lookup, supported-environment discovery, and `POST /api/plan`. Controllers
+are thin (validate → call a service → send); no application data and no installation
+decision lives in this workspace.
 
-The server starts and listens; it has no endpoints. No API exists for the web app to call,
-and the web app does not attempt to call one. Adding the first endpoint is an
-architectural decision (the catalog is currently compiled into the browser bundle), not a
-small change — open an issue first.
+**It plans and validates; it never executes.** There is no `child_process` import in the
+workspace and an integration test asserts there never is one. A server that ran
+package-manager commands on a user's behalf would be remote sudo — permanently out of
+scope, not merely unscheduled. Execution belongs to a local agent on the user's own machine
+(`docs/agent.md`).
+
+No database, no authentication, no sessions: nothing here needs one. The catalog is
+Git-managed data compiled into the process (PRD §33) and every endpoint is a pure function
+of the request.
+
+The server is JavaScript importing the workspace's TypeScript packages directly, run under
+`tsx`, so the monorepo still has no build step. `tsconfig.json` runs `checkJs` over it, so
+misuse of the catalog or installer APIs is caught by `pnpm typecheck`.
+
+The web app does **not** call it. `apps/web` compiles the catalog into its bundle, which is
+simpler and safer than a round trip; the API exists for consumers that cannot do that — a
+CLI, an MCP server, or anything else that should reuse resolution rather than reimplement
+it. See `apps/server/README.md`.
+
+### `packages/installer` — the deterministic core
+
+Pure functions over `(catalog, environment)`: no I/O, no filesystem, no network, no
+execution. Encodes PRD §22's source-trust hierarchy explicitly (`policy.ts`), so "which
+source did you pick, and why" is a tested, documented answer rather than catalog order.
+
+Sources that need a third-party repository added first are **excluded** and become a manual
+step pointing at the vendor's instructions — a provisional decision recorded in
+`docs/TechnicalAudit.md` §9 (Q1), localised to one predicate so it can be revisited without
+reshaping the resolver. Applications with no route at all are reported, never dropped.
+
+Verification commands come from one fixed template (`command -v <binary>`). The catalog has
+no field that could carry a check *command*, deliberately: that is precisely the field
+through which arbitrary strings would reach a shell.
+
+See `packages/installer/README.md`.
 
 ### `packages/ai`, `packages/mcp`
 
@@ -169,14 +220,18 @@ implementation must satisfy.
 
 See `docs/development.md` for the commands and `CONTRIBUTING.md` for the workflow.
 
-## What Phase 2 deliberately does not include
+## What is deliberately still missing
 
-Per the V1 phase plan: installer resolution (APT/DNF/Pacman/Flatpak/Snap), terminal command
-generation, clipboard install commands, any backend installation API, a database,
-authentication, AI, MCP, and the local agent. These are later phases/milestones, not
-missing pieces of Phase 2.
+- **The plan and command user interface.** The core generates both and the API serves them,
+  but `apps/web` renders neither, and its "Continue" button remains inert. This is the
+  largest gap between what works and what a user can see.
+- **Repository-setup steps.** Sources needing a third-party repository are skipped by
+  design, provisionally (Q1). ConfigShell adds no apt sources file and no signing key.
+- **Execution of any kind**, anywhere. The browser does not run commands, and neither does
+  the server.
+- **AI, MCP, the local agent, a database and authentication** — later milestones, not
+  missing pieces of this one.
 
-The catalog now *describes* installation sources, which makes the next boundary worth
-stating precisely: turning an `InstallationSource` into a command is the resolver's job,
-and the resolver does not exist. Nothing in `packages/catalog` or `apps/web` builds,
-stores, or displays a shell command.
+The boundary worth restating: `packages/catalog` and `apps/web` still build, store and
+display **no shell command**. Only `packages/installer`'s `renderPlan` produces command
+text, and only from catalog data that is pattern-checked immediately before interpolation.

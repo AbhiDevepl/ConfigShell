@@ -43,6 +43,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'org.mozilla.firefox', origin: 'vendor' },
       { method: 'snap', identifier: 'firefox', origin: 'vendor' },
     ],
+    verify: { binary: 'firefox' },
   },
   {
     id: 'google-chrome',
@@ -65,6 +66,7 @@ export const APPLICATIONS: readonly Application[] = [
       },
       { method: 'flatpak', identifier: 'com.google.Chrome', origin: 'community' },
     ],
+    verify: { binary: 'google-chrome-stable' },
   },
   {
     id: 'brave',
@@ -90,6 +92,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'com.brave.Browser', origin: 'community' },
       { method: 'snap', identifier: 'brave', origin: 'vendor' },
     ],
+    verify: { binary: 'brave-browser' },
   },
   {
     id: 'chromium',
@@ -132,6 +135,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'com.visualstudio.code', origin: 'community' },
       { method: 'snap', identifier: 'code', origin: 'vendor' },
     ],
+    verify: { binary: 'code' },
   },
   {
     id: 'cursor',
@@ -183,6 +187,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'com.sublimehq.SublimeText', origin: 'community' },
       { method: 'snap', identifier: 'sublime-text', origin: 'community' },
     ],
+    verify: { binary: 'subl' },
   },
 
   // --------------------------------------------------------------- CLI Tools
@@ -197,6 +202,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'dnf', identifier: 'git', origin: 'distro', distros: ['Fedora'] },
       { method: 'pacman', identifier: 'git', origin: 'distro', distros: ['Arch Linux'] },
     ],
+    verify: { binary: 'git' },
   },
   {
     id: 'docker',
@@ -223,6 +229,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'pacman', identifier: 'docker', origin: 'distro', distros: ['Arch Linux'] },
       { method: 'snap', identifier: 'docker', origin: 'community' },
     ],
+    verify: { binary: 'docker' },
   },
   {
     id: 'nodejs',
@@ -236,6 +243,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'pacman', identifier: 'nodejs', origin: 'distro', distros: ['Arch Linux'] },
       { method: 'snap', identifier: 'node', origin: 'vendor' },
     ],
+    verify: { binary: 'node' },
   },
   {
     id: 'curl',
@@ -248,6 +256,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'dnf', identifier: 'curl', origin: 'distro', distros: ['Fedora'] },
       { method: 'pacman', identifier: 'curl', origin: 'distro', distros: ['Arch Linux'] },
     ],
+    verify: { binary: 'curl' },
   },
   {
     id: 'htop',
@@ -260,6 +269,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'dnf', identifier: 'htop', origin: 'distro', distros: ['Fedora'] },
       { method: 'pacman', identifier: 'htop', origin: 'distro', distros: ['Arch Linux'] },
     ],
+    verify: { binary: 'htop' },
   },
   {
     id: 'neovim',
@@ -274,6 +284,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'io.neovim.nvim', origin: 'community' },
       { method: 'snap', identifier: 'nvim', origin: 'community' },
     ],
+    verify: { binary: 'nvim' },
   },
 
   // ------------------------------------------------------------- Development
@@ -294,6 +305,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'rest.insomnia.Insomnia', origin: 'community' },
       { method: 'snap', identifier: 'insomnia', origin: 'vendor' },
     ],
+    verify: { binary: 'insomnia' },
   },
   {
     id: 'dbeaver',
@@ -313,6 +325,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'io.dbeaver.DBeaverCommunity', origin: 'community' },
       { method: 'snap', identifier: 'dbeaver-ce', origin: 'vendor' },
     ],
+    verify: { binary: 'dbeaver' },
   },
   {
     id: 'postman',
@@ -342,6 +355,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'dnf', identifier: 'gh', origin: 'distro', distros: ['Fedora'] },
       { method: 'pacman', identifier: 'github-cli', origin: 'distro', distros: ['Arch Linux'] },
     ],
+    verify: { binary: 'gh' },
   },
 
   // --------------------------------------------------------------- Utilities
@@ -361,6 +375,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'dnf', identifier: 'gnome-tweaks', origin: 'distro', distros: ['Fedora'] },
       { method: 'pacman', identifier: 'gnome-tweaks', origin: 'distro', distros: ['Arch Linux'] },
     ],
+    verify: { binary: 'gnome-tweaks' },
   },
   {
     id: 'flameshot',
@@ -375,6 +390,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'org.flameshot.Flameshot', origin: 'vendor' },
       { method: 'snap', identifier: 'flameshot', origin: 'community' },
     ],
+    verify: { binary: 'flameshot' },
   },
   {
     id: 'timeshift',
@@ -387,6 +403,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'dnf', identifier: 'timeshift', origin: 'distro', distros: ['Fedora'] },
       { method: 'pacman', identifier: 'timeshift', origin: 'distro', distros: ['Arch Linux'] },
     ],
+    verify: { binary: 'timeshift' },
   },
   {
     id: 'gparted',
@@ -399,6 +416,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'dnf', identifier: 'gparted', origin: 'distro', distros: ['Fedora'] },
       { method: 'pacman', identifier: 'gparted', origin: 'distro', distros: ['Arch Linux'] },
     ],
+    verify: { binary: 'gparted' },
   },
 
   // ------------------------------------------------------------------- Media
@@ -414,6 +432,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'org.videolan.VLC', origin: 'community' },
       { method: 'snap', identifier: 'vlc', origin: 'vendor' },
     ],
+    verify: { binary: 'vlc' },
   },
   {
     id: 'obs-studio',
@@ -427,6 +446,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'pacman', identifier: 'obs-studio', origin: 'distro', distros: ['Arch Linux'] },
       { method: 'flatpak', identifier: 'com.obsproject.Studio', origin: 'vendor' },
     ],
+    verify: { binary: 'obs' },
   },
   {
     id: 'audacity',
@@ -441,6 +461,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'org.audacityteam.Audacity', origin: 'community' },
       { method: 'snap', identifier: 'audacity', origin: 'community' },
     ],
+    verify: { binary: 'audacity' },
   },
   {
     id: 'gimp',
@@ -455,6 +476,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'org.gimp.GIMP', origin: 'vendor' },
       { method: 'snap', identifier: 'gimp', origin: 'vendor' },
     ],
+    verify: { binary: 'gimp' },
   },
 
   // ----------------------------------------------------------- Communication
@@ -482,6 +504,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'com.slack.Slack', origin: 'community' },
       { method: 'snap', identifier: 'slack', origin: 'vendor' },
     ],
+    verify: { binary: 'slack' },
   },
   {
     id: 'discord',
@@ -494,6 +517,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'com.discordapp.Discord', origin: 'community' },
       { method: 'snap', identifier: 'discord', origin: 'community' },
     ],
+    verify: { binary: 'discord' },
   },
   {
     id: 'telegram-desktop',
@@ -517,6 +541,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'org.telegram.desktop', origin: 'vendor' },
       { method: 'snap', identifier: 'telegram-desktop', origin: 'vendor' },
     ],
+    verify: { binary: 'telegram-desktop' },
   },
   {
     id: 'thunderbird',
@@ -536,6 +561,7 @@ export const APPLICATIONS: readonly Application[] = [
       { method: 'flatpak', identifier: 'org.mozilla.thunderbird', origin: 'vendor' },
       { method: 'snap', identifier: 'thunderbird', origin: 'vendor' },
     ],
+    verify: { binary: 'thunderbird' },
   },
   {
     id: 'zoom',

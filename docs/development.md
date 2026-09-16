@@ -67,7 +67,7 @@ Per-workspace:
 
 ```sh
 pnpm --filter web dev       # Vite dev server, port 3000
-pnpm --filter server dev    # Express scaffold (nodemon) — starts, serves nothing
+pnpm --filter server dev    # planning API (tsx watch) — http://localhost:3000/health
 ```
 
 > Both default to port 3000. To run them together, set `PORT` in `apps/server/.env`
@@ -80,8 +80,8 @@ From the repository root:
 | Command | What it does |
 | ------- | ------------ |
 | `pnpm lint` | ESLint across the repo (flat config in `eslint.config.js`) |
-| `pnpm typecheck` | `tsc --noEmit` for `apps/web` and `packages/catalog` |
-| `pnpm test` | catalog test suite, then `apps/server` (which has no test files yet) |
+| `pnpm typecheck` | `tsc --noEmit` for `apps/web`, `packages/catalog`, `packages/installer` and `apps/server` |
+| `pnpm test` | 122 tests: `packages/catalog` (37), `packages/installer` (44), `apps/server` (41) |
 | `pnpm build` | production build of the web app → `apps/web/dist` |
 | `pnpm check` | all four, in that order — run this before opening a pull request |
 
@@ -91,18 +91,39 @@ Per-workspace equivalents:
 pnpm --filter web typecheck
 pnpm --filter @configshell/catalog test
 pnpm --filter @configshell/catalog typecheck
+pnpm --filter @configshell/installer test
+pnpm --filter @configshell/installer typecheck
 pnpm --filter server test
+pnpm --filter server typecheck
 ```
 
 ### Testing, honestly
 
-- `packages/catalog` has the repository's **only** test suite: 20 tests using Node's
-  built-in test runner via `tsx`. It validates the real catalog data, not just fixtures.
-- `apps/server` runs `node --test` and finds **no test files**. That is a pass with zero
-  tests, not a passing test suite.
-- `apps/web` has **no tests at all** — no test runner is installed. Adding one (Vitest is
-  the obvious choice for a Vite project) is an open task; see
-  [`.github/GOOD_FIRST_ISSUES.md`](../.github/GOOD_FIRST_ISSUES.md).
+All 122 tests run on Node's built-in test runner via `tsx`, against real data and the real
+application rather than fixtures and mocks.
+
+- `packages/catalog` — **37 tests.** Validates all 31 real catalog entries, the environment
+  model, and that a binary name which could reach a shell is rejected.
+- `packages/installer` — **44 tests.** Resolution against every application on every
+  distribution, plan ordering and determinism, golden command output per package manager,
+  and an assertion that no generated command can contain a shell metacharacter.
+- `apps/server` — **41 tests.** Drives the actual Express app over an ephemeral port:
+  endpoints, every rejection path, that errors never leak a stack trace or a filesystem
+  path, and that no module in the workspace imports `child_process`.
+- `apps/web` has **no tests at all** — no test runner is installed. That is now the largest
+  gap in the repository. Adding one (Vitest is the obvious choice for a Vite project) is an
+  open task; see [`.github/GOOD_FIRST_ISSUES.md`](../.github/GOOD_FIRST_ISSUES.md).
+
+### Trying the API
+
+```sh
+pnpm --filter server dev
+curl -s localhost:3000/health
+curl -s localhost:3000/api/plan -H 'content-type: application/json' \
+  -d '{"environment":{"distro":"Ubuntu"},"applicationIds":["git","htop"]}'
+```
+
+Endpoints are documented in [`apps/server/README.md`](../apps/server/README.md).
 
 ### Formatting
 

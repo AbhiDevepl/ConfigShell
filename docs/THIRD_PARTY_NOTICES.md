@@ -40,11 +40,15 @@ Not shipped to users, but part of the repository's toolchain.
 | `eslint-plugin-react-hooks` | MIT |
 | `globals` | MIT |
 | `tsx` | MIT |
-| `nodemon` | MIT |
 | `dotenv` | BSD-2-Clause |
 | `@types/node`, `@types/react`, `@types/react-dom`, `@types/express` | MIT (DefinitelyTyped) |
 
 `express` is also a runtime dependency of `apps/server` (MIT).
+
+`tsx` is listed here as tooling but is also how `apps/server` **runs**: the server is
+JavaScript that imports the workspace's TypeScript packages directly, and `tsx` transpiles
+them on the fly so the monorepo needs no build step. `nodemon` was removed in the same
+change — `tsx watch` covers what it did.
 
 ## Fonts
 

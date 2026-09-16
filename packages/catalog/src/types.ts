@@ -32,6 +32,77 @@ export type Distro = 'Ubuntu' | 'Debian' | 'Fedora' | 'Arch Linux';
 export const DISTROS: readonly Distro[] = ['Ubuntu', 'Debian', 'Fedora', 'Arch Linux'] as const;
 
 /**
+ * The operating system an environment runs. Linux is the only supported value
+ * and the only one the catalog carries data for.
+ *
+ * This axis exists *now*, with exactly one member, on purpose: every type below
+ * is otherwise Linux-shaped, and retrofitting an OS distinction after a resolver
+ * and a plan model are built would touch all of them. Adding `'macos'` later is
+ * a data problem; adding the axis later would be a refactor. Do **not** add
+ * another value until there is verified catalog data behind it.
+ */
+export type OperatingSystem = 'linux';
+
+export const OPERATING_SYSTEMS: readonly OperatingSystem[] = ['linux'] as const;
+
+/**
+ * A distribution's *native* package ecosystem — the package manager that ships
+ * with it and whose repositories it is built around.
+ *
+ * Deliberately narrower than `InstallMethod`: `flatpak` and `snap` are
+ * cross-distribution add-ons, not any distribution's native ecosystem, and
+ * `official` is not a package manager at all. Every ecosystem here is also an
+ * `InstallMethod`, which is what lets resolution match one against the other.
+ */
+export type PackageEcosystem = 'apt' | 'dnf' | 'pacman';
+
+export const PACKAGE_ECOSYSTEMS: readonly PackageEcosystem[] = ['apt', 'dnf', 'pacman'] as const;
+
+/**
+ * Which distributions belong to each native package ecosystem.
+ *
+ * This is the single home for that knowledge. `validate.ts` uses it to reject
+ * impossible sources ("dnf on Arch Linux"), and `environment.ts` inverts it to
+ * derive an environment's ecosystem from its distribution. Adding a
+ * distribution means adding it here and nowhere else.
+ */
+export const ECOSYSTEM_DISTROS: Record<PackageEcosystem, readonly Distro[]> = {
+  apt: ['Ubuntu', 'Debian'],
+  dnf: ['Fedora'],
+  pacman: ['Arch Linux'],
+} as const;
+
+/**
+ * CPU architecture. Recorded because PRD FR-001 asks for it and because it is
+ * cheaper to carry than to add later.
+ *
+ * **Nothing resolves on it today.** The catalog holds no per-architecture data,
+ * so resolution ignores this field entirely rather than pretending to filter on
+ * it. It is optional on `Environment` for exactly that reason.
+ */
+export type Architecture = 'x86_64' | 'aarch64';
+
+export const ARCHITECTURES: readonly Architecture[] = ['x86_64', 'aarch64'] as const;
+
+/**
+ * Where the user wants to install something — the second half of every
+ * resolution question, the first half being the application.
+ *
+ * Always an explicit, validated value. It is never inferred from a browser user
+ * agent: the web app can tell that a visitor *looks like* they are on Linux and
+ * nothing more, so the distribution is always a deliberate choice. Real system
+ * detection is a local-agent capability that does not exist yet.
+ */
+export interface Environment {
+  os: OperatingSystem;
+  distro: Distro;
+  /** Derived from `distro` — never supplied independently. See `environment.ts`. */
+  ecosystem: PackageEcosystem;
+  /** Optional, recorded only. Does not affect resolution — see `Architecture`. */
+  architecture?: Architecture;
+}
+
+/**
  * How an application can be obtained. `official` means the vendor's own
  * download/installer for cases where no package-manager route is verified.
  */
@@ -80,6 +151,23 @@ export interface InstallationSource {
   url?: string;
 }
 
+/**
+ * How to check that an application is actually present after installation.
+ *
+ * Deliberately a closed shape with exactly one field, not a free-text command.
+ * The resolver builds a check from a fixed template (`command -v <binary>`); it
+ * must never be handed a per-application string to run, which is precisely the
+ * "arbitrary strings reach a shell" failure the security model forbids.
+ */
+export interface Verification {
+  /**
+   * The command the installed package places on `PATH` — `git`, `nvim`, `code`.
+   * Subject to the same rule as every other identifier here: verified or
+   * omitted, never guessed.
+   */
+  binary: string;
+}
+
 export interface Application {
   /** Stable, unique, lowercase slug. Selection state in the UI is keyed on this. */
   id: string;
@@ -94,4 +182,12 @@ export interface Application {
    * means "nothing has been verified yet", not "not installable".
    */
   installation: readonly InstallationSource[];
+  /**
+   * How to verify the application afterwards. Optional, and absence means
+   * "no binary name has been verified" — not "unverifiable". Several entries
+   * legitimately have none: applications distributed only as Flatpaks or Snaps
+   * may put nothing predictable on `PATH`, and a binary whose name differs
+   * between distributions is omitted rather than guessed at.
+   */
+  verify?: Verification;
 }

@@ -20,14 +20,28 @@ Once releases begin, this table will list the release lines that receive fixes.
 
 As of today the project ships a **static React application** that makes no network
 requests, calls no backend, stores no user data beyond a theme preference in
-`localStorage`, and generates and executes no commands. `apps/server` starts an Express
-process with no routes registered. There is no AI layer, no MCP server, no local agent, no
-database, and no authentication.
+`localStorage`, and generates and executes no commands.
 
-In practice that means the realistic security issues right now are: dependency
-vulnerabilities, supply-chain problems in the toolchain, incorrect or malicious catalog
-data, and the repository's own hygiene. That will change as later layers land, and this
-policy will be updated when it does.
+Two components now do more than that:
+
+- `packages/installer` **generates package-manager command strings** from catalog data.
+  Nothing executes them — they are text a user pastes into their own terminal — but the code
+  that turns data into something a shell will interpret now exists.
+- `apps/server` serves a **read-only planning API** and accepts untrusted input at
+  `POST /api/plan`. It never executes anything; there is no `child_process` import in the
+  workspace and a test asserts there never will be.
+
+There is still no AI layer, no MCP server, no local agent, no database, and no
+authentication.
+
+The realistic security issues right now are therefore: **incorrect or malicious catalog
+data** (it reaches command generation, so a bad entry is the highest-value target — which is
+why identifiers are pattern-checked both in the catalog validator and again immediately
+before interpolation), a flaw in the planning API's input validation, dependency
+vulnerabilities, supply-chain problems in the toolchain, and the repository's own hygiene.
+
+The design that contains these is in [`docs/security-model.md`](security-model.md). This
+policy will be updated as later layers land.
 
 ## Reporting a vulnerability
 

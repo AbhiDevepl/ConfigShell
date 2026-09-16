@@ -44,6 +44,11 @@ interface Application {
   category: Category;
   homepage: string;      // official project/vendor URL (https)
   installation: readonly InstallationSource[];
+  verify?: Verification;  // how to check it afterwards — optional; see below
+}
+
+interface Verification {
+  binary: string;        // the command the package puts on PATH: 'git', 'nvim', 'code'
 }
 
 interface InstallationSource {
@@ -74,8 +79,9 @@ that is meant to be *trusted* should not flatten that away.
 | `vendor`    | published by the application's own project/vendor (their apt/dnf repo, their official Flatpak/Snap) |
 | `community` | packaged by a third party                                                          |
 
-Nothing in Phase 2 *acts* on `origin`. It is recorded so the resolver and the UI can later
-prefer trusted sources, and so users can be told what they are actually installing.
+**`origin` is now acted on.** `packages/installer` ranks sources by it (PRD §22), and for
+`apt`/`dnf`/`pacman` it decides whether a source is usable at all — see "What consumes this
+catalog" below. Getting it wrong changes what a user is told to run.
 
 ### `distros` — support is explicit, never assumed
 
@@ -143,6 +149,29 @@ Rules that govern additions:
 - **Record provenance honestly** via `origin` rather than presenting a community
   repackaging as vendor-official.
 
+### `verify` — how to check the install worked
+
+A **closed shape with exactly one field**, deliberately. It is a binary *name*, never a
+check *command*: a free-text command field would be precisely the route by which arbitrary
+strings reach a shell, which the security model forbids. Verification commands are built
+from one fixed template — `command -v <binary>` — and nothing else.
+
+Two rules:
+
+1. **The same "verified or omitted" discipline as identifiers.** If the binary name differs
+   between distributions, omit it. `chromium` is the worked example: Debian and Ubuntu ship
+   `chromium`, Fedora ships `chromium-browser`, so the entry carries no `verify` at all.
+2. **Omit it when there is no route that puts a binary on `PATH`.** Flatpak applications are
+   launched with `flatpak run <id>`, and vendor downloads vary. A test enforces this: an
+   entry whose only sources are `flatpak` or `official` must not claim a binary.
+
+Absence means "no binary name has been verified", not "unverifiable" — the same meaning
+absence has everywhere else in this catalog. 26 of the 31 entries carry one; `chromium`,
+`cursor`, `zed`, `postman` and `zoom` deliberately do not.
+
+The validator rejects anything that is not a plain executable name (`/^[A-Za-z0-9][A-Za-z0-9._+-]*$/`),
+and command generation re-checks it before interpolating.
+
 ## Icons
 
 Not implemented. No icon field exists. The web app renders a generic per-category Lucide
@@ -167,15 +196,22 @@ likewise.
 within an application; method is one of the six; origin is one of the three; `apt`/`dnf`/
 `pacman` must list the distros they are verified for; `flatpak`/`snap`/`official` must not
 list distros; a package manager cannot be paired with a distribution that does not use it
-(no "dnf on Arch Linux").
+(no "dnf on Arch Linux"). The distro↔package-manager mapping lives in one place,
+`ECOSYSTEM_DISTROS` in `types.ts`, which the validator reuses rather than copying.
 
-Run it with `pnpm --filter ./packages/catalog test` (Node's built-in test runner via
+**Verification** — `verify.binary`, when present, must be a plain executable name matching
+`/^[A-Za-z0-9][A-Za-z0-9._+-]*$/`. Anything containing a space, a quote, `;`, `$`, a
+backtick or a leading `-` is rejected here, at the data boundary, because this value is
+interpolated into a generated command. Command generation re-checks it anyway.
+
+Run it with `pnpm --filter @configshell/catalog test` (Node's built-in test runner via
 `tsx`). The suite covers each rule above against synthetic entries *and* asserts the real
-catalog is valid, non-trivial, and that every category is populated.
+catalog is valid, non-trivial, that every category is populated, and that no entry claims a
+binary it could not put on `PATH`.
 
 ## Current contents
 
-As of Phase 2: **31 applications**, **116 verified installation sources**.
+**31 applications**, **116 verified installation sources**, **26 with a verified binary name**.
 
 | Category      | Apps |     | Method    | Sources |     | Origin      | Sources |
 | ------------- | ---- | --- | --------- | ------- | --- | ----------- | ------- |
@@ -264,6 +300,23 @@ The mechanical steps:
    distribution list in the README.
 
 Run `pnpm check` from the repository root before opening the pull request.
+
+## What consumes this catalog
+
+`packages/installer` turns an entry plus an environment into a chosen installation source, a
+setup plan and a command. Two consequences for anyone editing catalog data:
+
+- **`origin` is now load-bearing.** It decides which source wins (PRD §22's trust hierarchy)
+  and, for `apt`/`dnf`/`pacman`, whether a source is usable at all: a package-manager source
+  with `origin: 'vendor'` means "in the vendor's own repository", which ConfigShell will not
+  add. Those sources are skipped and the user is pointed at the vendor's instructions
+  instead — so getting `origin` wrong now changes what a user is told to run, not just what
+  a badge says.
+- **Adding a `url` to a vendor source matters.** It becomes the link a user follows when
+  there is no generated command. `google-chrome`'s `apt` and `dnf` sources currently have
+  none, which is worth fixing.
+
+Skipping vendor-repository sources is **provisional** — see `docs/TechnicalAudit.md` §9 (Q1).
 
 ## Deliberate non-goals for this phase
 

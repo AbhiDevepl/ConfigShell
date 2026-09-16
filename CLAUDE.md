@@ -8,7 +8,7 @@ ConfigShell is an early-stage, open-source Linux software discovery and manageme
 platform. The intended product (see `README.md`) is a layered pipeline:
 
 ```
-UI → Application Catalog → System Detection → AI / Planning → MCP  → Validated System Operation
+UI → Application Catalog → System Detection → AI / Planning → MCP → Validated System Operation
 ```
 
 Non-negotiable safety principles that govern any feature work here:
@@ -25,14 +25,22 @@ Non-negotiable safety principles that govern any feature work here:
 This repo is a scaffold — most files exist as empty placeholders, not stubs with TODOs.
 Before editing, check whether a file actually has content; many don't:
 
-- **`apps/server/`**: the only files with code are `index.js` — a bare `express()` app that
-  calls `app.listen(...)` and registers no routes or middleware — and `config/env.js` +
-  `config/index.js`, which load `.env` via `dotenv`, validate `PORT`/`NODE_ENV`, and throw
-  an explanatory error on an invalid value. `app.js` and every file in `routes/`,
-  `controllers/`, `services/`, `middleware/`, `validators/`, `utils/` is still 0 bytes.
-  There is no routing, no catalog endpoint, no AI endpoint, and no auth, despite the
-  directory names. The server *does* start (`pnpm --filter server start`) — it just serves
-  nothing. Variables are documented in `apps/server/.env.example`; `.env` is git-ignored.
+- **`apps/server/`**: **implemented** — a read-only planning API. `app.js` is an Express app
+  factory; `index.js` is the only file that binds a port. Routes: `/health`,
+  `/api/applications[/:id]`, `/api/catalog/{categories,environments,stats}`, `POST /api/plan`
+  and `POST /api/plan/resolve` (all listed in `routes/index.js`). Controllers are thin —
+  validate, call a service, send. **41 tests** (`apps/server/api.test.js`,
+  `config/env.test.js`).
+  - **It never executes anything.** No `child_process` import exists in the workspace and a
+    test asserts it never will. Don't add one: execution belongs to the local agent
+    (`docs/agent.md`), and a server doing it would be remote sudo.
+  - It is **JavaScript run under `tsx`**, so it can import the TypeScript workspace packages
+    with no build step. `tsconfig.json` runs `checkJs` (with `noImplicitAny: false` — the
+    point is the package boundary, not annotating Express handlers) and excludes `*.test.js`.
+  - `controllers/ai.controller.js`, `services/ai.service.js`, `routes/ai.routes.js` and
+    `middleware/auth.middleware.js` are still **0 bytes on purpose**. Leave them that way.
+  - Variables are documented in `apps/server/.env.example`; `.env` is git-ignored. There are
+    deliberately no AI keys, database URLs or auth secrets, and a test checks for them.
 - **`apps/web/`**: a Vite + React + TypeScript + Tailwind v4 + **shadcn/ui** app. As of
   Phase 1 it has a working UI foundation for the actual product, built primarily from
   shadcn components (`components/ui/*` — button, card, badge, checkbox, radio-group,
@@ -49,7 +57,15 @@ Before editing, check whether a file actually has content; many don't:
 - **`packages/catalog`**: real, and as of Phase 2 the **single source of truth for
   application metadata** — 31 verified applications, the data model, a dependency-free
   validation function, and its own tests. Published to the workspace as
-  `@configshell/catalog` and consumed by `apps/web` via `workspace:*`. It is
+  `@configshell/catalog` and consumed by `apps/web`, `packages/installer` and `apps/server`
+  via `workspace:*`. It also owns the **environment model** (`environment.ts`:
+  `createEnvironment`, `parseEnvironment`, the distro↔ecosystem mapping) and read-only
+  **queries** (`query.ts`: `findApplication`, `searchApplications`) so every consumer answers
+  the same question the same way. `ECOSYSTEM_DISTROS` in `types.ts` is the *single* home for
+  which distributions use which package manager — `validate.ts` reuses it rather than keeping
+  a copy, and adding a distribution should be a one-line change there. Optional
+  `verify: { binary }` per application drives verification commands; absence means "no binary
+  name verified", which is a legitimate state. It is
   TypeScript source with **no build step** (`main`/`types`/`exports` point straight at
   `src/index.ts`); Vite and `tsc` both resolve it through the pnpm symlink, so don't add a
   bundler/`dist` pipeline unless something actually needs one. `apps/web/src/data/
@@ -57,8 +73,24 @@ Before editing, check whether a file actually has content; many don't:
   `docs/catalog.md` before adding entries: identifiers must be verified against an
   authoritative source, unverified ones are omitted rather than guessed, the AUR doesn't
   count as `pacman`, and version numbers are never recorded.
+- **`packages/installer`**: **implemented** — the deterministic core, and the most
+  security-sensitive code in the repo. Three pure stages: `resolve()` → `buildPlan()` →
+  `renderPlan()`. No I/O, no execution. **44 tests.** Rules that must hold:
+  - `renderPlan` is the **only** code anywhere that knows a package manager's command form.
+    Do not generate command text in `apps/web`, `apps/server`, or the catalog.
+  - The plan is **data**. A test asserts it contains no command text; keep it that way.
+  - Every identifier is re-validated against a strict pattern immediately before
+    interpolation, and throws on failure. Never quote-and-hope.
+  - Privilege comes from the install method, never from scanning a string for `sudo`.
+  - Vendor sources needing a third-party repo are **skipped** (provisional, Q1 — see
+    `docs/TechnicalAudit.md` §9). `requiresRepositorySetup()` is the single place that
+    decides; change it there, not at the call sites.
+  - No application is silently dropped: every one resolves, becomes manual, or is reported
+    unavailable, each with an explanation.
 - **`packages/ai`, `packages/mcp`**: a `package.json` and a README each, no source —
   placeholders for the AI planning and MCP layers. They are real (empty) workspace members.
+  **AI is future scope: do not implement it.** MCP is retained as a separate future
+  integration layer over `packages/installer` and is *not* blocked on AI.
 - **`docs/*.md`**: `architecture.md`, `catalog.md`, `security-model.md` and `development.md` are
   the source of truth for the implementation state, the V1 flow boundary, the security
   model, and the commands — read them before making architecture-adjacent changes.
@@ -72,9 +104,10 @@ Before editing, check whether a file actually has content; many don't:
   `eslint.config.js`, covering every workspace). `typecheck` is `tsc --noEmit` per
   TypeScript workspace. The old per-workspace `"lint": "tsc --noEmit"` scripts were
   renamed to `typecheck`, and `apps/server`'s broken `lint`/`check` scripts were removed.
-- **Tests**: `packages/catalog` has the repo's only test suite (Node's built-in runner via
-  `tsx`: `pnpm --filter @configshell/catalog test`). `apps/server` has no test
-  files (`node --test` passes with zero tests); `apps/web` has no test runner at all.
+- **Tests**: **122**, on Node's built-in runner via `tsx`, in three workspaces —
+  `packages/catalog` (37), `packages/installer` (44), `apps/server` (41). They exercise real
+  data and the real app, not fixtures and mocks. **`apps/web` still has no test runner at
+  all** — the largest remaining gap.
 - **`apps/web` typecheck (`tsc --noEmit`) needs `@types/react`/`@types/react-dom`**, added
   in Phase 1 — they were missing entirely before that (JSX/React props typechecked as
   effectively `any`, so `tsc --noEmit` looked clean but wasn't actually validating React
@@ -130,8 +163,8 @@ pnpm dev                         # == pnpm --filter web dev  (web only, no serve
 pnpm build                       # == pnpm --filter web build
 pnpm start                       # == pnpm --filter web start
 pnpm lint                        # eslint . across the whole repo (real ESLint)
-pnpm typecheck                   # tsc --noEmit for apps/web and packages/catalog
-pnpm test                        # catalog tests (tsx --test), then apps/server (node --test, no files)
+pnpm typecheck                   # tsc --noEmit for web, catalog, installer, server (checkJs)
+pnpm test                        # 122 tests: catalog (37), installer (44), server (41)
 pnpm check                       # lint -> typecheck -> test -> build (what CI runs)
 ```
 
@@ -143,12 +176,16 @@ pnpm --filter web preview               # preview the production build
 pnpm --filter web start                 # node server.js, serves apps/web/dist as a static SPA
 pnpm --filter web typecheck             # tsc --noEmit
 
-pnpm --filter @configshell/catalog typecheck   # tsc --noEmit
-pnpm --filter @configshell/catalog test        # node test runner via tsx — validates the real catalog
+pnpm --filter @configshell/catalog typecheck    # tsc --noEmit
+pnpm --filter @configshell/catalog test         # validates the real catalog data
 
-pnpm --filter server dev                # nodemon index.js — starts, serves nothing
-pnpm --filter server start              # node index.js
-pnpm --filter server test               # node --test (no test files exist yet)
+pnpm --filter @configshell/installer typecheck  # tsc --noEmit
+pnpm --filter @configshell/installer test       # resolution, plans, command safety
+
+pnpm --filter server dev                # tsx watch index.js
+pnpm --filter server start              # tsx index.js
+pnpm --filter server test               # tsx --test — API integration tests
+pnpm --filter server typecheck          # tsc --noEmit with checkJs
 ```
 
 The web dev server and the server both default to port 3000 — set `PORT` in

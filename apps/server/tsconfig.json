@@ -1,0 +1,49 @@
+{
+  "// why": [
+    "The server is JavaScript, but it imports TypeScript workspace packages.",
+    "checkJs runs those types against this code, so a mistake in how the server",
+    "calls the catalog or the installer is caught by `pnpm typecheck` rather",
+    "than at runtime. There is no build step: `tsx` runs the source directly.",
+    "",
+    "noImplicitAny is off on purpose. The point of typechecking here is the",
+    "package boundary -- that the server calls @configshell/catalog and",
+    "@configshell/installer correctly. Requiring a JSDoc annotation on every",
+    "Express handler parameter would add a great deal of noise and catch",
+    "nothing: `req` and `res` are the framework's, not ours. Real type errors",
+    "(a misspelled property, a wrong argument, an unnarrowed union) are still",
+    "caught."
+  ],
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "allowJs": true,
+    "checkJs": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "strict": true,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": [
+    "*.js",
+    "config/**/*.js",
+    "controllers/**/*.js",
+    "middleware/**/*.js",
+    "routes/**/*.js",
+    "services/**/*.js",
+    "utils/**/*.js",
+    "validators/**/*.js"
+  ],
+  "// exclude": [
+    "Tests are excluded: they drive the API over HTTP, so every response body",
+    "is legitimately `unknown` until asserted on. Annotating that away would",
+    "mean asserting the very shapes the tests exist to check. The tests still",
+    "run in CI via `pnpm test`."
+  ],
+  "exclude": ["**/*.test.js"]
+}

@@ -86,18 +86,29 @@ See [Security](#security) and [`docs/security-model.md`](docs/security-model.md)
   it contains **no commands**, and nothing acts on it yet. See
   [`docs/catalog.md`](docs/catalog.md).
 
-- **An Express API scaffold** (`apps/server`) — starts, validates its environment, and
-  registers **no routes**. The `controllers/`, `services/`, `routes/`, `middleware/`,
-  `validators/` and `utils/` directories exist but their files are empty. The web app does
-  not call it.
+- **The deterministic core** (`packages/installer`) — resolution, setup-plan generation and
+  command generation, as three pure functions with no I/O and no execution. Given a
+  selection and an environment it picks an installation source (and records why, and what it
+  rejected), builds an ordered plan as structured data, and renders the exact commands a user
+  would run. Sources needing a third-party repository are deliberately skipped in favour of
+  the vendor's own instructions, so a generated command never fails on a clean system. 44
+  tests, including that no generated command can contain a shell metacharacter.
+
+- **A read-only planning API** (`apps/server`) — Express, with a health endpoint, catalog
+  browse/search/lookup, supported-environment discovery, and `POST /api/plan`. It **plans and
+  validates; it never executes** — there is no `child_process` import in the workspace and a
+  test asserts there never is one. No database, no authentication, no sessions. 41 tests.
 
 - **Repository tooling** — pnpm workspaces, repository-wide ESLint, per-workspace
-  typechecking, the catalog test suite, and CI that runs all of it on Node 20 and 22.
+  typechecking, 122 tests across three workspaces, and CI that runs all of it on Node 20
+  and 22.
 
-**Not implemented (planned):** package-manager resolution (turning catalog metadata into an
-install plan), terminal command generation, system detection beyond "does the browser look
-like Linux", application detail pages, application icons, AI features, the MCP server, the
-local Linux agent, database storage, and authentication. See [`ROADMAP.md`](docs/ROADMAP.md).
+**Not implemented (planned):** the setup-plan and command-generation **user interface** —
+the core exists and is tested, but the web app does not yet show a plan or a command, and its
+"Continue" button is still inert. Also unimplemented: system detection beyond "does the
+browser look like Linux", application detail pages, application icons, AI features, the MCP
+server, the local Linux agent, database storage, and authentication. See
+[`ROADMAP.md`](docs/ROADMAP.md).
 
 *There is no screenshot or demo in this README yet — run it locally with `pnpm dev`; it
 takes about a minute.*
@@ -125,15 +136,20 @@ Validated System
 Operation             The only layer that can change the system
 ```
 
-**Of that pipeline, the first two layers exist.** Everything below "Application Catalog" is
-design, not code:
+**The catalog, the interface, and the deterministic planning core between them exist.**
+AI, MCP and the local agent do not:
 
 ```mermaid
 flowchart LR
     CATALOG["packages/catalog<br/>verified application data"] -- "bundled at build time" --> WEB["apps/web<br/>React interface"]
-    WEB -. "not wired up" .-> SERVER["apps/server<br/>Express scaffold"]
+    CATALOG --> INSTALLER["packages/installer<br/>resolve · plan · commands"]
+    INSTALLER --> SERVER["apps/server<br/>read-only planning API"]
+    WEB -. "not wired up yet" .-> INSTALLER
     SERVER -. "does not exist" .-> REST["AI · MCP · local agent"]
 ```
+
+The dashed edge from the web app is the honest part: the core is built and tested, but the
+interface does not yet render a plan or a command.
 
 Each layer is intentionally decoupled so security boundaries can be enforced at each hop:
 nothing downstream runs arbitrary input, and nothing upstream can touch the operating
@@ -164,9 +180,13 @@ Website → Linux detection state → Distribution selection → Application cat
 | Responsive interface | **implemented** |
 | Dark/light theme toggle (dark by default) | **implemented** |
 | Verified application catalog (31 apps, metadata only) | **implemented** |
+| Installer resolution (APT/DNF/Pacman/Flatpak/Snap) | **implemented** (`packages/installer`) |
+| Setup-plan generation, ordered and deterministic | **implemented** (`packages/installer`) |
+| Terminal command generation | **implemented** (`packages/installer`) |
+| Installation verification commands | **implemented** (`packages/installer`) |
+| Read-only planning API | **implemented** (`apps/server`) |
+| Plan/command **user interface** + copy to clipboard | not started |
 | Application details | not started |
-| Installer resolution (APT/DNF/Pacman/Flatpak/Snap) | not started |
-| Terminal command generation / copy to clipboard | not started |
 
 V1 does **not** include real package installation, arbitrary shell execution, MCP, AI, or a
 local agent — those are out of scope for V1 entirely.
@@ -194,8 +214,9 @@ Every application belongs to exactly one category. See
 | Layer | Technology |
 | ----- | ---------- |
 | Web interface | React 19, Vite, TypeScript, Tailwind CSS v4, shadcn/ui (Radix UI), Lucide icons, Geist font |
-| API server | Node.js, Express *(scaffold — no endpoints)* |
-| Shared packages | TypeScript, no build step |
+| API server | Node.js, Express — read-only catalog and planning endpoints |
+| Deterministic core | TypeScript, no dependencies (`packages/installer`) |
+| Shared packages | TypeScript, no build step (`tsx` runs the server directly) |
 | Monorepo | pnpm workspaces (no Turborepo pipeline — root pnpm scripts orchestrate) |
 | Lint / types / tests | ESLint (flat config), `tsc --noEmit`, Node's built-in test runner |
 | CI | GitHub Actions, Node 20 and 22 |
@@ -207,14 +228,15 @@ Every application belongs to exactly one category. See
 
 ```
 apps/
-├── server/            Express API scaffold — starts, registers no routes
-│   ├── config/        env.js / index.js — validated configuration (the only code here)
-│   ├── controllers/   empty
-│   ├── middleware/    empty
-│   ├── routes/        empty
-│   ├── services/      empty
-│   ├── utils/         empty
-│   ├── validators/    empty
+├── server/            Read-only planning API — plans and validates, never executes
+│   ├── app.js         Express app factory; index.js is the only file that listens
+│   ├── config/        validated configuration — fails startup on a bad value
+│   ├── controllers/   thin: validate → call a service → send
+│   ├── middleware/    request context, 404, error handling
+│   ├── routes/        the whole API surface in one table
+│   ├── services/      catalog access + plan generation (no application data)
+│   ├── utils/         structured logger, response envelope
+│   ├── validators/    the untrusted-input boundary
 │   └── .env.example   environment template (all values optional)
 └── web/               React web app (shadcn/ui on Tailwind v4)
     ├── src/
@@ -235,7 +257,9 @@ apps/
 packages/
 ├── ai/                placeholder — no source (docs/ai.md)
 ├── catalog/           verified application catalog — single source of truth
-│   └── src/           types.ts · applications.ts · validate.ts · validate.test.ts · index.ts
+│   └── src/           types.ts · applications.ts · environment.ts · query.ts · validate.ts
+├── installer/         the deterministic core — resolution, plan, commands
+│   └── src/           policy.ts · resolve.ts · plan.ts · commands.ts · types.ts
 └── mcp/               placeholder — no source (docs/mcp.md)
 
 docs/                  architecture · catalog · security · development · ai · agent · mcp
@@ -301,7 +325,7 @@ pnpm --filter web dev       # Vite dev server, port 3000
 pnpm --filter web build     # production build → apps/web/dist
 pnpm --filter web preview   # preview the production build
 pnpm --filter web start     # serve apps/web/dist (needs a build first)
-pnpm --filter server dev    # Express scaffold via nodemon — starts, serves nothing
+pnpm --filter server dev    # planning API (tsx watch) — http://localhost:3000/health
 ```
 
 > Both default to port 3000. Set `PORT` in `apps/server/.env` to run them together.
@@ -322,15 +346,21 @@ editing.
 
 ## Testing
 
-`packages/catalog` has the repository's **only** test suite: 20 tests on Node's built-in
-runner (via `tsx`) that validate the real catalog data, not just fixtures.
+**122 tests** on Node's built-in runner (via `tsx`), across three workspaces:
 
 ```sh
-pnpm --filter @configshell/catalog test
+pnpm test                                        # all of them
+pnpm --filter @configshell/catalog test          # 37 — validates the real catalog data
+pnpm --filter @configshell/installer test        # 44 — resolution, plans, command safety
+pnpm --filter server test                        # 41 — API integration, against the real app
 ```
 
-`apps/server` runs `node --test` and finds no test files (a pass with zero tests).
-`apps/web` has no test runner at all. Closing those gaps is open work — see
+They test real data and the real application rather than fixtures and mocks: the catalog
+suite validates all 31 entries, the installer suite asserts that no generated command can
+contain a shell metacharacter on any distribution, and the server suite drives the actual
+Express app over HTTP.
+
+`apps/web` still has **no test runner at all** — that is the largest remaining gap. See
 [`.github/GOOD_FIRST_ISSUES.md`](.github/GOOD_FIRST_ISSUES.md).
 
 ---
@@ -401,7 +431,7 @@ required reading for contributors, but it is kept accurate.
 
 | Milestone | Contents |
 | --------- | -------- |
-| **V1 — Discovery** | Web foundation ✅, application catalog ✅, search/filtering ✅, selection flow ✅, application details, installer resolution, command generation |
+| **V1 — Discovery** | Web foundation ✅, application catalog ✅, search/filtering ✅, selection flow ✅, installer resolution ✅, setup plan ✅, command generation ✅, planning API ✅ — remaining: the plan/command **interface**, application details |
 | **V2 — Intelligence** | AI recommendations, compatibility analysis, natural-language discovery, installation planning |
 | **V3 — MCP** | MCP server, resources, tools, tool authorization |
 | **V4 — Local agent** | Linux system detection, package-manager detection, installation validation, confirmed installation |

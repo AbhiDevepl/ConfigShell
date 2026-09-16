@@ -14,6 +14,34 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 
 ### Added
 
+- **`packages/installer` — the deterministic core.** Resolution, setup-plan generation and
+  command generation as three pure functions over `(catalog, environment)`, with no I/O and
+  no execution. PRD §22's source-trust hierarchy is encoded explicitly and tested rule by
+  rule; a resolution records which source won, why, and what was rejected. Sources needing a
+  third-party repository are skipped in favour of the vendor's own instructions, so a
+  generated command never fails on a clean system (provisional — see `docs/TechnicalAudit.md`
+  §9). Manual steps and applications with no verified route are reported, never dropped.
+- **`apps/server` — a read-only planning API.** `/health` (with catalog integrity),
+  `/api/applications[/:id]`, `/api/catalog/{categories,environments,stats}`, `POST /api/plan`
+  and `POST /api/plan/resolve`. Structured JSON logging, per-request correlation ids, a
+  closed set of error codes, a 16 kB body cap and a 200-id selection cap. It plans and
+  validates; **it never executes**, and a test asserts no module in the workspace imports
+  `child_process`.
+- **Environment model** in `packages/catalog`: `Environment`, `createEnvironment`,
+  `parseEnvironment`, and an explicit `os` axis with `'linux'` as its only value so a second
+  operating system is a data problem later rather than a refactor. The
+  distribution↔ecosystem mapping now lives in exactly one place, which the validator reuses.
+- **Verification metadata**: optional `verify: { binary }` per application, populated for 26
+  of 31 entries. A closed shape with one field on purpose — a free-text check *command* is
+  precisely the field through which arbitrary strings would reach a shell. Verification
+  commands come from one fixed template, `command -v <binary>`.
+- Read-only catalog queries (`findApplication`, `searchApplications`) shared by every
+  consumer, so the API and the web app cannot answer the same question differently.
+- **102 new tests** (20 → 122): the catalog suite grew to 37, `packages/installer` has 44,
+  and `apps/server` has 41 API integration tests against the real application. Includes
+  golden command output per package manager and an assertion that no generated command can
+  contain a shell metacharacter on any supported distribution.
+
 - `docs/ProductRequirements.md` — the product requirements document (vision, scope, MVP
   definition, long-term architecture).
 - `docs/TechnicalAudit.md` — a full audit of the repository against the PRD and README:
@@ -38,6 +66,14 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 - `.editorconfig` and `.gitattributes`.
 
 ### Changed
+
+- `apps/server` runs under `tsx` so it can import the workspace's TypeScript packages
+  directly; the monorepo still has no build step. Its `tsconfig.json` runs `checkJs` over
+  the JavaScript source, so misuse of the catalog or installer APIs is caught by
+  `pnpm typecheck`.
+- `origin` is now load-bearing rather than descriptive: it drives source preference and, for
+  `apt`/`dnf`/`pacman`, whether a source is usable at all.
+- Root `typecheck` and `test` scripts cover the two new workspaces; CI runs them unchanged.
 
 - **Renamed the project to ConfigShell** throughout: workspace package names, the npm scope
   (`@linux-app-platform/*` → `@configshell/*`), the page title, UI copy, and every
@@ -71,6 +107,8 @@ version is below `1.0.0`, the public surface may change in a minor release — s
   Express 5 no longer accepts.
 
 ### Removed
+
+- `nodemon` from `apps/server` — `tsx watch` covers it.
 
 - `MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API` from `apps/web/metadata.json` — the only place
   in the repository that asserted a live model dependency, for a feature that does not

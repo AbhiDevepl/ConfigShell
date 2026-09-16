@@ -284,6 +284,34 @@ deployment, an API contract and an attack surface in exchange for nothing a user
 Each phase is sized to be a reviewable unit of work. Phases are ordered; items within a
 phase are mostly parallelisable.
 
+> ### Progress as of 2026-09-16
+>
+> | Phase | State |
+> | ----- | ----- |
+> | **A** — repository coherence | ✅ **done** — rename applied repo-wide, 50 links fixed, case collision resolved, truncations repaired, PRD amended, AI references moved to future scope, `docs/mcp.md` reframed as client-agnostic |
+> | **B** — environment model | ✅ **done in `packages/catalog`** — `Environment`, `parseEnvironment`, `os` axis, single distro↔ecosystem mapping. ⚠️ **B3 outstanding:** `apps/web` still holds `distro` as write-only state |
+> | **C** — catalog schema | ✅ **done** — `verify.binary` on 26 of 31 entries, validated. **C2 resolved without a schema change:** `requiresRepositorySetup()` derives the answer from `method` + `origin`, which the catalog already records (see below). C4 (stats script) outstanding |
+> | **D** — resolution | ✅ **done** — `packages/installer`, trust policy per PRD §22, typed failure model, 44 tests |
+> | **E** — setup plan | ✅ **done** — ordered, deterministic, data-not-strings, privileged flags, first-class manual steps |
+> | **F** — command generation | ✅ **done** — fixed vocabulary, re-validation before interpolation, golden tests per manager, hostile-catalog test, metacharacter assertion |
+> | **G** — test infrastructure | ⚠️ **partial** — 122 tests across catalog, installer and server, including an integration test across the full chain (G4). **G1/G2 outstanding:** `apps/web` still has no test runner |
+> | **H** — UI completion | ❌ **not started** — the core generates plans and commands; the interface renders neither |
+> | **I** — release readiness | ⚠️ **partial** — documentation updated to match (I1); CI covers the new workspaces (I2) |
+>
+> **Also built, ahead of its place in this backlog:** `apps/server`, a read-only planning
+> API. §7 argued for deferring the backend on the grounds that nothing in the P0 chain
+> needed it, and that reasoning still holds for the *web app*, which compiles the catalog in
+> and does not call the API. It was built on the maintainer's instruction; the cost noted
+> there (an API contract and an attack surface) is real and now exists. It is kept thin — no
+> database, no auth, no execution — so it adds a consumer rather than a dependency.
+>
+> **On C2.** Q1's answer asked for "the smallest clean abstraction" distinguishing directly
+> resolvable sources from vendor sources needing setup. That turned out to need **no new
+> catalog field at all**: for a native package manager, `origin: 'vendor'` already means
+> "published in the vendor's own repository" by the catalog's own definition — if the
+> distribution shipped it, the origin would be `'distro'`. The derivation lives in one
+> predicate, so a future catalog field can replace it without reshaping the resolver.
+
 ### P0 — required for the core release
 
 #### Phase A — repository coherence *(no behaviour change)*

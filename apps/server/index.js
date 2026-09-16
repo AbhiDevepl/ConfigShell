@@ -1,18 +1,33 @@
 /**
  * API server entry point.
  *
- * Scaffold status: this starts an Express process and nothing else. There are
- * no routes, controllers, or services wired up yet — the directories for them
- * exist but their files are empty. The web app does not call this server.
- * See docs/architecture.md before adding endpoints here.
+ * The only file that binds a port. The application itself lives in `app.js`,
+ * which is what tests import.
+ *
+ * Run it with `pnpm --filter server start`. The process is executed through
+ * `tsx` so it can import the workspace's TypeScript packages
+ * (`@configshell/catalog`, `@configshell/installer`) directly — see
+ * `apps/server/README.md` for why there is no build step.
  */
 
-import express from "express";
-
+import { createApp } from "./app.js";
 import { env } from "./config/index.js";
+import { logger } from "./utils/logger.js";
 
-const app = express();
+const app = createApp();
 
-app.listen(env.port, () => {
-  console.log(`[server] listening on port ${env.port} (${env.nodeEnv})`);
+const server = app.listen(env.port, () => {
+  logger.info("server listening", { port: env.port, nodeEnv: env.nodeEnv });
 });
+
+/**
+ * Shut down cleanly on a signal so in-flight requests finish and the process
+ * does not have to be killed. Nothing here holds a connection pool or a lock —
+ * there is no database — so this is simply closing the listener.
+ */
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.on(signal, () => {
+    logger.info("shutting down", { signal });
+    server.close(() => process.exit(0));
+  });
+}

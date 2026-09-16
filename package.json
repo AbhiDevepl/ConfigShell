@@ -13,8 +13,8 @@
     "build": "pnpm --filter web build",
     "start": "pnpm --filter web start",
     "lint": "eslint .",
-    "typecheck": "pnpm --filter web typecheck && pnpm --filter @configshell/catalog typecheck",
-    "test": "pnpm --filter @configshell/catalog test && pnpm --filter server test",
+    "typecheck": "pnpm --filter web typecheck && pnpm --filter @configshell/catalog typecheck && pnpm --filter @configshell/installer typecheck && pnpm --filter server typecheck",
+    "test": "pnpm --filter @configshell/catalog test && pnpm --filter @configshell/installer test && pnpm --filter server test",
     "check": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build"
   },
   "license": "Apache-2.0",

@@ -46,30 +46,40 @@ future integration layer and is *not* blocked on AI — see [`mcp.md`](mcp.md).
 - Repository-wide ESLint, validated server environment configuration, workspace READMEs,
   and a dependency clean-up.
 
+### Phase 4 — the deterministic core and the planning API
+- `packages/catalog` gains the **environment model** (`Environment`, `parseEnvironment`,
+  the distro↔ecosystem mapping in one place), read-only **queries**, and optional
+  **verification metadata** (`verify.binary`, 26 of 31 entries).
+- `packages/installer`: **resolution → setup plan → command generation**, as three pure
+  functions with no I/O and no execution. PRD §22's trust hierarchy encoded explicitly;
+  sources needing a third-party repository skipped in favour of the vendor's instructions;
+  manual steps and unavailable applications reported rather than dropped.
+- `apps/server`: a **read-only planning API** — health with catalog integrity, catalog
+  browse/search/lookup, supported-environment discovery, `POST /api/plan`. Structured
+  logging, a closed set of error codes, and a bounded untrusted-input surface. It plans and
+  validates; it never executes, and a test asserts the workspace cannot.
+- Tests go from 20 to **122**, across three workspaces.
+
 ## Current — completing the V1 flow
 
 V1 is a **command generator, not an installer**: it ends at a command the user copies into
 their own terminal. The remaining pieces, in the order they make sense:
 
-1. **Environment model** — make the selected distribution a real typed value that flows
-   downstream. Today it is write-only state that nothing reads.
-2. **Catalog schema for the core** — verification metadata, and whatever minimal signal the
-   resolver needs to tell a directly-installable source from a vendor source that requires
-   third-party repository setup. Data first: the resolver must never invent either.
-3. **Installer resolution** — choosing an appropriate `InstallationSource` for the selected
-   environment, reporting honestly when there is none, and saying *why* it chose what it
-   chose. Belongs in `packages/installer`, not in the UI.
-4. **Setup plan** — an ordered, deterministic plan; data, not command strings; privileged
-   steps marked; manual steps first-class.
-5. **Terminal command generation** — turning a plan into commands built *only* from trusted
-   catalog data, shown in full before they are copied, with copy-to-clipboard. The browser
-   never runs them.
-6. **Installation verification** — generated from a fixed template, never per-application
-   free text.
-7. **Application details** — a per-application view showing the verified sources and what
-   each one means (distro vs. vendor vs. community).
-8. **Tests for `apps/web`** — a test runner and coverage of the selection and filtering
-   logic. Not a follow-up: the resolver deserves tests from its first commit.
+The deterministic core is built and tested. What remains is the part a user can see:
+
+1. **Wire the environment through `apps/web`.** `App.tsx` still holds `distro` as
+   write-only state that nothing downstream reads. Replace it with the catalog's
+   `Environment` and pass it to the catalog view.
+2. **Setup-plan review screen** — the ordered steps, privileged steps marked, manual steps
+   explained, and per-application "no verified route here" stated plainly.
+3. **Command display and copy-to-clipboard** — the full command visible before it can be
+   copied. The browser never runs it.
+4. **Application details** — a per-application view showing the verified sources, what
+   `distro`/`vendor`/`community` mean, and which source would be used here and why.
+5. **Failure and empty states** for every outcome the resolver can produce, plus an error
+   boundary.
+6. **Tests for `apps/web`** — a test runner and coverage of selection, filtering and the new
+   plan rendering. `apps/web` is now the only workspace with no tests at all.
 
 Then, immediately after: **deterministic role/use-case presets** (Web Developer, Student,
 General User, …) as curated role → application-id bundles in the catalog. No model.
@@ -92,9 +102,13 @@ Website → Linux detection state → Distribution selection → Application cat
 - Accessibility and keyboard-navigation passes.
 
 ### Platform
-- A real API in `apps/server` — only once something genuinely needs a server. The catalog
-  is compiled into the browser bundle today, which is simpler and safer.
+- **Repository-setup steps.** Sources needing a third-party repository are skipped today and
+  the user is sent to the vendor's instructions. Generating those steps — with signing keys
+  and sources files — is a real feature and a real security question; the current behaviour
+  is recorded as provisional in `docs/TechnicalAudit.md` §9 (Q1).
 - Persisted selections (shareable lists) — requires deciding whether that needs a backend.
+- Broader API surface, if a consumer needs one. The web app compiles the catalog in and does
+  not call the API; the API exists for clients that cannot, such as a CLI or an MCP server.
 
 ## Future / experimental
 

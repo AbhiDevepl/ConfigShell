@@ -1,6 +1,7 @@
 import {
   CATEGORIES,
   DISTROS,
+  ECOSYSTEM_DISTROS,
   INSTALL_METHODS,
   type Application,
   type Distro,
@@ -13,14 +14,25 @@ const ORIGINS = new Set(['distro', 'vendor', 'community']);
 /**
  * Which distributions each package manager can even apply to. Guards against
  * entries like "dnf on Arch Linux", which would sail past a plain enum check.
+ *
+ * This is `ECOSYSTEM_DISTROS` itself, not a copy: a distribution-specific
+ * install method *is* a native package ecosystem, and the mapping is owned by
+ * `types.ts` so adding a distribution is a one-line change in one file.
  */
-const METHOD_DISTROS: Partial<Record<InstallMethod, readonly Distro[]>> = {
-  apt: ['Ubuntu', 'Debian'],
-  dnf: ['Fedora'],
-  pacman: ['Arch Linux'],
-};
+const METHOD_DISTROS: Partial<Record<InstallMethod, readonly Distro[]>> = ECOSYSTEM_DISTROS;
 
 const ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/**
+ * What may appear in a verification binary name.
+ *
+ * Strict on purpose. This value is interpolated into a generated shell command
+ * (`command -v <binary>`), so it is the one field in the catalog with a direct
+ * path to a shell. Anything outside this alphabet — a space, a quote, `;`,
+ * `$`, a backtick — is rejected here, at the data boundary, before command
+ * generation ever sees it. Command generation re-checks it anyway.
+ */
+const BINARY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._+-]*$/;
 
 function validateSource(
   source: InstallationSource,
@@ -114,6 +126,18 @@ export function validateCatalog(applications: readonly Application[]): string[] 
     }
     if (!isValidHttpsUrl(app.homepage)) {
       errors.push(`${app.id}: malformed homepage "${app.homepage}"`);
+    }
+
+    if (app.verify !== undefined) {
+      const binary = app.verify.binary;
+      if (typeof binary !== 'string' || binary.trim() === '') {
+        errors.push(`${app.id}: verify.binary must be a non-empty string`);
+      } else if (!BINARY_PATTERN.test(binary)) {
+        errors.push(
+          `${app.id}: verify.binary "${binary}" is not a plain executable name. ` +
+            `It is interpolated into a generated command and must match ${String(BINARY_PATTERN)}.`,
+        );
+      }
     }
 
     const seenSources = new Set<string>();

@@ -1385,8 +1385,11 @@ Based on the repository you shared, you're already beyond the pure idea stage.
 
 You currently have the beginnings of:
 
-> **Corrected 2026-09-16 against the actual repository.** The original table overstated
-> two rows. Verified state:
+> **Corrected 2026-09-16 against the actual repository**, then **superseded the same day**
+> by the backend implementation. The table below records the state *at the time of the
+> audit*; `docs/TechnicalAudit.md` and `README.md` describe what exists now (the
+> deterministic core and the planning API have since been built). Kept for the record
+> because the audit's conclusions were drawn from it.
 
 ```text
 pnpm workspaces           ✓   (Turborepo ✗ — never installed, turbo.json deleted)

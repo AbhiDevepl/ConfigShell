@@ -69,7 +69,7 @@ Full setup notes, every variable, and troubleshooting live in
 
 ```sh
 pnpm dev                    # web app → http://localhost:3000
-pnpm --filter server dev    # Express scaffold (starts, serves nothing yet)
+pnpm --filter server dev    # planning API (tsx watch) — http://localhost:3000/health
 ```
 
 Both default to port 3000 — set `PORT` in `apps/server/.env` if you run them together.

@@ -194,3 +194,59 @@ test('distro-specific sources only claim distros that use that package manager',
     }
   }
 });
+
+test('verification metadata is optional, and present entries use a plain binary name', () => {
+  const withVerify = APPLICATIONS.filter((entry) => entry.verify !== undefined);
+  assert.ok(withVerify.length > 0, 'expected at least some entries to carry a binary name');
+
+  for (const entry of withVerify) {
+    assert.match(
+      entry.verify!.binary,
+      /^[A-Za-z0-9][A-Za-z0-9._+-]*$/,
+      `${entry.id}: verify.binary must be a plain executable name`,
+    );
+  }
+});
+
+test('an entry with no package-manager or snap route carries no binary name', () => {
+  // Flatpak-only and official-only applications put nothing predictable on
+  // PATH, so claiming a binary for them would be inventing data.
+  for (const entry of APPLICATIONS) {
+    const hasPathRoute = entry.installation.some((source) =>
+      ['apt', 'dnf', 'pacman', 'snap'].includes(source.method),
+    );
+    if (!hasPathRoute) {
+      assert.equal(
+        entry.verify,
+        undefined,
+        `${entry.id} has no PATH-installing route but claims a binary`,
+      );
+    }
+  }
+});
+
+test('validateCatalog rejects a binary name that could reach a shell', () => {
+  for (const binary of [
+    'git; rm -rf /',
+    'git && curl evil.sh',
+    '$(whoami)',
+    '`id`',
+    'git | sh',
+    'two words',
+    '../../bin/sh',
+    '-rf',
+    '',
+  ]) {
+    const errors = validateCatalog([app({ verify: { binary } })]);
+    assert.ok(
+      errors.length > 0,
+      `expected verify.binary ${JSON.stringify(binary)} to be rejected`,
+    );
+  }
+});
+
+test('validateCatalog accepts ordinary binary names', () => {
+  for (const binary of ['git', 'nvim', 'google-chrome-stable', 'gimp', 'node', 'obs', 'g++']) {
+    assert.deepEqual(validateCatalog([app({ verify: { binary } })]), [], binary);
+  }
+});
