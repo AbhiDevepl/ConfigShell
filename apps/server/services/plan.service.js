@@ -22,6 +22,7 @@
 
 import { buildPlan, renderPlan, resolveAll } from "@configshell/installer";
 import { getApplications } from "./catalog.service.js";
+import { presentResolution } from "./resolution.presenter.js";
 
 /**
  * Resolve a selection against an environment, without planning.
@@ -48,7 +49,7 @@ export function createSetupPlan(applicationIds, environment) {
   return {
     environment,
     /** What was decided for each selected application, and why. */
-    resolutions: resolutions.map(summariseResolution),
+    resolutions: resolutions.map(presentResolution),
     /** Ordered steps, as data. No command strings at this level. */
     steps: plan.steps,
     /** The commands to copy, in order, each marked privileged or not. */
@@ -71,45 +72,5 @@ export function createSetupPlan(applicationIds, environment) {
       /** Always false. Stated explicitly so no client has to infer it. */
       executed: false,
     },
-  };
-}
-
-/**
- * Flatten a resolution for the wire.
- *
- * `considered` is included deliberately: a user is entitled to see which
- * sources were rejected and why, not just which one won.
- */
-function summariseResolution(resolution) {
-  const base = {
-    applicationId: resolution.application.id,
-    applicationName: resolution.application.name,
-    outcome: resolution.outcome,
-    considered: resolution.considered.map((c) => ({
-      method: c.source.method,
-      identifier: c.source.identifier,
-      origin: c.source.origin,
-      rank: c.rank,
-      note: c.note,
-    })),
-  };
-
-  if (resolution.outcome === "resolved") {
-    return {
-      ...base,
-      source: {
-        method: resolution.source.method,
-        identifier: resolution.source.identifier,
-        origin: resolution.source.origin,
-      },
-      reason: resolution.reason,
-    };
-  }
-
-  return {
-    ...base,
-    reason: resolution.reason,
-    explanation: resolution.explanation,
-    ...(resolution.outcome === "manual" && resolution.url ? { url: resolution.url } : {}),
   };
 }

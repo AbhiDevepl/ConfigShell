@@ -25,7 +25,7 @@ These hold at every phase, not just once the local agent or AI exist:
 ## Current state
 
 The web app (`apps/web`) is a React SPA that generates no commands of its own: it displays
-what the API returns. Its only network call is `POST /api/plan`, and a test asserts the
+what the API returns. It calls only ConfigShell's own API, and a test asserts the
 package-manager vocabulary appears nowhere in its source, so the browser never holds the
 means to build a command even if something else went wrong.
 
@@ -97,6 +97,53 @@ path — also asserted by test.
 The server holds no secrets, has no database and no authentication, because nothing it does
 needs any of them.
 
+### The MCP interface
+
+`packages/mcp` is the interface most likely to be driven by something that is not a person —
+an AI host, a script, an agent. That makes **"there is no tool for it"** the load-bearing
+guarantee rather than any runtime check, and it is asserted by test:
+
+- **No tool takes an argument for a package name, a command, a flag, a URL or a repository.**
+  A caller supplies catalog ids and a distribution name. Nothing else can reach command
+  generation because nothing else is read. A test walks the registered schemas and fails if
+  such a field ever appears.
+- **Schemas are strict.** An unrecognised argument is rejected rather than ignored, so a host
+  that invents a `command` field is told so instead of receiving a plan that silently dropped
+  it. The SDK validates arguments against the declared schema before a handler runs; business
+  rules a schema cannot express — does this id exist in the catalog? — are checked after.
+- **The package ecosystem is derived from the distribution, never accepted**, so a caller
+  cannot pair "Arch Linux" with "apt" to steer command generation.
+- **`detect_system`, `check_installed` and `execute_setup` are not registered at all** — not
+  as stubs that fail. They require the local agent, and a tool that always errors is still a
+  tool a caller must discover and handle. Tests assert none of them is exposed or
+  discoverable over the protocol.
+- **No `child_process`, no `eval`, no filesystem read, no socket** anywhere in the package,
+  asserted structurally over the source.
+- **The package-manager vocabulary does not appear in the package.** Command text comes only
+  from `@configshell/installer`, so the MCP layer cannot fork command generation and quietly
+  disagree with the web app about what a user should run.
+- Every tool is **read-only and deterministic**, and says so in the protocol's own vocabulary
+  via tool annotations (`readOnlyHint`, `openWorldHint: false`) where a host will actually
+  read it.
+
+`validate_setup` is the one tool that accepts command text, and only to **compare** it against
+catalog-derived output. It never executes or re-emits it, and its result says explicitly that
+a pass is not an authorisation — whatever eventually executes must re-validate against the
+catalog itself and ask the user (`docs/agent.md` rule 2).
+
+The protocol layer is the **official MCP TypeScript SDK**, not hand-written. That is a
+security property as much as a maintenance one: framing, version negotiation and schema
+validation are handled by the implementation the specification's authors maintain, rather than
+by code here that would silently drift from the spec.
+
+The transport is **stdio only**: launched by the client that uses it, so there is no listening
+port, no authentication story and no remote attack surface. Diagnostics go to stderr; stdout
+carries protocol messages alone.
+
+Authorization is therefore absent, and correctly so for a local subprocess. It becomes a real
+requirement the moment either a remote transport or a non-read-only tool arrives — and since
+anything that could change a system belongs to the agent, those two questions arrive together.
+
 ### The catalog as trusted data
 
 `packages/catalog` is the "trusted catalog" the principles above refer to. Its security-relevant properties:
@@ -156,9 +203,10 @@ distro detection rule" for why exact detection is out of scope for the browser e
 - **Local agent** (post-V1): the security boundary for any actual system change. Validates
   every operation against the trusted catalog and requires explicit user confirmation
   before executing anything.
-- **MCP resources and per-capability authorization** (post-V1): the tool surface is built
-  and read-only (see "The MCP interface" above); resources and explicit per-capability
-  authorization are not. Anything that could lead to a system change waits for the agent.
+- **Remote MCP and authorization** (post-V1): the tool surface is built and read-only over
+  stdio (see "The MCP interface" above). A remotely hosted server would need sessions, origin
+  validation and per-capability authorization. Anything that could lead to a system change
+  waits for the agent.
 - **AI / planning** (post-V1): plans and recommends; every planned operation still flows
   through the same validation and confirmation path as a manual one.
 

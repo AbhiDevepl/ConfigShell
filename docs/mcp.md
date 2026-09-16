@@ -1,74 +1,132 @@
 # MCP interface
 
-## Status: implemented (read-only)
+## Status: implemented, built on the official MCP SDK
 
-`packages/mcp` is a working MCP server over stdio, exposing **seven read-only, deterministic
-tools** over the trusted catalog and the installer. It plans and validates; it executes
-nothing.
+`packages/mcp` is a working MCP server exposing **seven read-only, deterministic tools**,
+plus two reference resources and one workflow prompt, over the trusted catalog and the
+installer.
 
 ```sh
 pnpm mcp        # or: pnpm --filter @configshell/mcp start
 ```
 
-It is a **thin adapter**: resolution, plan ordering, privilege marking and command generation
-are all decided by `@configshell/installer`, the same functions the web app and the API
-server use. An MCP client cannot get a different answer from anyone else, and a test asserts
-the package-manager vocabulary never appears in this package at all.
+## What it is for
 
-## Purpose
+MCP is ConfigShell's **external integration boundary**. It lets an MCP-capable AI host —
+Claude, ChatGPT, Cursor, VS Code, or anything else that speaks the protocol — use
+ConfigShell's trusted capabilities to help a user discover, compare and choose software and
+build a setup plan.
 
-MCP (Model Context Protocol) is the **controlled interface** through which *external clients*
-interact with the platform — a fixed, explicitly authorized set of capabilities instead of
-general access. If a client can do something, it is because a tool for it exists, was
-reviewed, and was authorized.
+```
+External AI host          reasoning, conversation, recommendations
+        ↓  MCP protocol
+ConfigShell MCP           adapters only — no business logic
+        ↓
+ConfigShell core
+        ↓
+Catalog · Resolver · Compatibility · Setup plan
+        ↓
+        results back to the host, which explains them to the user
+```
 
-**MCP does not depend on the AI layer.** An AI system is one possible client; so is a CLI, an
-editor extension, or a script. Nothing here requires a model to exist, and MCP must never
-become the AI layer's private back door — an AI client gets exactly the same seven tools, and
-exactly the same validation, as any other caller.
+**The division of labour is the point.** The host does the reasoning and the talking.
+ConfigShell supplies verified data and deterministic operations, and contains no model, no
+provider SDK and no API key. A question like *"I'm setting up Fedora for full-stack web
+development, what should I install?"* is answered by the host calling `list_environments`,
+`list_roles`, `search_application`, `get_application`, `check_compatibility` and
+`generate_setup`, then explaining the results in its own words.
+
+ConfigShell must not try to become the conversational AI itself, and AI/model integration
+inside ConfigShell remains future scope ([`ai.md`](ai.md)).
+
+## Built on the official SDK
+
+The server uses **`@modelcontextprotocol/server` v2** — the official MCP TypeScript SDK,
+implementing the [2026-07-28 spec](https://modelcontextprotocol.io/specification/2026-07-28).
+
+The SDK owns the protocol: JSON-RPC framing, the initialize handshake, protocol-version
+negotiation, capability declaration, `tools/list` and `tools/call` dispatch, JSON Schema
+generation from our Zod schemas, argument validation, and error envelopes.
+
+ConfigShell owns the business logic: the catalog, resolution, compatibility, setup plans and
+the security policy. Protocol correctness is a solved problem maintained by the people who
+write the spec; a trusted application catalog is not.
+
+> **This replaced a hand-written JSON-RPC implementation.** That earlier decision was made
+> against `@modelcontextprotocol/sdk` v1, a monolithic package with seventeen transitive
+> dependencies — HTTP transports, OAuth, and a process-spawning library. **v2 split the
+> packages**, and a server now needs three: `@modelcontextprotocol/server`,
+> `@modelcontextprotocol/core` and `zod`. The dependency objection no longer held.
+>
+> The compatibility argument settled it independently: the hand-written server negotiated
+> protocol versions up to `2025-06-18` and knew nothing of `2026-07-28`. Tracking a moving
+> spec by hand is a maintenance burden with no upside, and every month it drifts further
+> from what real clients expect.
 
 ## The tool surface
 
-| Tool | Purpose | Reads or changes |
-| ---- | ------- | ---------------- |
-| `list_environments` | Supported distributions and their package ecosystems | read-only |
-| `search_application` | Search the trusted catalog by text and/or category | read-only |
-| `get_application` | One entry, with its sources; optionally resolved for an environment | read-only |
-| `list_roles` | Deterministic role/use-case presets | read-only |
-| `check_compatibility` | Resolve a selection against an environment, without a plan | read-only |
-| `generate_setup` | Ordered setup plan plus the commands a **user** would run | read-only (produces a proposal) |
-| `validate_setup` | Check submitted commands against what the catalog produces | read-only |
+| Tool | Purpose |
+| ---- | ------- |
+| `list_environments` | Supported distributions and their package ecosystems |
+| `search_application` | Search the catalog by text and/or category |
+| `get_application` | One entry, its verified sources and who packages them; optionally resolved for an environment |
+| `list_roles` | Deterministic role/use-case presets |
+| `check_compatibility` | Resolve a selection against an environment, without building a plan |
+| `generate_setup` | Ordered setup plan plus the commands a **user** would run |
+| `validate_setup` | Check submitted commands against what the catalog produces |
 
-Every tool validates its arguments, rejects rather than coerces, and returns both a JSON text
-block and `structuredContent`.
+Every tool is annotated `readOnlyHint: true`, `destructiveHint: false`,
+`idempotentHint: true`, `openWorldHint: false` — the security posture stated in the
+protocol's own vocabulary, where a host will actually read it, rather than only in prose.
+
+Every tool returns **both** a JSON text block and `structuredContent`, so a host can parse
+the result rather than re-reading prose.
+
+Input schemas are Zod and **strict**: an unrecognised argument is rejected rather than
+ignored. A host that invents a `command` field is told so, instead of receiving a plan that
+silently dropped it.
 
 ### `generate_setup` produces a proposal, not an action
 
-It returns commands for the **user** to run in their own terminal. Every result carries an
-explicit marker:
+It returns commands for the **user** to run in their own terminal. Every result carries:
 
 ```json
 "execution": { "executed": false, "executedBy": null, "note": "ConfigShell never runs these…" }
 ```
 
-Privileged commands are flagged so a client can show which ones need root *before* the user
-agrees. Applications that need a vendor repository, or ship only as a vendor download, come
-back as **manual steps with a link** — never as a command that would fail on a clean system.
+Privileged commands are flagged so a host can show which need root *before* the user agrees.
+Applications needing a vendor repository, or shipping only as a vendor download, come back as
+**manual steps with a link** — never a command that would fail on a clean system.
 
 ### `validate_setup` is a check, not an authorisation
 
-It re-derives the plan from the trusted catalog and compares the submitted commands,
-reporting anything added, altered, dropped or reordered. Submitted commands are **compared
-only**: never executed, and never echoed back as approved.
+It re-derives the plan from the catalog and compares the submitted commands, reporting
+anything added, altered, dropped or reordered. Submitted commands are **compared only**:
+never executed, never echoed back as approved. A pass is not permission to run anything —
+whatever eventually executes must re-validate for itself ([`agent.md`](agent.md) rule 2).
 
-A pass is not permission to run anything. Whatever eventually executes must re-validate
-against the catalog itself and ask the user — see [`agent.md`](agent.md) rule 2.
+## Resources and prompts
+
+Added because they earn their place, not for completeness.
+
+**Resources** (two): `configshell://reference/environments` — the supported distributions,
+ecosystems, categories and role names as one small JSON document a host can read once instead
+of spending a tool call; and `configshell://reference/safety` — what ConfigShell will and
+will not do, for a host to consult before presenting commands.
+
+The catalog itself is deliberately **not** a resource. `search_application` exists so a host
+filters server-side rather than pulling every entry into its context.
+
+**Prompt** (one): `plan_a_setup`, with optional `distro` and `useCase` arguments. A host can
+discover the tools by itself, but the *order* — establish the environment before planning,
+explain trade-offs before generating commands — is ConfigShell-specific knowledge worth
+handing over explicitly. One prompt covers the product's main journey; more would be padding.
 
 ## What is deliberately absent
 
-Three capabilities from the original sketch are **not tools**, and are not stubs that return
-an error either. A tool that always fails is still a tool a caller must discover and handle;
-a tool that returns a plausible guess would be a lie.
+Three capabilities are **not tools**, and are not stubs that return an error either. A tool
+that always fails is still a tool a caller must discover and handle; one returning a
+plausible guess would be a lie.
 
 | Capability | Why it is withheld |
 | ---------- | ------------------ |
@@ -77,82 +135,64 @@ a tool that returns a plausible guess would be a lie.
 | `execute_setup` | Execution is the local agent's entire purpose, with local re-validation and per-step confirmation. **No MCP tool may run a command.** |
 
 All three belong to the local agent ([`agent.md`](agent.md)), which does not exist.
-`WITHHELD_CAPABILITIES` in `src/tools.ts` records them with their reasons, and a test asserts
-none of them is ever registered.
+`WITHHELD_CAPABILITIES` in `src/tools.ts` records them with reasons, and tests assert none is
+ever registered or discoverable.
 
-## Rules for any implementation
+## Security boundaries
 
-These held before the server existed and still hold:
+1. **No raw shell tool. Ever.** No `run_command`, no `exec`, no escape hatch.
+2. **No tool takes an argument for a package name, a command, a flag, a URL or a
+   repository.** A caller supplies catalog ids and a distribution name; nothing else can
+   reach command generation because nothing else is read. A test walks the registered
+   schemas and fails if such a field appears.
+3. **Everything resolves against the trusted catalog.** An unknown id refuses the whole call
+   rather than being skipped, so a plan always matches what was asked for.
+4. **The package ecosystem is derived from the distribution, never accepted**, so a caller
+   cannot pair "Arch Linux" with "apt" to steer command generation.
+5. **Identifiers are re-validated** against a strict pattern immediately before
+   interpolation, inside `@configshell/installer`, which does not trust this layer either.
+6. **No execution, no filesystem, no sockets** anywhere in the package — asserted
+   structurally over the source, along with the absence of package-manager command
+   vocabulary, so this layer cannot fork command generation and disagree with the web app.
 
-1. **No raw shell tool. Ever.** There is no `run_command`, no `exec`, no escape hatch. A tool
-   that accepts an arbitrary string destined for a shell is out of scope for this project,
-   not a design decision to be revisited.
-2. **Tool inputs are untrusted.** Every argument is validated against a schema; rejected
-   rather than coerced.
-3. **Everything resolves against the trusted catalog.** Tools operate on catalog ids and
-   verified installation sources, never on caller-supplied package names or URLs.
-4. **Read-only by default.** A new tool is read-only unless there is a specific reason
-   otherwise, and anything that is not read-only goes through the agent's confirmation path.
-5. **Authorization is explicit and per-capability**, not "connected = allowed".
-6. **Security-relevant calls are logged** so a user can audit what was asked for.
+`validate_setup`'s `commands` is the one argument that accepts command text, and only to be
+compared against catalog-derived output.
 
-### How rules 1–3 are enforced
+### Authorization
 
-The structural defence matters more than any individual check: **no tool takes an argument
-for a package name, a command, a flag, a URL or a repository.** A caller supplies catalog ids
-and a distribution name. Nothing else can reach command generation, because nothing else is
-read. Tests assert exactly this against the registered schemas.
+There is none, and none is needed yet: the transport is stdio, so the server is launched by
+the user's own client as a subprocess with no listening port and no remote attack surface.
+Per-capability authorization becomes a real requirement the moment either a remote transport
+or a non-read-only tool arrives — which, per rule 4 above, means it arrives with the agent.
 
-The one exception is `validate_setup`'s `commands`, which exists to be compared against
-catalog-derived output and is never executed or re-emitted.
+### Logging
 
-Defence in depth, in order:
+Diagnostics go to stderr; stdout carries protocol messages alone. There is no audit log
+because there is no security-relevant call to audit: every tool is read-only and the server
+holds no credentials. A tool that could lead to a system change must arrive with one.
 
-1. Argument shape and length (`src/validate.ts`).
-2. Ids checked against the catalog — an unknown id refuses the whole call rather than being
-   skipped.
-3. The package ecosystem is **derived** from the distribution, never accepted, so
-   `{"distro":"Arch Linux","ecosystem":"apt"}` resolves as pacman.
-4. Only a catalog source's own identifier reaches command generation, which re-validates it
-   against a strict pattern immediately before interpolation and throws rather than quoting
-   anything suspicious.
+## Transport
 
-A test renders every application on every supported distribution through the MCP layer and
-asserts no generated command contains a shell metacharacter.
+**stdio today.** That is what MCP hosts use to launch a local server, and it is the whole
+transport story for a local integration.
 
-### On rule 6
+The boundary is drawn so a remote deployment is not a rewrite:
+`createConfigShellServer()` returns a configured `McpServer` with **no transport attached**.
+`bin.ts` binds stdio; a future HTTP entry point binds
+`WebStandardStreamableHTTPServerTransport` from the same SDK package and registers the same
+tools. Nothing in `tools.ts` knows how it is being reached — the tests prove it by binding
+the same server to an in-memory transport instead.
 
-Logging is currently **the transport's startup line on stderr, and nothing else.** The server
-is read-only, holds no credentials and performs no privileged operation, so there is no
-security-relevant call to audit yet. When a tool is added that could lead to a system change,
-it must arrive with an audit log — which, per rule 4, means it arrives with the agent.
+**Streamable HTTP is not implemented**, deliberately. It would bring sessions, origin
+validation and an authorization story, none of which has a user yet. The SDK ships it, along
+with adapters for Express, Fastify, Hono and plain Node, whenever ConfigShell needs a
+remotely hosted server.
 
-## Design decisions
+**Today the server is local-only.**
 
-### Hand-written JSON-RPC rather than the official SDK
+## Connecting a client
 
-`@modelcontextprotocol/sdk` pulls in seventeen transitive dependencies — express, hono, jose,
-cors, eventsource, pkce-challenge and `cross-spawn` among them — almost all of it for HTTP
-transports and OAuth that a read-only stdio server does not use. Adding a process-spawning
-library to the dependency tree of a project whose central claim is "nothing here can execute
-a command" is a poor trade, and the surface actually needed is small: `initialize`,
-`notifications/initialized`, `ping`, `tools/list`, `tools/call`, over newline-delimited JSON.
-
-`packages/mcp` therefore has **zero runtime dependencies** beyond the two workspace packages.
-
-This is a judgement call, not a rule. `src/tools.ts` knows nothing about the transport, so
-swapping `src/protocol.ts` for the SDK later would not touch a single tool. Revisit it if
-ConfigShell needs an HTTP transport, OAuth, sampling, or resources.
-
-### stdio only
-
-The browser never speaks MCP, and there is no HTTP transport. A stdio server is launched by
-the client that uses it, which means no listening port, no authentication story and no remote
-attack surface.
-
-## Using it
-
-Point an MCP client at the server command. For example:
+Point an MCP host at the server command:
 
 ```json
 {
@@ -165,18 +205,26 @@ Point an MCP client at the server command. For example:
 }
 ```
 
-Protocol versions supported: `2025-06-18`, `2025-03-26`, `2024-11-05`. An unrecognised
-version is answered with the newest supported one, per the specification.
-
-Diagnostics go to **stderr**; stdout carries protocol messages only. Anything else writing to
-stdout would corrupt the framing, which is why `src/bin.ts` is the single writer.
+Compatibility is not a claim made from reading the spec: `src/integration.test.ts` connects
+the **official MCP client** to this server over the real protocol, and `src/stdio.test.ts`
+spawns the binary as a subprocess exactly as a host does.
 
 ## Where it lives
 
-`packages/mcp` — a standalone stdio server importing `@configshell/catalog` and
+`packages/mcp` — a standalone server importing `@configshell/catalog` and
 `@configshell/installer` directly. It does **not** go through the HTTP API: both are adapters
 over the same pure functions, and a network hop between them would add a failure mode without
-adding a guarantee.
+adding a guarantee. The same request produces the same result from the web app, the API and
+an MCP client, because all three call the same code.
+
+```
+src/
+├── bin.ts            stdio entry point — the only transport binding
+├── server.ts         createConfigShellServer(): tools, resources, prompts, instructions
+├── tools.ts          the seven tools — pure, transport-independent
+├── validate.ts       business-rule validation (Zod covers shape)
+└── errors.ts         tool errors, safe to return to a caller
+```
 
 ```sh
 pnpm --filter @configshell/mcp test        # 52 tests

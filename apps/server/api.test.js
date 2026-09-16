@@ -129,6 +129,40 @@ describe("GET /api/applications/:id", () => {
     assert.ok(body.data.resolution.considered.length > 0, "rejected sources are recorded");
   });
 
+  test("a resolution has the same shape here as it does in a plan", async () => {
+    // These two endpoints returned different shapes for the same concept until
+    // they were given a shared presenter — a client that could read one could
+    // not read the other.
+    const single = await get("/api/applications/vscode?distro=Ubuntu");
+    const plan = await post("/api/plan", {
+      environment: { distro: "Ubuntu" },
+      applicationIds: ["vscode"],
+    });
+
+    const fromEndpoint = single.body.data.resolution;
+    const fromPlan = plan.body.data.resolutions[0];
+    assert.deepEqual(fromEndpoint, fromPlan);
+  });
+
+  test("a resolution reports eligibility rather than the policy's internal rank", async () => {
+    const { body } = await get("/api/applications/vscode?distro=Ubuntu");
+    const considered = body.data.resolution.considered;
+
+    for (const candidate of considered) {
+      assert.equal(typeof candidate.eligible, "boolean", JSON.stringify(candidate));
+      assert.equal(candidate.rank, undefined, "the internal rank must not reach the wire");
+      assert.equal(candidate.source, undefined, "sources are flattened, not nested");
+      assert.ok(candidate.note.length > 0);
+    }
+
+    // VS Code's apt route is the vendor's own repository, which ConfigShell
+    // will not add — so it must be reported as not usable, and the UI must be
+    // told why rather than working it out again.
+    const apt = considered.find((c) => c.method === "apt");
+    assert.equal(apt.eligible, false);
+    assert.match(apt.note, /vendor repository/);
+  });
+
   test("distinguishes a malformed id (400) from an unknown one (404)", async () => {
     assert.equal((await get("/api/applications/NOT%20AN%20ID")).status, 400);
     assert.equal((await get("/api/applications/no-such-app")).status, 404);

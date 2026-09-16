@@ -13,6 +13,14 @@
  * Nothing here executes a command, touches the filesystem, opens a socket, or
  * inspects the machine this process runs on.
  *
+ * ## What this layer is for
+ *
+ * An external MCP host — Claude, ChatGPT, Cursor, VS Code, anything that speaks
+ * the protocol — connects and uses these tools to help a user discover, compare
+ * and choose software, then build a setup plan. **The host does the reasoning
+ * and the conversation; ConfigShell supplies trusted data and deterministic
+ * operations.** There is no model in this repository and none is required.
+ *
  * Three capabilities from the design sketch are deliberately **absent** rather
  * than stubbed, because they require the local agent that does not exist
  * (docs/agent.md):
@@ -49,6 +57,7 @@ import {
   type Environment,
 } from '@configshell/catalog';
 import { buildPlan, renderPlan, resolveAll, type Resolution } from '@configshell/installer';
+import { z } from 'zod';
 import { ToolError } from './errors.ts';
 import {
   applicationsFor,
@@ -61,48 +70,85 @@ import {
   parseQuery,
 } from './validate.ts';
 
-/** A JSON Schema fragment. Hand-written: the shapes are small and fixed. */
-type JsonSchema = Record<string, unknown>;
-
+/**
+ * A tool, described once and consumed by the SDK.
+ *
+ * `inputSchema` is a Zod object rather than hand-written JSON Schema: the SDK
+ * derives the JSON Schema that clients see, and validates arguments against it
+ * before a handler runs. That gives every MCP host an accurate, machine-readable
+ * contract without a second copy of the shape maintained by hand.
+ *
+ * Zod checks *shape*. `validate.ts` still checks the business rules that a
+ * schema cannot express — that an id exists in the catalog, that a selection is
+ * deduplicated — so the two are complementary rather than redundant.
+ */
 export interface ToolDefinition {
   name: string;
+  /** Short human label for client UIs. */
+  title: string;
   description: string;
-  inputSchema: JsonSchema;
+  inputSchema: z.ZodObject<z.ZodRawShape>;
+  /**
+   * Behavioural hints, read by hosts to decide what needs confirmation.
+   *
+   * Every ConfigShell tool is `readOnlyHint: true` and `openWorldHint: false`:
+   * nothing changes state, and every answer comes from the compiled-in catalog
+   * rather than the open internet. That is the security posture, declared in the
+   * protocol's own vocabulary instead of only in prose a host will not read.
+   */
+  annotations: {
+    readOnlyHint: true;
+    destructiveHint: false;
+    idempotentHint: true;
+    openWorldHint: false;
+  };
   /** Handlers are synchronous: every one is a pure function over the catalog. */
   handler: (args: unknown) => unknown;
 }
 
+/** Shared by every tool here — see `ToolDefinition.annotations`. */
+const READ_ONLY = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+} as const;
+
 // ------------------------------------------------------------ shared schemas
 
-const ENVIRONMENT_SCHEMA: JsonSchema = {
-  type: 'object',
-  description:
+/**
+ * `.strict()` throughout: an unrecognised argument is rejected rather than
+ * ignored. A host that invents a `command` or `packages` field gets a clear
+ * schema error instead of a silently-dropped field and a plan that does not
+ * match what it thought it asked for.
+ */
+const ENVIRONMENT_SCHEMA = z
+  .object({
+    distro: z
+      .enum(DISTROS as unknown as [string, ...string[]])
+      .describe(
+        'The Linux distribution. Required. The package ecosystem (apt/dnf/pacman) is ' +
+          'derived from this and must not be supplied.',
+      ),
+    architecture: z
+      .enum(ARCHITECTURES as unknown as [string, ...string[]])
+      .optional()
+      .describe('Optional, recorded only. No catalog data is architecture-specific yet.'),
+  })
+  .strict()
+  .describe(
     'The target environment. Always supplied by the caller — ConfigShell cannot detect ' +
-    'the user\'s machine (see list_environments).',
-  properties: {
-    distro: {
-      type: 'string',
-      enum: [...DISTROS],
-      description: 'Required. The package ecosystem is derived from this, never supplied.',
-    },
-    architecture: {
-      type: 'string',
-      enum: [...ARCHITECTURES],
-      description: 'Optional, recorded only. No catalog data is architecture-specific yet.',
-    },
-  },
-  required: ['distro'],
-  additionalProperties: false,
-};
+      "the user's machine. Call list_environments and ask the user.",
+  );
 
-const APPLICATION_IDS_SCHEMA: JsonSchema = {
-  type: 'array',
-  items: { type: 'string' },
-  minItems: 1,
-  description:
-    'Catalog ids. An id that is not in the catalog refuses the whole call rather than ' +
-    'being skipped.',
-};
+const APPLICATION_IDS_SCHEMA = z
+  .array(z.string())
+  .min(1)
+  .describe(
+    'Catalog ids, e.g. ["git","vscode"]. Get them from search_application. An id that is ' +
+      'not in the catalog refuses the whole call rather than being skipped, so the plan ' +
+      'always matches what was asked for.',
+  );
 
 // ------------------------------------------------------------------ shaping
 
@@ -184,7 +230,9 @@ const listEnvironments: ToolDefinition = {
     'a browser cannot do it honestly and a server process is not on the user\'s machine. ' +
     'Real detection is a local-agent capability that does not exist yet, so the caller ' +
     'must supply the environment — asking the user is the correct behaviour.',
-  inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+  title: 'List supported environments',
+  inputSchema: z.object({}).strict(),
+  annotations: READ_ONLY,
   handler: () => ({
     detectionAvailable: false,
     detectionNote:
@@ -206,14 +254,20 @@ const searchApplication: ToolDefinition = {
   description:
     'Search the trusted catalog by free text and/or category. Matches id, name, ' +
     'description and category. Returns catalog entries only — no installation commands.',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      query: { type: 'string', description: 'Free text. Omit to list everything.' },
-      category: { type: 'string', enum: [...CATEGORIES] },
-    },
-    additionalProperties: false,
-  },
+  title: 'Search applications',
+  inputSchema: z
+    .object({
+      query: z
+        .string()
+        .optional()
+        .describe('Free text matched against id, name, description and category. Omit to list everything.'),
+      category: z
+        .enum(CATEGORIES as unknown as [string, ...string[]])
+        .optional()
+        .describe('Exact category filter, applied in addition to query.'),
+    })
+    .strict(),
+  annotations: READ_ONLY,
   handler: (args) => {
     const input = asObject(args);
     const results = searchApplications({
@@ -234,15 +288,14 @@ const getApplication: ToolDefinition = {
     'One catalog entry by id, including every verified installation source and who ' +
     'packages it (distro / vendor / community). Supply an environment to also get the ' +
     'resolution for it: which source would be used, why, and what was rejected.',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      applicationId: { type: 'string', description: 'Catalog id, e.g. "vscode".' },
-      environment: ENVIRONMENT_SCHEMA,
-    },
-    required: ['applicationId'],
-    additionalProperties: false,
-  },
+  title: 'Get application details',
+  inputSchema: z
+    .object({
+      applicationId: z.string().describe('Catalog id, e.g. "vscode".'),
+      environment: ENVIRONMENT_SCHEMA.optional(),
+    })
+    .strict(),
+  annotations: READ_ONLY,
   handler: (args) => {
     const input = asObject(args);
     const id = parseApplicationId(input.applicationId);
@@ -271,13 +324,16 @@ const listRoles: ToolDefinition = {
   description:
     'List the deterministic role/use-case presets. A preset is a curated list of catalog ' +
     'ids — a fixed, reviewable set, not a recommendation engine. No model is involved.',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      roleId: { type: 'string', description: 'Optional. Return just this preset.' },
-    },
-    additionalProperties: false,
-  },
+  title: 'List role presets',
+  inputSchema: z
+    .object({
+      roleId: z
+        .string()
+        .optional()
+        .describe('Optional. Return just this preset, with full application details.'),
+    })
+    .strict(),
+  annotations: READ_ONLY,
   handler: (args) => {
     const input = asObject(args);
 
@@ -316,15 +372,11 @@ const checkCompatibility: ToolDefinition = {
     'verified route — with the reason and the sources that were rejected.\n\n' +
     'This answers "will this work on this distribution", not "is it already installed" ' +
     '— ConfigShell cannot see the user\'s machine.',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      applicationIds: APPLICATION_IDS_SCHEMA,
-      environment: ENVIRONMENT_SCHEMA,
-    },
-    required: ['applicationIds', 'environment'],
-    additionalProperties: false,
-  },
+  title: 'Check compatibility',
+  inputSchema: z
+    .object({ applicationIds: APPLICATION_IDS_SCHEMA, environment: ENVIRONMENT_SCHEMA })
+    .strict(),
+  annotations: READ_ONLY,
   handler: (args) => {
     const input = asObject(args);
     const ids = parseApplicationIds(input.applicationIds);
@@ -353,15 +405,11 @@ const generateSetup: ToolDefinition = {
     'them decide. Applications that need a vendor repository, or that ship only as a ' +
     'vendor download, come back as manual steps with a link rather than as a command that ' +
     'would fail.',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      applicationIds: APPLICATION_IDS_SCHEMA,
-      environment: ENVIRONMENT_SCHEMA,
-    },
-    required: ['applicationIds', 'environment'],
-    additionalProperties: false,
-  },
+  title: 'Generate setup plan',
+  inputSchema: z
+    .object({ applicationIds: APPLICATION_IDS_SCHEMA, environment: ENVIRONMENT_SCHEMA })
+    .strict(),
+  annotations: READ_ONLY,
   handler: (args) => {
     const input = asObject(args);
     const ids = parseApplicationIds(input.applicationIds);
@@ -423,20 +471,20 @@ const validateSetup: ToolDefinition = {
     'executed and never echoed back as approved.\n\n' +
     'A pass here is NOT an authorisation to run anything. Whatever eventually executes ' +
     'must re-validate against the catalog itself and ask the user.',
-  inputSchema: {
-    type: 'object',
-    properties: {
+  title: 'Validate a setup plan',
+  inputSchema: z
+    .object({
       applicationIds: APPLICATION_IDS_SCHEMA,
       environment: ENVIRONMENT_SCHEMA,
-      commands: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'The commands to check, in order.',
-      },
-    },
-    required: ['applicationIds', 'environment', 'commands'],
-    additionalProperties: false,
-  },
+      commands: z
+        .array(z.string())
+        .describe(
+          'The commands to check, in order. Compared against catalog-derived output; ' +
+            'never executed, never returned as approved.',
+        ),
+    })
+    .strict(),
+  annotations: READ_ONLY,
   handler: (args) => {
     const input = asObject(args);
     const ids = parseApplicationIds(input.applicationIds);

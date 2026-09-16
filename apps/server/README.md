@@ -125,9 +125,11 @@ repository root starts both.
 
 ## What the web app uses this for
 
-`apps/web` calls **`POST /api/plan`, and nothing else.** It compiles
-`@configshell/catalog` into its bundle, so browsing, search and role presets work with no
-server at all — simpler, faster, and with no catalog-fetch path to intercept.
+`apps/web` calls **`POST /api/plan`** for setup plans and
+**`GET /api/applications/:id?distro=…`** for per-source availability — everything the
+resolver decides, and nothing else. It compiles `@configshell/catalog` into its bundle, so
+browsing, search and role presets work with no server at all — simpler, faster, and with no
+catalog-fetch path to intercept.
 
 Plan generation is the deliberate exception. The web app could import
 `@configshell/installer` directly, but that would put the one security-critical function in

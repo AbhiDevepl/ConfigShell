@@ -1,27 +1,29 @@
-#!/usr/bin/env -S npx tsx
+#!/usr/bin/env node
 /**
- * ConfigShell MCP server (stdio).
+ * ConfigShell MCP server over stdio.
  *
  *     pnpm --filter @configshell/mcp start
  *
- * Read-only and deterministic: it reads the compiled-in catalog and computes
- * plans. It opens no sockets, reads no files, and executes nothing.
+ * stdio is the transport MCP hosts use to launch a local server: the host runs
+ * this command and speaks the protocol over the pipe. There is no listening
+ * port and no authentication story, because there is nothing remote to
+ * authenticate.
+ *
+ * **Never write to stdout here.** It carries protocol messages; anything else
+ * corrupts the stream. Diagnostics go to stderr.
  */
 
-import { createInterface } from 'node:readline';
-import { serve } from './server.ts';
-import { SERVER_INFO } from './protocol.ts';
+import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
+import { createConfigShellServer, SERVER_INFO } from './server.ts';
 
-const io = {
-  // The single writer to stdout in this process. Anything else would corrupt
-  // the message framing.
-  send: (response: unknown) => process.stdout.write(`${JSON.stringify(response)}\n`),
-  log: (message: string) => process.stderr.write(`[configshell-mcp] ${message}\n`),
-};
+async function main(): Promise<void> {
+  const server = createConfigShellServer();
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error(`[configshell-mcp] ${SERVER_INFO.name} ${SERVER_INFO.version} ready on stdio`);
+}
 
-io.log(`${SERVER_INFO.name} ${SERVER_INFO.version} ready on stdio`);
-
-const input = createInterface({ input: process.stdin, terminal: false });
-serve(input, io);
-
-input.on('close', () => process.exit(0));
+main().catch((error: unknown) => {
+  console.error('[configshell-mcp] fatal:', error instanceof Error ? error.message : error);
+  process.exit(1);
+});

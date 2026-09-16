@@ -14,6 +14,11 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 
 ### Added
 
+- **MCP resources and a prompt.** Two reference resources
+  (`configshell://reference/environments`, `configshell://reference/safety`) give an AI host
+  static context in one read instead of a tool call, and the `plan_a_setup` prompt hands over
+  the intended workflow order. The catalog itself is deliberately not a resource —
+  `search_application` exists so a host filters server-side.
 - **`packages/mcp` — an MCP server over stdio.** Seven read-only, deterministic tools over
   the trusted catalog and the installer: `list_environments`, `search_application`,
   `get_application`, `list_roles`, `check_compatibility`, `generate_setup` and
@@ -28,11 +33,8 @@ version is below `1.0.0`, the public surface may change in a minor release — s
     repository** — a caller supplies catalog ids and a distribution name, and a test walks
     the registered schemas to keep it that way. `validate_setup` accepts command text only to
     *compare* it against catalog-derived output; it never executes or re-emits it.
-  - **Zero runtime dependencies.** The JSON-RPC 2.0 layer is hand-written rather than pulling
-    in the official SDK's seventeen transitive dependencies — largely HTTP transports and
-    OAuth a stdio server does not use, including a process-spawning library this project has
-    good reason not to carry. `src/tools.ts` is transport-independent, so the decision is
-    reversible without touching a tool.
+  - Built on the official SDK (see "Changed"). `src/tools.ts` is transport-independent, which
+    is what made that migration a replacement of the protocol layer alone.
   - 52 tests: the tool surface, the protocol, hostile arguments, and structural guarantees
     (no `child_process`, no `eval`, no filesystem, no sockets, read-only, deterministic).
 - `pnpm mcp` starts the server.
@@ -109,6 +111,25 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 
 ### Changed
 
+- **The MCP layer now uses the official MCP TypeScript SDK** (`@modelcontextprotocol/server`
+  v2, implementing the 2026-07-28 spec), replacing the hand-written JSON-RPC and stdio
+  implementation. Two things changed the calculus behind the original decision: v2 **split the
+  monolithic `@modelcontextprotocol/sdk`** into scoped packages, so a server now needs three
+  dependencies rather than seventeen and the OAuth/process-spawning code is in the *client*
+  package; and the hand-written server negotiated protocol versions only up to `2025-06-18`,
+  with no knowledge of the current spec. `src/protocol.ts` and the hand-rolled framing in
+  `src/server.ts` are gone; the tools themselves were kept.
+- Tool input schemas are now **Zod and strict**. The SDK derives the JSON Schema clients see
+  and validates arguments before a handler runs, so unknown arguments are rejected rather than
+  ignored — a host that invents a `command` field is told so.
+- Every tool now carries **annotations** (`readOnlyHint`, `destructiveHint: false`,
+  `idempotentHint`, `openWorldHint: false`) and a `title`, stating the security posture in the
+  protocol's own vocabulary, and returns `structuredContent` alongside text.
+- `createConfigShellServer()` binds **no transport**, so stdio today and Streamable HTTP later
+  are the same tools with a different binding.
+- MCP tests are now interoperability tests: the **official MCP client** connects to the server
+  over the real protocol, and a second test spawns the binary over stdio exactly as a host
+  does. The hand-written protocol unit tests were deleted with the code they covered.
 - The application-id pattern now lives in `@configshell/catalog` (`APPLICATION_ID_PATTERN`,
   `isApplicationIdShape`) instead of being written out separately in the API server — three
   consumers, one rule.
@@ -192,6 +213,23 @@ version is below `1.0.0`, the public surface may change in a minor release — s
   installed and always failed. Linting now runs from the repository root.
 
 ### Fixed
+
+- **The application detail view disagreed with the setup plan.** It computed which
+  installation sources applied to a distribution itself, and that local copy did not know
+  that a vendor package-manager source needs a third-party repository added first. On Ubuntu
+  it highlighted VS Code's `apt` source as applicable while the plan installed the Snap. The
+  duplicated logic is gone; the view now asks the resolver through the API and shows its
+  reason per source, plus which one would actually be used.
+- **`GET /api/applications/:id` and `POST /api/plan` returned different shapes for the same
+  resolution** — the former leaked the raw installer type (nested sources, the policy's
+  internal rank integer, and the application repeated inside its own resolution). Both now
+  use one shared presenter, and a test asserts the two shapes are identical.
+- A resolution's `considered` entries now report `eligible: boolean` rather than the policy's
+  internal `rank`, matching what the MCP adapter already emitted. A resolution reads the same
+  however it was requested.
+- **Added an error boundary**, so a render error degrades to a message rather than a blank
+  page. The fallback deliberately uses no design-system components, since the thing that
+  broke may be the design system.
 
 - Documentation contradictions in `README.md` (root scripts described as unwired, the
   `LICENSE` file described as missing, empty docs described as written).

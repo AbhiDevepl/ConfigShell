@@ -92,11 +92,21 @@ flowchart LR
 The catalog is *compiled into* the web bundle; it is not fetched at runtime. Browsing,
 search, category filtering and role presets therefore work with no server at all.
 
-The web app makes **exactly one kind of network request**: `POST /api/plan`. That split is
-deliberate. The web app could import `packages/installer` directly, but that would put the
-one security-critical function in the browser bundle and give two consumers two places to
-drift apart. The cost is visible rather than hidden: without the API you can browse and
-select but not generate a plan, and the UI says exactly that instead of degrading quietly.
+The web app makes **two kinds of network request**, both to ConfigShell's own API:
+`POST /api/plan` to generate a setup plan, and `GET /api/applications/:id?distro=…` to ask
+how one application resolves for a distribution.
+
+That split is deliberate. The web app could import `packages/installer` directly, but that
+would put the one security-critical function in the browser bundle and give two consumers two
+places to drift apart. The detail view is the cautionary example: it once computed
+applicability itself and disagreed with the plan — highlighting VS Code's `apt` source as
+applying to Ubuntu while the plan installed the Snap, because the local copy did not know
+that a vendor package-manager source needs a repository added first. It now asks the
+resolver.
+
+The cost is visible rather than hidden: without the API you can browse and select but not
+generate a plan or see per-source availability, and the UI says exactly that instead of
+degrading quietly.
 
 ### The three stages, and why they are separate
 
@@ -213,23 +223,37 @@ through which arbitrary strings would reach a shell.
 
 See `packages/installer/README.md`.
 
-### `packages/mcp` — the MCP interface
+### `packages/mcp` — the external integration boundary
 
-A stdio MCP server exposing **seven read-only, deterministic tools** over the catalog and the
-installer: environment discovery, catalog search, application detail, role presets,
-compatibility checking, setup-plan generation, and plan validation.
+An MCP server letting an MCP-capable AI host use ConfigShell's trusted capabilities:
 
-It is a thin adapter — every decision comes from `packages/installer`, so an MCP client
-cannot get a different answer from the web app or the API. It does not go through the HTTP
-API: both are adapters over the same pure functions, and a network hop between them would add
-a failure mode without adding a guarantee.
+```
+External AI host  →  MCP  →  ConfigShell MCP  →  core  →  catalog · resolver · plan
+```
+
+The host reasons and converses; ConfigShell supplies verified data and deterministic
+operations. **No model, provider SDK or API key exists anywhere in this repository**, and MCP
+does not change that — an AI host is simply one kind of client, alongside a CLI or an editor.
+
+Seven read-only tools (environment discovery, catalog search, application detail, role
+presets, compatibility checking, setup-plan generation, plan validation), two reference
+resources and one workflow prompt.
+
+Built on the **official MCP TypeScript SDK** (`@modelcontextprotocol/server` v2, implementing
+the 2026-07-28 spec). The SDK owns the protocol; this package owns only adapters. Every
+decision comes from `packages/installer`, so an MCP client cannot get a different answer from
+the web app or the API. It does not go through the HTTP API: both are adapters over the same
+pure functions, and a network hop between them would add a failure mode without adding a
+guarantee.
+
+`createConfigShellServer()` binds no transport, so stdio today and Streamable HTTP later are
+the same tools with a different binding.
 
 **Three capabilities are deliberately absent rather than stubbed:** `detect_system`,
 `check_installed` and `execute_setup` all require the local agent. A tool that always fails is
 still a tool a caller must handle; one that returns a plausible guess would be a lie.
 
-Zero runtime dependencies — the JSON-RPC layer is hand-written rather than pulling in the
-official SDK's seventeen transitive dependencies. See `docs/mcp.md`.
+See `docs/mcp.md`.
 
 ### `packages/ai`
 

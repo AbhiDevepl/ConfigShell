@@ -26,6 +26,9 @@ These end up in `apps/web/dist` and are therefore distributed to users of a depl
 | `shadcn` | MIT | `shadcn/tailwind.css` is imported by `src/index.css` |
 | `@fontsource-variable/geist` | **OFL-1.1** | see "Fonts" below |
 | `express` | MIT | used by `apps/web/server.js` to serve the built app |
+| `@modelcontextprotocol/server` | MIT | the official MCP TypeScript SDK (v2), used by `packages/mcp` |
+| `@modelcontextprotocol/core` | MIT | shared protocol types and schemas, pulled in by the server package |
+| `zod` | MIT | tool input schemas in `packages/mcp`; the SDK derives JSON Schema from them |
 
 ## Build and development tooling
 
@@ -40,10 +43,15 @@ Not shipped to users, but part of the repository's toolchain.
 | `eslint-plugin-react-hooks` | MIT |
 | `globals` | MIT |
 | `tsx` | MIT |
+| `@modelcontextprotocol/client` | MIT |
 | `dotenv` | BSD-2-Clause |
 | `@types/node`, `@types/react`, `@types/react-dom`, `@types/express` | MIT (DefinitelyTyped) |
 
 `express` is also a runtime dependency of `apps/server` (MIT).
+
+`@modelcontextprotocol/client` is a development dependency only: it is the official MCP
+client, used by `packages/mcp`'s interoperability tests to connect to our own server over the
+real protocol. It is never shipped.
 
 `tsx` is listed here as tooling but is also how `apps/server` **runs**: the server is
 JavaScript that imports the workspace's TypeScript packages directly, and `tsx` transpiles

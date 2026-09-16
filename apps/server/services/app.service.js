@@ -13,6 +13,7 @@
 
 import { resolve } from "@configshell/installer";
 import { getApplication } from "./catalog.service.js";
+import { presentResolution } from "./resolution.presenter.js";
 
 /**
  * One application plus its resolution for an environment.
@@ -25,5 +26,7 @@ export function describeApplication(id, environment) {
   const application = getApplication(id);
   if (!application) return undefined;
   if (!environment) return { application };
-  return { application, resolution: resolve(application, environment) };
+  // Presented, not raw: `POST /api/plan` returns the same shape, so a client
+  // that can read one resolution can read them all.
+  return { application, resolution: presentResolution(resolve(application, environment)) };
 }

@@ -72,14 +72,18 @@ future integration layer and is *not* blocked on AI — see [`mcp.md`](mcp.md).
   responsive behaviour down to 375px, and first tests for `apps/web`.
 
 ### Phase 6 — the MCP interface
-- `packages/mcp`: a stdio MCP server with seven read-only, deterministic tools over the
-  catalog and the installer. A thin adapter — no business logic, no forked command
-  generation.
-- Hand-written JSON-RPC 2.0, so the package has **zero runtime dependencies**.
+- `packages/mcp`: ConfigShell's external integration boundary, letting an MCP-capable AI host
+  use the trusted catalog and deterministic setup capabilities. Seven read-only tools, two
+  reference resources, one workflow prompt.
+- Built on the **official MCP TypeScript SDK** (`@modelcontextprotocol/server` v2,
+  2026-07-28 spec), replacing an initial hand-written JSON-RPC implementation — see
+  [`mcp.md`](mcp.md) for the reasoning.
+- Transport-agnostic server factory: stdio today, Streamable HTTP later without touching the
+  tools.
 - `detect_system`, `check_installed` and `execute_setup` deliberately **withheld**, with
   their reasons recorded in code and asserted by test. They belong to the local agent.
-- 52 tests covering the tool surface, the protocol, hostile arguments, and the structural
-  guarantees (no execution, no filesystem, no sockets, no command vocabulary).
+- 52 tests, including interoperability tests that connect the **official MCP client** over
+  the real protocol and spawn the binary over stdio as a host would.
 
 ## Current — completing the V1 flow
 
@@ -92,7 +96,6 @@ The flow works end to end. What remains is polish and the gaps it exposed:
    in the repository. Needs Vitest plus a DOM implementation plus Testing Library, which is
    a dependency decision worth making deliberately.
 2. **Selection persistence across reloads**, so a half-built selection survives a refresh.
-3. **An error boundary**, so a render failure does not blank the page.
 4. **Application icons**, once the licensing and trademark questions are settled.
 5. **Search by tags and aliases** (PRD §14) — needs a catalog field; `id` matching landed
    with the shared search function.
@@ -134,9 +137,11 @@ the core release.**
 
 - **AI planning layer** ([`docs/ai.md`](ai.md)) — recommendations, compatibility
   reasoning, natural-language discovery, plan drafting. AI plans; it never executes.
-- **MCP resources and per-capability authorization** ([`docs/mcp.md`](mcp.md)) — the tool
-  surface is implemented and read-only; resources, subscriptions and explicit per-capability
-  authorization are not. Anything that could lead to a system change waits for the agent.
+- **Remote MCP (Streamable HTTP) and authorization** ([`docs/mcp.md`](mcp.md)) — the tool
+  surface, resources and a prompt are implemented and read-only over stdio. A remotely hosted
+  server needs sessions, origin validation and an authorization story; the SDK ships all of
+  it, and the transport boundary is already drawn so the tools would not change. Anything
+  that could lead to a system change still waits for the agent.
 - **Local Linux agent** ([`docs/agent.md`](agent.md)) — real system detection and the
   only component permitted to change a system, with validation and explicit confirmation.
 - **Production platform** — database, accounts, catalog management, community-submitted

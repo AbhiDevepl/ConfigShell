@@ -46,10 +46,15 @@ Before editing, check whether a file actually has content; many don't:
   role presets → browse/search/filter → application detail → selection → setup plan →
   commands. Two views (`build` and `plan`) held in `App.tsx`, which owns selection state.
   See "shadcn/ui setup" below before adding UI.
-  - **It calls the API for plan generation** (`src/lib/api.ts` → `POST /api/plan`) and
-    nothing else. The catalog is still compiled in, so browsing works offline; the plan step
-    does not, and the UI says so rather than degrading quietly. Do **not** import
+  - **It calls the API for anything the resolver decides** (`src/lib/api.ts`):
+    `POST /api/plan` for setup plans, `GET /api/applications/:id?distro=…` for per-source
+    availability. The catalog is still compiled in, so browsing works offline; those two do
+    not, and the UI says so rather than degrading quietly. Do **not** import
     `@configshell/installer` here — one implementation of command generation, not two.
+  - **Never re-derive resolver policy in a component.** The detail sheet once computed which
+    sources applied to a distribution and disagreed with the plan, because the local copy did
+    not know vendor package-manager sources need a repository first. If a screen needs to
+    know whether a source is usable, ask the API.
   - **Dev server is port 5173**, the API is 3000, and Vite proxies `/api`. `pnpm dev` from
     the root runs both in parallel; `pnpm dev:web` runs the web app alone.
   - 11 tests on `tsx --test`: `src/lib/api.test.ts` (the API client's contract) and
@@ -92,20 +97,27 @@ Before editing, check whether a file actually has content; many don't:
     decides; change it there, not at the call sites.
   - No application is silently dropped: every one resolves, becomes manual, or is reported
     unavailable, each with an explanation.
-- **`packages/mcp`**: **implemented** — a stdio MCP server with seven read-only,
-  deterministic tools over the catalog and the installer. **52 tests.** Rules:
+- **`packages/mcp`**: **implemented** — ConfigShell's external integration boundary. A stdio
+  MCP server built on the **official SDK** (`@modelcontextprotocol/server` v2), with seven
+  read-only tools, two resources and one prompt. **52 tests.** Rules:
+  - **Use the SDK for protocol, not hand-rolled JSON-RPC.** It owns framing, the handshake,
+    version negotiation, capability declaration, JSON Schema generation and argument
+    validation. An earlier hand-written implementation was replaced — see `docs/mcp.md` for
+    why, and don't reintroduce one.
   - It is a **thin adapter**. No business logic, and no command vocabulary: a test fails if
     `apt-get install`, `sudo ` and friends appear anywhere in the package. Command text comes
     only from `@configshell/installer`.
   - **`detect_system`, `check_installed` and `execute_setup` must never be registered** —
     not even as stubs that return an error. They need the local agent. `WITHHELD_CAPABILITIES`
-    records why, and a test asserts they stay absent.
+    records why, and tests assert they stay absent and undiscoverable.
   - **No tool may take a package name, command, flag, URL or repository argument.** A test
-    walks the registered schemas. `validate_setup`'s `commands` is the sole exception and is
-    only ever compared, never executed or re-emitted.
-  - **Zero runtime dependencies** — hand-written JSON-RPC. Do not add the MCP SDK without
-    reading the rationale in `docs/mcp.md`.
-  - `src/tools.ts` is transport-independent; keep it that way.
+    walks the registered Zod schemas. `validate_setup`'s `commands` is the sole exception and
+    is only ever compared, never executed or re-emitted.
+  - **Schemas are Zod and `.strict()`** — unknown arguments are rejected, not ignored.
+  - **`createConfigShellServer()` binds no transport.** `bin.ts` binds stdio; a future HTTP
+    entry point binds Streamable HTTP and registers the same tools. Keep `tools.ts` ignorant
+    of transport — the integration tests depend on it by using an in-memory pair.
+  - Interoperability is tested with the **official MCP client**, not asserted from the spec.
 - **`packages/ai`**: a `package.json` and a README, no source — placeholder for the AI
   planning layer. **AI is future scope: do not implement it.**
 - **`docs/*.md`**: `architecture.md`, `catalog.md`, `security-model.md` and `development.md` are

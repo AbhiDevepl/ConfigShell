@@ -58,6 +58,21 @@ test('the web app contains no package-manager command vocabulary', () => {
   assert.deepEqual(offenders, [], 'the browser must not know how to build a command');
 });
 
+test('the app is wrapped in an error boundary', () => {
+  // A render error should degrade to a message, not a blank page. Asserted
+  // structurally because there is no DOM test runner to render it.
+  const main = readFileSync(join(SRC, 'main.tsx'), 'utf8');
+  assert.match(main, /<ErrorBoundary>/, 'main.tsx does not mount the error boundary');
+  assert.match(main, /<\/ErrorBoundary>/);
+
+  const boundary = readFileSync(
+    join(SRC, 'components', 'layout', 'ErrorBoundary.tsx'),
+    'utf8',
+  );
+  assert.match(boundary, /getDerivedStateFromError/, 'not a real error boundary');
+  assert.match(boundary, /role="alert"/, 'the fallback is not announced');
+});
+
 test('the web app never imports the installer package', () => {
   // One implementation of command generation, not two. Importing it here would
   // put the security-critical function in the browser bundle and give the API

@@ -1,4 +1,13 @@
-import { CheckCircle2, ExternalLink, Package, ShieldAlert, ShieldCheck, ShieldQuestion } from 'lucide-react';
+import {
+  CheckCircle2,
+  CircleAlert,
+  ExternalLink,
+  Loader2,
+  Package,
+  ShieldAlert,
+  ShieldCheck,
+  ShieldQuestion,
+} from 'lucide-react';
 import type { ComponentType } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,12 +20,13 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import {
-  ecosystemForDistro,
-  type Application,
-  type Distro,
-  type InstallationSource,
-  type RepositoryOrigin,
+import { useApplicationResolution } from '@/hooks/useApplicationResolution';
+import type { ConsideredSource } from '@/lib/api';
+import type {
+  Application,
+  Distro,
+  InstallationSource,
+  RepositoryOrigin,
 } from '@configshell/catalog';
 
 /**
@@ -63,11 +73,14 @@ interface AppDetailSheetProps {
 /**
  * Per-application detail (PRD §12, ROADMAP "Application details").
  *
- * Shows every verified source and, once a distribution is chosen, which ones
- * apply to it. It deliberately does **not** duplicate the resolver's choice:
- * the setup plan is the single place that says "this is what will be used and
- * why", and a second, subtly different answer here would be worse than none.
- * What this view adds is provenance — who packaged each route.
+ * Shows every verified source with its provenance — who packaged each route —
+ * and, once a distribution is chosen, **the resolver's own answer** about which
+ * ones apply and which would be used.
+ *
+ * That answer is fetched rather than computed. Applicability is resolver policy,
+ * including rules this screen has no business knowing (a vendor package-manager
+ * source needs a repository added first and so is not usable). An earlier version
+ * re-derived it locally and disagreed with the plan.
  */
 export function AppDetailSheet({
   app,
@@ -76,6 +89,21 @@ export function AppDetailSheet({
   onToggle,
   onOpenChange,
 }: AppDetailSheetProps) {
+  const { status, resolution, error } = useApplicationResolution(app?.id ?? null, distro);
+
+  /** The resolver's verdict on one source, once it has arrived. */
+  const consideredFor = (source: InstallationSource): ConsideredSource | null =>
+    resolution?.considered.find(
+      (candidate) =>
+        candidate.method === source.method && candidate.identifier === source.identifier,
+    ) ?? null;
+
+  /** Is this the source the resolver would actually use? */
+  const isChosen = (source: InstallationSource): boolean =>
+    resolution?.outcome === 'resolved' &&
+    resolution.source?.method === source.method &&
+    resolution.source?.identifier === source.identifier;
+
   return (
     <Sheet open={app !== null} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md">
@@ -111,11 +139,33 @@ export function AppDetailSheet({
                 <h3 id="sources-heading" className="text-sm font-medium">
                   Verified installation sources
                 </h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {distro
-                    ? `Highlighted rows apply to ${distro}. Which one ConfigShell actually uses is decided in the setup plan.`
-                    : 'Choose a distribution to see which of these apply to you.'}
+                <p className="mt-1 text-xs text-muted-foreground" aria-live="polite">
+                  {!distro
+                    ? 'Choose a distribution to see which of these apply to you.'
+                    : status === 'loading'
+                      ? `Checking which apply to ${distro}…`
+                      : status === 'ready'
+                        ? `Highlighted rows can be used on ${distro}.`
+                        : `Showing every verified source. Availability for ${distro} could not be checked.`}
                 </p>
+
+                {status === 'loading' && (
+                  <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
+                    Asking ConfigShell which sources apply
+                  </p>
+                )}
+
+                {status === 'error' && (
+                  <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <CircleAlert aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+                    <span>
+                      {error?.kind === 'offline'
+                        ? "The ConfigShell API isn't reachable, so which sources apply here can't be checked. The sources themselves are still listed."
+                        : 'Could not check which sources apply here. The sources themselves are still listed.'}
+                    </span>
+                  </p>
+                )}
 
                 {app.installation.length === 0 ? (
                   <p className="mt-3 rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
@@ -128,10 +178,19 @@ export function AppDetailSheet({
                       <SourceRow
                         key={`${source.method}:${source.identifier}`}
                         source={source}
-                        appliesHere={distro ? sourceAppliesTo(source, distro) : null}
+                        considered={consideredFor(source)}
+                        chosen={isChosen(source)}
                       />
                     ))}
                   </ul>
+                )}
+
+                {status === 'ready' && resolution && (
+                  <p className="mt-3 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+                    {resolution.outcome === 'resolved'
+                      ? resolution.reason
+                      : (resolution.explanation ?? resolution.reason)}
+                  </p>
                 )}
               </section>
 
@@ -163,34 +222,27 @@ export function AppDetailSheet({
   );
 }
 
-/** Does this source apply to the chosen distribution? */
-function sourceAppliesTo(source: InstallationSource, distro: Distro): boolean {
-  if (source.method === 'flatpak' || source.method === 'snap' || source.method === 'official') {
-    return true; // distribution-agnostic by design
-  }
-  return source.method === ecosystemForDistro(distro) && (source.distros?.includes(distro) ?? false);
-}
-
 function SourceRow({
   source,
-  appliesHere,
+  considered,
+  chosen,
 }: {
   source: InstallationSource;
-  appliesHere: boolean | null;
+  /** The resolver's verdict, or null before it arrives / if it could not be fetched. */
+  considered: ConsideredSource | null;
+  chosen: boolean;
 }) {
   const origin = ORIGIN_INFO[source.origin];
   const OriginIcon = origin.icon;
-  // A package-manager route with a vendor origin lives in the vendor's own
-  // repository, which ConfigShell will not add for you.
-  const needsRepoSetup =
-    source.origin === 'vendor' && ['apt', 'dnf', 'pacman'].includes(source.method);
+  const eligible = considered?.eligible ?? null;
 
   return (
     <li
       className={cn(
         'rounded-lg border p-3',
-        appliesHere === false ? 'border-border bg-muted/30 opacity-60' : 'border-border bg-card',
-        appliesHere === true && 'border-primary/40',
+        eligible === false ? 'border-border bg-muted/30 opacity-60' : 'border-border bg-card',
+        eligible === true && 'border-primary/40',
+        chosen && 'border-primary ring-1 ring-primary',
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -204,21 +256,28 @@ function SourceRow({
             {source.distros && ` · ${source.distros.join(', ')}`}
           </p>
         </div>
-        <Badge variant="outline" className="shrink-0">
-          <OriginIcon aria-hidden="true" className={cn('size-3', origin.tone)} />
-          {origin.label}
-        </Badge>
+        <span className="flex shrink-0 flex-col items-end gap-1">
+          <Badge variant="outline">
+            <OriginIcon aria-hidden="true" className={cn('size-3', origin.tone)} />
+            {origin.label}
+          </Badge>
+          {chosen && <Badge variant="secondary">Used here</Badge>}
+        </span>
       </div>
 
       <p className="mt-2 text-xs text-muted-foreground">{origin.meaning}</p>
 
-      {needsRepoSetup && (
+      {/*
+        The reason comes from the resolver, not from a rule restated here. That
+        keeps this screen and the setup plan from ever disagreeing about why a
+        source was or was not used.
+      */}
+      {considered && (
         <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
           <ShieldAlert aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
           <span>
-            Lives in the vendor's own repository, which has to be added to your system first.
-            ConfigShell does not generate repository-setup commands, so it will point you at
-            the vendor's instructions instead.
+            {eligible ? 'Usable here — ' : 'Not used here — '}
+            {considered.note}.
           </span>
         </p>
       )}

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { APPLICATIONS, DISTROS } from '@configshell/catalog';
+import { z } from 'zod';
 import { ToolError } from './errors.ts';
 import { TOOLS, WITHHELD_CAPABILITIES, findTool } from './tools.ts';
 
@@ -24,14 +25,27 @@ function expectToolError(name: string, args: unknown, code?: string): ToolError 
 
 // ------------------------------------------------------------ tool surface
 
-test('every registered tool has a name, a description and a schema', () => {
+test('every registered tool has a name, a title, a description and a schema', () => {
   for (const tool of TOOLS) {
     assert.match(tool.name, /^[a-z][a-z0-9_]*$/, `odd tool name: ${tool.name}`);
+    assert.ok(tool.title.length > 0, `${tool.name}: no title`);
     assert.ok(tool.description.length > 40, `${tool.name}: description too thin`);
-    assert.equal(tool.inputSchema.type, 'object');
+    assert.ok(tool.inputSchema instanceof z.ZodObject, `${tool.name}: schema is not a Zod object`);
     assert.equal(typeof tool.handler, 'function');
   }
   assert.equal(new Set(TOOLS.map((t) => t.name)).size, TOOLS.length, 'duplicate tool name');
+});
+
+test('every tool declares itself read-only and closed-world', () => {
+  // These annotations are how a host learns the security posture in the
+  // protocol's own vocabulary, rather than from prose it will never read.
+  for (const tool of TOOLS) {
+    assert.deepEqual(
+      tool.annotations,
+      { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      `${tool.name}`,
+    );
+  }
 });
 
 test('no tool accepts a command, package name, URL or repository argument', () => {
@@ -42,9 +56,7 @@ test('no tool accepts a command, package name, URL or repository argument', () =
     'repo', 'script', 'shell', 'exec', 'args', 'flags'];
 
   for (const tool of TOOLS) {
-    const properties = Object.keys(
-      (tool.inputSchema.properties ?? {}) as Record<string, unknown>,
-    );
+    const properties = Object.keys(tool.inputSchema.shape);
     for (const property of properties) {
       // validate_setup takes `commands`, but only to COMPARE them — it never
       // executes or re-emits them. Every other tool must be clean.

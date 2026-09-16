@@ -60,8 +60,9 @@ export interface ConsideredSource {
   method: InstallMethod;
   identifier: string;
   origin: RepositoryOrigin;
-  /** `null` means the trust policy excluded this source; `note` says why. */
-  rank: number | null;
+  /** Whether this source could be used for the requested environment. */
+  eligible: boolean;
+  /** Why it was chosen or excluded, in words safe to show a user. */
   note: string;
 }
 
@@ -214,6 +215,25 @@ export function createPlan(applicationIds: string[], distro: Distro): Promise<Se
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ environment: { distro }, applicationIds }),
   });
+}
+
+/**
+ * How one application resolves for one distribution.
+ *
+ * Wraps `GET /api/applications/:id?distro=…`. The UI uses this instead of
+ * working applicability out for itself — see `useApplicationResolution`.
+ */
+export async function fetchApplicationResolution(
+  applicationId: string,
+  distro: Distro,
+): Promise<PlanResolution> {
+  const data = await request<{ application: unknown; resolution?: PlanResolution }>(
+    `/applications/${encodeURIComponent(applicationId)}?distro=${encodeURIComponent(distro)}`,
+  );
+  if (!data.resolution) {
+    throw new ApiRequestError('malformed', 'The API returned no resolution for this application.');
+  }
+  return data.resolution;
 }
 
 export interface ApiHealth {

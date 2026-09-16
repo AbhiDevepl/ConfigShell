@@ -102,12 +102,16 @@ See [Security](#security) and [`docs/security-model.md`](docs/security-model.md)
   there is no `child_process` import in the workspace and a test asserts there never is one.
   No database, no authentication, no sessions. 45 tests.
 
-- **An MCP server** (`packages/mcp`) — seven read-only, deterministic tools over stdio:
-  environment discovery, catalog search, application detail, role presets, compatibility
-  checking, setup-plan generation, and plan validation. A thin adapter over the same
-  installer functions, with **zero runtime dependencies**. `detect_system`, `check_installed`
-  and `execute_setup` are deliberately **absent, not stubbed** — they belong to the local
-  agent. See [`docs/mcp.md`](docs/mcp.md).
+- **An MCP server** (`packages/mcp`) — ConfigShell's external integration boundary, built on
+  the **official MCP TypeScript SDK** (`@modelcontextprotocol/server` v2, 2026-07-28 spec).
+  Seven read-only, deterministic tools over stdio — environment discovery, catalog search,
+  application detail, role presets, compatibility checking, setup-plan generation and plan
+  validation — plus two reference resources and a workflow prompt. An MCP-capable AI host
+  (Claude, Cursor, VS Code) does the reasoning; ConfigShell supplies trusted data and
+  deterministic operations, with **no model or provider SDK anywhere in the repository**.
+  `detect_system`, `check_installed` and `execute_setup` are deliberately **absent, not
+  stubbed** — they belong to the local agent. Interoperability is verified by connecting the
+  official MCP client over the real protocol. See [`docs/mcp.md`](docs/mcp.md).
 
 - **Deterministic role presets** (`packages/catalog`) — curated role → application-id
   bundles (General use, Student, Developer, Web developer, DevOps). Fixed, reviewable lists.
@@ -118,9 +122,10 @@ See [Security](#security) and [`docs/security-model.md`](docs/security-model.md)
   and 22.
 
 **Not implemented (planned):** system detection beyond "does the browser look like Linux",
-application icons, selection persistence across reloads, component-level tests for the web
-app, MCP resources and per-capability authorization, AI features, the local Linux agent,
-database storage, and authentication. See [`ROADMAP.md`](docs/ROADMAP.md).
+application icons, selection persistence across reloads, search by tags and aliases,
+component-level tests for the web app, remote MCP over HTTP with authorization, AI features,
+the local Linux agent, database storage, and authentication. See
+[`ROADMAP.md`](docs/ROADMAP.md).
 
 *There is no screenshot or demo in this README yet — run it locally with `pnpm dev`; it
 takes about a minute.*
@@ -238,7 +243,7 @@ Every application belongs to exactly one category. See
 | Monorepo | pnpm workspaces (no Turborepo pipeline — root pnpm scripts orchestrate) |
 | Lint / types / tests | ESLint (flat config), `tsc --noEmit`, Node's built-in test runner |
 | CI | GitHub Actions, Node 20 and 22 |
-| MCP | Hand-written JSON-RPC 2.0 over stdio — no SDK, no runtime dependencies |
+| MCP | `@modelcontextprotocol/server` v2 (official SDK), Zod schemas, stdio transport |
 | Planned | AI/LLM providers, a local Linux agent, PostgreSQL, Zod, Vitest, Playwright |
 
 ---
@@ -283,7 +288,7 @@ packages/
 ├── installer/         the deterministic core — resolution, plan, commands
 │   └── src/           policy.ts · resolve.ts · plan.ts · commands.ts · types.ts
 └── mcp/               MCP server (stdio) — read-only tools over the core
-    └── src/           tools.ts · validate.ts · protocol.ts · server.ts · bin.ts
+    └── src/           tools.ts · validate.ts · server.ts · bin.ts · errors.ts
 
 docs/                  architecture · catalog · security · development · ai · agent · mcp
 .github/               CI workflow, issue/PR templates, CODEOWNERS, Dependabot, good first issues
@@ -381,7 +386,7 @@ editing.
 pnpm test                                        # all of them
 pnpm --filter @configshell/catalog test          # 45 — catalog data, environment, presets
 pnpm --filter @configshell/installer test        # 46 — resolution, plans, command safety
-pnpm --filter @configshell/mcp test              # 52 — tool surface, protocol, hostile input
+pnpm --filter @configshell/mcp test              # 52 — tools, official-client interop, hostile input
 pnpm --filter server test                        # 45 — API integration, against the real app
 pnpm --filter web test                           # 11 — API client contract + safety invariants
 ```

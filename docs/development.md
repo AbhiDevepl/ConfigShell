@@ -108,9 +108,11 @@ application rather than fixtures and mocks.
 - `packages/installer` — **44 tests.** Resolution against every application on every
   distribution, plan ordering and determinism, golden command output per package manager,
   and an assertion that no generated command can contain a shell metacharacter.
-- `packages/mcp` — **52 tests.** The tool surface, the JSON-RPC transport, hostile arguments,
-  and the structural guarantees: no execution, no filesystem, no sockets, no command
-  vocabulary, and that the three agent-owned capabilities stay unregistered.
+- `packages/mcp` — **52 tests.** The tool surface, hostile arguments, and the structural
+  guarantees (no execution, no filesystem, no sockets, no command vocabulary, and that the
+  three agent-owned capabilities stay unregistered) — plus **interoperability**: the official
+  MCP client connects to the server over the real protocol, and a second test spawns the
+  binary over stdio exactly as an AI host does.
 - `apps/server` — **45 tests.** Drives the actual Express app over an ephemeral port:
   endpoints, every rejection path, that errors never leak a stack trace or a filesystem
   path, and that no module in the workspace imports `child_process`.
@@ -136,14 +138,18 @@ degrading quietly. `pnpm dev:web` runs the web app alone.
 pnpm mcp
 ```
 
-It speaks MCP over stdio, so it is normally launched by the client that uses it rather than
-run by hand. To probe it directly, pipe JSON-RPC messages in:
+It speaks MCP over stdio, so it is normally launched by the host that uses it rather than run
+by hand. To connect a host — Claude Desktop, Cursor, VS Code — point it at the command:
 
-```sh
-printf '%s\n' \
-  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
-  '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-  | pnpm --filter @configshell/mcp start
+```json
+{
+  "mcpServers": {
+    "configshell": {
+      "command": "pnpm",
+      "args": ["--filter", "@configshell/mcp", "start"]
+    }
+  }
+}
 ```
 
 Diagnostics go to stderr; stdout carries protocol messages only. See
