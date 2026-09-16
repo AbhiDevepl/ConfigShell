@@ -42,7 +42,10 @@ inside ConfigShell remains future scope ([`ai.md`](ai.md)).
 ## Built on the official SDK
 
 The server uses **`@modelcontextprotocol/server` v2** — the official MCP TypeScript SDK,
-implementing the [2026-07-28 spec](https://modelcontextprotocol.io/specification/2026-07-28).
+which negotiates [MCP protocol](https://modelcontextprotocol.io/specification) revisions
+`2025-11-25` through `2024-10-07`. (`2025-11-25` is the newest the installed package
+advertises in `SUPPORTED_PROTOCOL_VERSIONS`; the SDK's own README describes a later spec, so
+check the package rather than the prose when this matters.)
 
 The SDK owns the protocol: JSON-RPC framing, the initialize handshake, protocol-version
 negotiation, capability declaration, `tools/list` and `tools/call` dispatch, JSON Schema
@@ -59,7 +62,8 @@ write the spec; a trusted application catalog is not.
 > `@modelcontextprotocol/core` and `zod`. The dependency objection no longer held.
 >
 > The compatibility argument settled it independently: the hand-written server negotiated
-> protocol versions up to `2025-06-18` and knew nothing of `2026-07-28`. Tracking a moving
+> protocol versions up to `2025-06-18`, two revisions behind what the SDK negotiates.
+> Tracking a moving
 > spec by hand is a maintenance burden with no upside, and every month it drifts further
 > from what real clients expect.
 
@@ -145,6 +149,12 @@ ever registered or discoverable.
    repository.** A caller supplies catalog ids and a distribution name; nothing else can
    reach command generation because nothing else is read. A test walks the registered
    schemas and fails if such a field appears.
+   Schemas are Zod and **`.strict()`**, so an unrecognised argument is refused rather than
+   ignored. Shape, lengths, array bounds and the catalog-id pattern are all declared there:
+   the SDK enforces them before a handler runs, and publishes them in the JSON Schema
+   clients read, so a host can see the rules instead of discovering them from an error.
+   `src/validate.ts` keeps only what a schema cannot express — catalog existence,
+   deduplication, and building a validated `Environment`.
 3. **Everything resolves against the trusted catalog.** An unknown id refuses the whole call
    rather than being skipped, so a plan always matches what was asked for.
 4. **The package ecosystem is derived from the distribution, never accepted**, so a caller

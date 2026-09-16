@@ -240,7 +240,8 @@ presets, compatibility checking, setup-plan generation, plan validation), two re
 resources and one workflow prompt.
 
 Built on the **official MCP TypeScript SDK** (`@modelcontextprotocol/server` v2, implementing
-the 2026-07-28 spec). The SDK owns the protocol; this package owns only adapters. Every
+protocol revisions through `2025-11-25`). The SDK owns the protocol; this package owns only
+adapters. Every
 decision comes from `packages/installer`, so an MCP client cannot get a different answer from
 the web app or the API. It does not go through the HTTP API: both are adapters over the same
 pure functions, and a network hop between them would add a failure mode without adding a

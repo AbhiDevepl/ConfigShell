@@ -17,9 +17,9 @@
  * a resolution decision explicable after the fact.
  */
 
-const LEVELS = { debug: 10, info: 20, warn: 30, error: 40 };
+const LEVELS = { info: 20, warn: 30, error: 40 };
 
-const activeLevel = () => (process.env.NODE_ENV === "test" ? LEVELS.error : LEVELS.debug);
+const activeLevel = () => (process.env.NODE_ENV === "test" ? LEVELS.error : LEVELS.info);
 
 /**
  * Turn an Error into something JSON.stringify can represent. Stack traces are
@@ -36,7 +36,7 @@ function serialiseError(error) {
 }
 
 /**
- * @param {"debug"|"info"|"warn"|"error"} level
+ * @param {"info"|"warn"|"error"} level
  * @param {string} message
  * @param {Record<string, unknown> & { error?: unknown }} [context]
  */
@@ -62,7 +62,6 @@ function write(level, message, context = {}) {
 
 function make(base = {}) {
   return {
-    debug: (message, context) => write("debug", message, { ...base, ...context }),
     info: (message, context) => write("info", message, { ...base, ...context }),
     warn: (message, context) => write("warn", message, { ...base, ...context }),
     error: (message, context) => write("error", message, { ...base, ...context }),

@@ -82,8 +82,8 @@ export const ROLES: readonly Role[] = [
 ] as const;
 
 /** One role by id. `undefined` for an unknown id. */
-export function findRole(id: string, roles: readonly Role[] = ROLES): Role | undefined {
-  return roles.find((role) => role.id === id);
+export function findRole(id: string): Role | undefined {
+  return ROLES.find((role) => role.id === id);
 }
 
 /**
@@ -96,12 +96,11 @@ export function findRole(id: string, roles: readonly Role[] = ROLES): Role | und
 export function applicationsForRole(
   role: Role,
   which: 'recommended' | 'optional' | 'all' = 'recommended',
-  applications: readonly Application[] = APPLICATIONS,
 ): readonly Application[] {
   const ids = new Set(
     which === 'all' ? [...role.recommended, ...role.optional] : role[which],
   );
-  return applications.filter((application) => ids.has(application.id));
+  return APPLICATIONS.filter((application) => ids.has(application.id));
 }
 
 /**

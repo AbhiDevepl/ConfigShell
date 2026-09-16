@@ -111,8 +111,19 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 
 ### Changed
 
+- **MCP argument limits moved from hand-written checks into the Zod schemas** — the catalog-id
+  pattern, the 100-character query cap, the 200-id selection cap and the 4096-character
+  command cap. The SDK now enforces them before a handler runs *and* publishes them in the
+  JSON Schema clients read, so a host can see the rules instead of discovering them from an
+  error. `packages/mcp/src/validate.ts` keeps only what a schema cannot express: catalog
+  existence, deduplication, and building a validated `Environment`.
+- Three hand-rolled recursive directory walkers in tests replaced with
+  `readdirSync(dir, { recursive: true })`, each now asserting it actually scanned something
+  so the structural tests cannot pass vacuously.
+
 - **The MCP layer now uses the official MCP TypeScript SDK** (`@modelcontextprotocol/server`
-  v2, implementing the 2026-07-28 spec), replacing the hand-written JSON-RPC and stdio
+  v2, negotiating protocol revisions through `2025-11-25`), replacing the hand-written
+  JSON-RPC and stdio
   implementation. Two things changed the calculus behind the original decision: v2 **split the
   monolithic `@modelcontextprotocol/sdk`** into scoped packages, so a server now needs three
   dependencies rather than seventeen and the OAuth/process-spawning code is in the *client*
@@ -195,6 +206,17 @@ version is below `1.0.0`, the public surface may change in a minor release — s
   Express 5 no longer accepts.
 
 ### Removed
+
+- **Dead AI Studio scaffolding**: `aistudioMediaPlugin` from `apps/web/vite.config.ts` (60
+  lines of dev-server middleware serving `public/assets/aistudio/`, a directory whose only
+  content was a `.gitignore` containing `*`), the directory itself, and
+  `apps/web/metadata.json` — an AI Studio manifest with no readers anywhere in the repo.
+- `apps/server/services/app.service.js` (one function, one caller — inlined into its
+  controller), `apps/server/config/index.js` (a re-export barrel with one importer),
+  `logger.debug` (no callers), the `REQUIRES_LOCAL_AGENT` error code (declared, never thrown
+  — by design it cannot be), and speculative injectable-collection parameters on
+  `findApplication`, `findRole`, `applicationsForRole` and `searchApplications` that no
+  caller ever passed.
 
 - `nodemon` from `apps/server` — `tsx watch` covers it.
 

@@ -103,7 +103,8 @@ See [Security](#security) and [`docs/security-model.md`](docs/security-model.md)
   No database, no authentication, no sessions. 45 tests.
 
 - **An MCP server** (`packages/mcp`) — ConfigShell's external integration boundary, built on
-  the **official MCP TypeScript SDK** (`@modelcontextprotocol/server` v2, 2026-07-28 spec).
+  the **official MCP TypeScript SDK** (`@modelcontextprotocol/server` v2, protocol revisions
+  through `2025-11-25`).
   Seven read-only, deterministic tools over stdio — environment discovery, catalog search,
   application detail, role presets, compatibility checking, setup-plan generation and plan
   validation — plus two reference resources and a workflow prompt. An MCP-capable AI host

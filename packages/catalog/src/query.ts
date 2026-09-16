@@ -14,11 +14,8 @@ import type { Application, Category } from './types.ts';
  * One application by id. `undefined` for an unknown id — callers decide whether
  * that is a 404, a validation error, or a skipped entry.
  */
-export function findApplication(
-  id: string,
-  applications: readonly Application[] = APPLICATIONS,
-): Application | undefined {
-  return applications.find((app) => app.id === id);
+export function findApplication(id: string): Application | undefined {
+  return APPLICATIONS.find((app) => app.id === id);
 }
 
 export interface SearchOptions {
@@ -37,14 +34,11 @@ export interface SearchOptions {
  * Aliases and tags are a separate, later catalog addition (PRD §14); nothing
  * here pretends they exist.
  */
-export function searchApplications(
-  options: SearchOptions = {},
-  applications: readonly Application[] = APPLICATIONS,
-): readonly Application[] {
+export function searchApplications(options: SearchOptions = {}): readonly Application[] {
   const query = options.query?.trim().toLowerCase() ?? '';
   const { category } = options;
 
-  return applications.filter((app) => {
+  return APPLICATIONS.filter((app) => {
     if (category !== undefined && app.category !== category) return false;
     if (query === '') return true;
     return (

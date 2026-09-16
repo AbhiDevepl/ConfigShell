@@ -26,7 +26,8 @@ This repo is a scaffold — most files exist as empty placeholders, not stubs wi
 Before editing, check whether a file actually has content; many don't:
 
 - **`apps/server/`**: **implemented** — a read-only planning API. `app.js` is an Express app
-  factory; `index.js` is the only file that binds a port. Routes: `/health`,
+  factory; `index.js` is the only file that binds a port and imports `./config/env.js`
+  directly (there is no `config/index.js` barrel). Routes: `/health`,
   `/api/applications[/:id]`, `/api/catalog/{categories,environments,stats}`, `POST /api/plan`
   and `POST /api/plan/resolve` (all listed in `routes/index.js`). Controllers are thin —
   validate, call a service, send. **41 tests** (`apps/server/api.test.js`,

@@ -7,21 +7,22 @@
  */
 
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join, sep } from 'node:path';
 import { test } from 'node:test';
 import { TOOLS } from './tools.ts';
 
 const SRC = new URL('.', import.meta.url).pathname;
 
-function sourceFiles(dir: string, acc: string[] = []): string[] {
-  for (const entry of readdirSync(dir)) {
-    if (entry === 'node_modules' || entry.startsWith('.')) continue;
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) sourceFiles(full, acc);
-    else if (/\.ts$/.test(entry) && !entry.endsWith('.test.ts')) acc.push(full);
-  }
-  return acc;
+function sourceFiles(dir: string): string[] {
+  const entries = readdirSync(dir, { recursive: true, encoding: 'utf8' })
+    // `recursive` descends into node_modules and dotfile directories.
+    .filter((entry) => !entry.split(sep).some((s) => s === 'node_modules' || s.startsWith('.')))
+    .filter((entry) => entry.endsWith('.ts') && !entry.endsWith('.test.ts'));
+
+  // A scan that found nothing would pass every test below vacuously.
+  assert.ok(entries.length > 0, `expected source files under ${dir}`);
+  return entries.map((entry) => join(dir, entry));
 }
 
 /** Comments discuss these rules in prose; only code should be searched. */

@@ -53,7 +53,10 @@ import {
   findApplication,
   findRole,
   searchApplications,
+  APPLICATION_ID_PATTERN,
+  MAX_APPLICATION_ID_LENGTH,
   type Application,
+  type Category,
   type Environment,
 } from '@configshell/catalog';
 import { buildPlan, renderPlan, resolveAll, type Resolution } from '@configshell/installer';
@@ -62,12 +65,8 @@ import { ToolError } from './errors.ts';
 import {
   applicationsFor,
   asObject,
-  parseApplicationId,
   parseApplicationIds,
-  parseCategory,
-  parseCommands,
   parseEnvironmentArgument,
-  parseQuery,
 } from './validate.ts';
 
 /**
@@ -141,9 +140,27 @@ const ENVIRONMENT_SCHEMA = z
       "the user's machine. Call list_environments and ask the user.",
   );
 
-const APPLICATION_IDS_SCHEMA = z
-  .array(z.string())
+/**
+ * A catalog id, with its shape declared rather than checked by hand.
+ *
+ * The SDK enforces this before a handler runs *and* publishes it in the JSON
+ * Schema every client reads, so a host can see what a valid id looks like
+ * instead of discovering it from an error. The pattern comes from
+ * `@configshell/catalog`, which is where that rule lives.
+ */
+const APPLICATION_ID_SCHEMA = z
+  .string()
   .min(1)
+  .max(MAX_APPLICATION_ID_LENGTH)
+  .regex(APPLICATION_ID_PATTERN, 'must be a lowercase slug, such as "vscode"');
+
+/** Bounds work per call. The catalog holds 31 entries, so this constrains nobody. */
+const MAX_SELECTION = 200;
+
+const APPLICATION_IDS_SCHEMA = z
+  .array(APPLICATION_ID_SCHEMA)
+  .min(1)
+  .max(MAX_SELECTION)
   .describe(
     'Catalog ids, e.g. ["git","vscode"]. Get them from search_application. An id that is ' +
       'not in the catalog refuses the whole call rather than being skipped, so the plan ' +
@@ -259,6 +276,7 @@ const searchApplication: ToolDefinition = {
     .object({
       query: z
         .string()
+        .max(100)
         .optional()
         .describe('Free text matched against id, name, description and category. Omit to list everything.'),
       category: z
@@ -271,8 +289,8 @@ const searchApplication: ToolDefinition = {
   handler: (args) => {
     const input = asObject(args);
     const results = searchApplications({
-      query: parseQuery(input.query),
-      category: parseCategory(input.category),
+      query: input.query as string | undefined,
+      category: input.category as Category | undefined,
     });
     return {
       total: results.length,
@@ -291,14 +309,14 @@ const getApplication: ToolDefinition = {
   title: 'Get application details',
   inputSchema: z
     .object({
-      applicationId: z.string().describe('Catalog id, e.g. "vscode".'),
+      applicationId: APPLICATION_ID_SCHEMA.describe('Catalog id, e.g. "vscode".'),
       environment: ENVIRONMENT_SCHEMA.optional(),
     })
     .strict(),
   annotations: READ_ONLY,
   handler: (args) => {
     const input = asObject(args);
-    const id = parseApplicationId(input.applicationId);
+    const id = input.applicationId as string;
 
     const application = findApplication(id);
     if (!application) {
@@ -327,10 +345,9 @@ const listRoles: ToolDefinition = {
   title: 'List role presets',
   inputSchema: z
     .object({
-      roleId: z
-        .string()
-        .optional()
-        .describe('Optional. Return just this preset, with full application details.'),
+      roleId: APPLICATION_ID_SCHEMA.optional().describe(
+        'Optional. Return just this preset, with full application details.',
+      ),
     })
     .strict(),
   annotations: READ_ONLY,
@@ -338,7 +355,7 @@ const listRoles: ToolDefinition = {
     const input = asObject(args);
 
     if (input.roleId !== undefined) {
-      const id = parseApplicationId(input.roleId);
+      const id = input.roleId as string;
       const role = findRole(id);
       if (!role) throw ToolError.notFound(`No role with id "${id}".`);
       return {
@@ -477,7 +494,8 @@ const validateSetup: ToolDefinition = {
       applicationIds: APPLICATION_IDS_SCHEMA,
       environment: ENVIRONMENT_SCHEMA,
       commands: z
-        .array(z.string())
+        .array(z.string().max(4096))
+        .max(500)
         .describe(
           'The commands to check, in order. Compared against catalog-derived output; ' +
             'never executed, never returned as approved.',
@@ -489,7 +507,7 @@ const validateSetup: ToolDefinition = {
     const input = asObject(args);
     const ids = parseApplicationIds(input.applicationIds);
     const environment = parseEnvironmentArgument(input.environment);
-    const submitted = parseCommands(input.commands);
+    const submitted = input.commands as string[];
 
     const { rendered } = planFor(ids, environment);
     const expected = rendered.commands.map((command) => command.command);

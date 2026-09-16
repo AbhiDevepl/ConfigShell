@@ -441,8 +441,8 @@ describe("safety invariants", () => {
     // Structural, not behavioural: no module in the server imports a process
     // API. This is the property the security model rests on, so it is asserted
     // rather than assumed.
-    const { readdirSync, readFileSync, statSync } = await import("node:fs");
-    const { join } = await import("node:path");
+    const { readdirSync, readFileSync } = await import("node:fs");
+    const { join, sep } = await import("node:path");
 
     // Comments are stripped first: this file and `plan.service.js` both discuss
     // the rule in prose, and a test that cannot tell code from a comment about
@@ -450,23 +450,23 @@ describe("safety invariants", () => {
     const stripComments = (source) =>
       source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
 
+    const root = new URL(".", import.meta.url).pathname;
+    const sources = readdirSync(root, { recursive: true, encoding: "utf8" })
+      // `recursive` descends into node_modules and dotfile directories, which a
+      // hand-rolled walk skipped as it went.
+      .filter((entry) => !entry.split(sep).some((s) => s === "node_modules" || s.startsWith(".")))
+      .filter((entry) => entry.endsWith(".js") && !entry.endsWith(".test.js"));
+
+    // A scan that found nothing would pass this test vacuously.
+    assert.ok(sources.length > 20, `expected to scan the workspace, saw ${sources.length} files`);
+
     const offenders = [];
-    const walk = (dir) => {
-      for (const entry of readdirSync(dir)) {
-        if (entry === "node_modules" || entry.startsWith(".")) continue;
-        const full = join(dir, entry);
-        if (statSync(full).isDirectory()) {
-          walk(full);
-          continue;
-        }
-        if (!entry.endsWith(".js") || entry.endsWith(".test.js")) continue;
-        const source = stripComments(readFileSync(full, "utf8"));
-        for (const forbidden of ["child_process", "execSync", "spawnSync", "execFile"]) {
-          if (source.includes(forbidden)) offenders.push(`${full}: ${forbidden}`);
-        }
+    for (const entry of sources) {
+      const source = stripComments(readFileSync(join(root, entry), "utf8"));
+      for (const forbidden of ["child_process", "execSync", "spawnSync", "execFile"]) {
+        if (source.includes(forbidden)) offenders.push(`${entry}: ${forbidden}`);
       }
-    };
-    walk(new URL(".", import.meta.url).pathname);
+    }
 
     assert.deepEqual(offenders, [], "the API server must never be able to run a command");
   });

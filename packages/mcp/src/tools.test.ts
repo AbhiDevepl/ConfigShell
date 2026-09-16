@@ -5,21 +5,50 @@ import { z } from 'zod';
 import { ToolError } from './errors.ts';
 import { TOOLS, WITHHELD_CAPABILITIES, findTool } from './tools.ts';
 
+/**
+ * Invoke a tool the way the SDK does: validate the arguments against the
+ * declared schema, then run the handler on the parsed result.
+ *
+ * Going through the schema matters. Argument shape, lengths and the catalog-id
+ * pattern are declared in Zod and enforced by the SDK in production; a test that
+ * called the handler directly would be exercising a path no client uses, and
+ * would quietly stop covering those rules.
+ */
 function call(name: string, args: unknown): any {
   const tool = findTool(name);
   assert.ok(tool, `no such tool: ${name}`);
-  return tool.handler(args);
+  return tool.handler(tool.inputSchema.parse(args));
 }
 
-function expectToolError(name: string, args: unknown, code?: string): ToolError {
+/**
+ * Assert a tool refuses these arguments — whether the schema rejected them
+ * (a `ZodError`) or a business rule did (a `ToolError`). Both are refusals as
+ * far as a caller is concerned. Pass `code` only for the business rules, which
+ * are the ones a schema cannot express.
+ */
+function expectRejected(name: string, args: unknown, code?: string): ToolError | z.ZodError {
   let thrown: unknown;
   try {
     call(name, args);
   } catch (cause) {
     thrown = cause;
   }
-  assert.ok(thrown instanceof ToolError, `${name} did not reject ${JSON.stringify(args)}`);
-  if (code) assert.equal(thrown.code, code);
+  assert.ok(thrown !== undefined, `${name} did not reject ${JSON.stringify(args)}`);
+  assert.ok(
+    thrown instanceof ToolError || thrown instanceof z.ZodError,
+    `${name} threw something unexpected: ${String(thrown)}`,
+  );
+  if (code) {
+    assert.ok(thrown instanceof ToolError, `expected a ToolError with code ${code}`);
+    assert.equal(thrown.code, code);
+  }
+  return thrown as ToolError | z.ZodError;
+}
+
+/** Same, but for the business rules — returns the `ToolError` so it can be read. */
+function expectToolError(name: string, args: unknown, code: string): ToolError {
+  const thrown = expectRejected(name, args, code);
+  assert.ok(thrown instanceof ToolError);
   return thrown;
 }
 
@@ -135,10 +164,12 @@ test('search_application searches and filters', () => {
 });
 
 test('search_application rejects an unknown category and an over-long query', () => {
-  expectToolError('search_application', { category: 'Nonsense' }, 'INVALID_ARGUMENTS');
-  expectToolError('search_application', { query: 'a'.repeat(500) }, 'INVALID_ARGUMENTS');
-  expectToolError('search_application', { query: 123 }, 'INVALID_ARGUMENTS');
-  expectToolError('search_application', 'not an object', 'INVALID_ARGUMENTS');
+  // All four are schema violations now, so the SDK refuses them before a
+  // handler runs — and a client can see the rules in the published JSON Schema.
+  expectRejected('search_application', { category: 'Nonsense' });
+  expectRejected('search_application', { query: 'a'.repeat(500) });
+  expectRejected('search_application', { query: 123 });
+  expectRejected('search_application', 'not an object');
 });
 
 test('get_application returns an entry, and resolves it when given an environment', () => {
@@ -156,9 +187,12 @@ test('get_application returns an entry, and resolves it when given an environmen
 });
 
 test('get_application distinguishes malformed from unknown ids', () => {
-  expectToolError('get_application', { applicationId: 'NOT AN ID' }, 'INVALID_ARGUMENTS');
-  expectToolError('get_application', { applicationId: 'no-such-app' }, 'NOT_FOUND');
-  expectToolError('get_application', {}, 'INVALID_ARGUMENTS');
+  // A malformed id violates the schema; a well-formed one that is not in the
+  // catalog is a business rule no schema can express. Different layers, and the
+  // caller can still tell the two apart.
+  expectRejected('get_application', { applicationId: 'NOT AN ID' });
+  expectRejected('get_application', { applicationId: 'no-such-app' }, 'NOT_FOUND');
+  expectRejected('get_application', {});
 });
 
 test('list_roles returns curated presets whose ids are all real', () => {
@@ -171,7 +205,7 @@ test('list_roles returns curated presets whose ids are all real', () => {
     }
   }
   assert.equal(call('list_roles', { roleId: 'web-developer' }).role.id, 'web-developer');
-  expectToolError('list_roles', { roleId: 'no-such-role' }, 'NOT_FOUND');
+  expectRejected('list_roles', { roleId: 'no-such-role' }, 'NOT_FOUND');
 });
 
 // ------------------------------------------------------------- planning
@@ -308,12 +342,12 @@ const HOSTILE_IDS = [
 
 test('hostile application ids are rejected by every tool that takes one', () => {
   for (const id of HOSTILE_IDS) {
-    expectToolError('get_application', { applicationId: id });
-    expectToolError('generate_setup', {
+    expectRejected('get_application', { applicationId: id });
+    expectRejected('generate_setup', {
       applicationIds: [id],
       environment: { distro: 'Ubuntu' },
     });
-    expectToolError('check_compatibility', {
+    expectRejected('check_compatibility', {
       applicationIds: [id],
       environment: { distro: 'Ubuntu' },
     });
@@ -331,43 +365,42 @@ test('an unknown application id refuses the whole call rather than being skipped
 });
 
 test('a caller cannot pair a distribution with the wrong ecosystem', () => {
-  const plan = call('generate_setup', {
+  // The schema is strict, so an `ecosystem` field is refused outright.
+  expectRejected('generate_setup', {
     applicationIds: ['git'],
     environment: { distro: 'Arch Linux', ecosystem: 'apt' },
   });
-  assert.equal(plan.environment.ecosystem, 'pacman');
-  assert.ok(plan.commands.every((c: any) => !c.command.includes('apt')));
+
+  // And if it ever did get through, the ecosystem is still derived from the
+  // distribution rather than taken from the caller. Two layers, tested apart.
+  const direct = findTool('generate_setup')!.handler({
+    applicationIds: ['git'],
+    environment: { distro: 'Arch Linux', ecosystem: 'apt' },
+  }) as any;
+  assert.equal(direct.environment.ecosystem, 'pacman');
+  assert.ok(direct.commands.every((c: any) => !c.command.includes('apt')));
 });
 
 test('malformed environments are rejected', () => {
   for (const environment of [undefined, {}, { distro: 'Gentoo' }, 'Ubuntu', null, [], 42]) {
-    expectToolError(
-      'generate_setup',
-      { applicationIds: ['git'], environment },
-      'INVALID_ARGUMENTS',
-    );
+    expectRejected('generate_setup', { applicationIds: ['git'], environment });
   }
 });
 
 test('oversized and malformed selections are rejected', () => {
-  expectToolError('generate_setup', {
-    applicationIds: [],
-    environment: { distro: 'Ubuntu' },
-  }, 'INVALID_ARGUMENTS');
-
-  expectToolError('generate_setup', {
-    applicationIds: 'git',
-    environment: { distro: 'Ubuntu' },
-  }, 'INVALID_ARGUMENTS');
-
-  expectToolError('generate_setup', {
+  // Empty, wrong type, and over the 200-id cap — all declared in the schema.
+  expectRejected('generate_setup', { applicationIds: [], environment: { distro: 'Ubuntu' } });
+  expectRejected('generate_setup', { applicationIds: 'git', environment: { distro: 'Ubuntu' } });
+  expectRejected('generate_setup', {
     applicationIds: Array.from({ length: 201 }, (_, i) => `app-${i}`),
     environment: { distro: 'Ubuntu' },
-  }, 'TOO_LARGE');
+  });
 });
 
-test('extra arguments are ignored, never honoured', () => {
-  const plan = call('generate_setup', {
+test('extra arguments are refused, not quietly ignored', () => {
+  // `.strict()` on every schema. A host that invents a field is told so, rather
+  // than receiving a plan that silently dropped what it asked for.
+  expectRejected('generate_setup', {
     applicationIds: ['git'],
     environment: { distro: 'Ubuntu' },
     command: 'rm -rf /',
@@ -375,11 +408,18 @@ test('extra arguments are ignored, never honoured', () => {
     extraFlags: '--force',
     execute: true,
   });
-  const serialised = JSON.stringify(plan.commands);
+
+  // And nothing invented reaches a command even when the handler is called raw.
+  const direct = findTool('generate_setup')!.handler({
+    applicationIds: ['git'],
+    environment: { distro: 'Ubuntu' },
+    command: 'rm -rf /',
+    packages: ['evil'],
+  }) as any;
+  const serialised = JSON.stringify(direct.commands);
   assert.ok(!serialised.includes('rm -rf'));
   assert.ok(!serialised.includes('evil'));
-  assert.ok(!serialised.includes('--force'));
-  assert.equal(plan.execution.executed, false);
+  assert.equal(direct.execution.executed, false);
 });
 
 // --------------------------------------------------------- output safety
@@ -410,7 +450,7 @@ test('no tool result leaks a path, an environment variable or a stack trace', ()
 });
 
 test('rejection messages describe the request, not this process', () => {
-  const error = expectToolError('get_application', { applicationId: 'NOT AN ID' });
+  const error = expectToolError('get_application', { applicationId: 'no-such-app' }, 'NOT_FOUND');
   assert.ok(!error.message.includes('/home/'));
   assert.ok(!error.message.includes('node_modules'));
   assert.ok(!/\s{4}at /.test(error.message), 'looks like a stack trace');

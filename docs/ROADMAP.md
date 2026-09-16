@@ -76,7 +76,8 @@ future integration layer and is *not* blocked on AI — see [`mcp.md`](mcp.md).
   use the trusted catalog and deterministic setup capabilities. Seven read-only tools, two
   reference resources, one workflow prompt.
 - Built on the **official MCP TypeScript SDK** (`@modelcontextprotocol/server` v2,
-  2026-07-28 spec), replacing an initial hand-written JSON-RPC implementation — see
+  protocol revisions through `2025-11-25`), replacing an initial hand-written JSON-RPC
+  implementation — see
   [`mcp.md`](mcp.md) for the reasoning.
 - Transport-agnostic server factory: stdio today, Streamable HTTP later without touching the
   tools.

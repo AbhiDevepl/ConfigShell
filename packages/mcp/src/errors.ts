@@ -19,14 +19,7 @@ export type ToolErrorCode =
   /** Well-formed, but no such catalog entry / role / tool. */
   | 'NOT_FOUND'
   /** A documented limit was exceeded. */
-  | 'TOO_LARGE'
-  /**
-   * The capability exists in the design but belongs to the local agent, which
-   * does not exist. Distinct from NOT_FOUND so a caller can tell "you asked for
-   * something that is not a tool" from "you asked for something this layer is
-   * deliberately not allowed to do".
-   */
-  | 'REQUIRES_LOCAL_AGENT';
+  | 'TOO_LARGE';
 
 export class ToolError extends Error {
   constructor(

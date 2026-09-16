@@ -17,8 +17,9 @@ External AI host  →  MCP  →  ConfigShell  →  Catalog · Resolver · Setup 
 The host does the reasoning and the conversation. ConfigShell supplies verified data and
 deterministic operations, and contains **no model, no provider SDK and no API key**.
 
-Built on **`@modelcontextprotocol/server` v2**, the official MCP TypeScript SDK. The SDK owns
-the protocol; this package owns only the adapters. Business logic lives in
+Built on **`@modelcontextprotocol/server` v2**, the official MCP TypeScript SDK, which
+negotiates protocol revisions `2025-11-25` through `2024-10-07`. The SDK owns the protocol;
+this package owns only the adapters. Business logic lives in
 `@configshell/catalog` and `@configshell/installer`, so the same request gives the same answer
 from the web app, the API and an MCP client.
 
