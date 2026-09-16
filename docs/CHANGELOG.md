@@ -12,11 +12,41 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 
 ## [Unreleased]
 
+### Changed
+
+- **One canonical setup plan, built in one place.** `presentSetupPlan` in
+  `@configshell/installer` now assembles the plan that `POST /api/plan` and the MCP
+  `generate_setup` tool both return. Each adapter previously shaped its own, and the two had
+  already drifted: the HTTP plan carried `summary.executed` while the MCP plan carried a
+  richer `execution` block, and HTTP's `manualSteps` leaked the internal `kind` and
+  `privileged` step fields that MCP's did not. The cross-adapter tests compared the fields
+  both happened to share, so neither difference failed anything; they now compare the whole
+  plan object.
+
+  **Breaking, for API clients:** `summary.executed` is gone. The same fact is in
+  `execution: { executed, executedBy, note }`, which both adapters now return.
+
 ### Added
+
+- **`status` on the setup plan** — `complete`, `partial` or `none`, saying whether every
+  selected application resolved to a command. A mixed selection is a partial success, not a
+  failure, and the plan is returned in full either way. Previously a client had to derive
+  this from the counts.
+
+- **Plan self-validation.** `validateSetupPlan` runs on every generated plan before it is
+  returned: the counts must add up, the privileged-command count must match the commands,
+  and every command must match a narrow allowlist — checked on the finished string, after
+  interpolation, which is the last point anything is observable. A plan that fails throws
+  rather than being returned with a warning attached.
+
+- **`packages/installer` setup-plan test matrix** — 18 tests covering single and multiple
+  selections, all four ecosystems, partial success, an application with no route on a given
+  distribution, an empty selection, byte-identical determinism across runs, each validation
+  failure mode, and a hostile catalog entry.
 
 - **`packages/contract-tests` — cross-adapter contract tests.** The HTTP API and the MCP
   server are sibling adapters over the same core; they do not call each other, so nothing
-  structural made them agree. 11 tests run the real Express app and the real MCP tool
+  structural made them agree. 12 tests run the real Express app and the real MCP tool
   handlers side by side and assert they agree on catalog contents, search, role presets,
   per-source resolution (including rejection reasons), generated commands across all five
   distributions, and every rejection path.

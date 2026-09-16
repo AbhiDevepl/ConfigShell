@@ -240,7 +240,8 @@ describe("POST /api/plan", () => {
 
   test("always reports that nothing was executed", async () => {
     const { body } = await post("/api/plan", { environment: ubuntu, applicationIds: ["git"] });
-    assert.equal(body.data.summary.executed, false);
+    assert.equal(body.data.execution.executed, false);
+    assert.equal(body.data.execution.executedBy, null);
   });
 
   test("marks privileged commands", async () => {

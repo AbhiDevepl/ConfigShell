@@ -31,11 +31,11 @@ and no assertion library — `node:test` and `node:assert/strict`.
 | --------- | ----- | ------------------------ |
 | `packages/test-utils` | 6 | **Architecture enforcement**: dependency direction, acyclicity, forbidden edges, and that package-manager syntax stays inside `packages/installer` |
 | `packages/catalog` | 46 | All 31 real catalog entries validate; the environment model; role presets name only real applications |
-| `packages/installer` | 56 | Every application resolved on every distribution; the cross-ecosystem contract matrix (apt/dnf/pacman/zypper); plan ordering and determinism; golden command output per package manager |
+| `packages/installer` | 73 | Every application resolved on every distribution; the cross-ecosystem contract matrix (apt/dnf/pacman/zypper); plan ordering and determinism; golden command output per package manager; the canonical setup plan — status, counts, validation failure modes, byte-identical determinism, hostile catalog entries |
 | `packages/mcp` | 52 | The tool surface; **interoperability with the official MCP client** over the real protocol and over a spawned stdio process; hostile arguments |
 | `apps/server` | 53 | The real Express app over an ephemeral port: every endpoint, every rejection path, single-port production serving |
 | `apps/web` | 12 | The API client's contract, and structural safety invariants |
-| `packages/contract-tests` | 11 | **Cross-adapter**: the HTTP API and the MCP server must answer the same question the same way |
+| `packages/contract-tests` | 12 | **Cross-adapter**: the HTTP API and the MCP server must answer the same question the same way — including a whole-object comparison of the setup plan |
 
 **They test real data and the real application**, not fixtures and mocks. The catalog suite
 validates the actual catalog; the server suite drives the actual app; the MCP suite connects
@@ -61,15 +61,20 @@ in the resolution → plan → command path.
 ### Cross-adapter contract tests
 
 ConfigShell exposes one core through two adapters, and they do **not** call each other — MCP
-does not go over HTTP. Each flattens a resolution for the wire in its own module, and those
-were aligned by hand, which is the kind of agreement that rots silently.
+does not go over HTTP, so nothing at the transport level forces them to agree.
+
+Both now build their plan with `presentSetupPlan` from `@configshell/installer`, so
+agreement on the plan is structural. These tests keep it that way. They earned their keep by
+failing to: each adapter used to shape the plan itself, the two drifted, and the tests here
+compared only the fields both happened to share — so the drift passed. The plan assertion is
+now a whole-object comparison, which is the only form that would have caught it.
 
 `packages/contract-tests` runs the real Express app on an ephemeral port and the real MCP
 tool handlers in the same process, then asserts they agree on: catalog contents, search
-results, role presets, per-source resolution (including *why* each source was rejected),
-generated commands across all five distributions, and every rejection path — unknown ids,
-hostile identifiers, unsupported distributions. A divergence in either adapter fails here
-rather than reaching a client.
+results, role presets, per-source resolution (including *why* each source was rejected), the
+entire setup plan across all five distributions, plan status for complete/partial/empty
+selections, and every rejection path — unknown ids, hostile identifiers, unsupported
+distributions. A divergence in either adapter fails here rather than reaching a client.
 
 ### Architecture tests
 

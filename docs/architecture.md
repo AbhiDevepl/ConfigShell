@@ -108,19 +108,60 @@ The cost is visible rather than hidden: without the API you can browse and selec
 generate a plan or see per-source availability, and the UI says exactly that instead of
 degrading quietly.
 
-### The three stages, and why they are separate
+### The four stages, and why they are separate
 
 ```
-resolve()      (application, environment)  →  which source, and why
-buildPlan()    (resolutions, environment)  →  ordered steps, as DATA
-renderPlan()   (plan)                      →  command strings
+resolve()           (application, environment)  →  which source, and why
+buildPlan()         (resolutions, environment)  →  ordered steps, as DATA
+renderPlan()        (plan)                      →  command strings
+presentSetupPlan()  (applications, environment) →  the plan an adapter returns
 ```
 
-This split is the security model rather than tidiness. `renderPlan` is the **only** code in
-the repository that knows `apt` means `apt-get install`; everything before it is structured
-data that cannot contain a shell fragment. That keeps the dangerous step small enough to
-test exhaustively, and it is what lets a future CLI or MCP server reuse resolution and
-planning without inheriting command generation.
+The first three are the security model rather than tidiness. `renderPlan` is the **only**
+code in the repository that knows `apt` means `apt-get install`; everything before it is
+structured data that cannot contain a shell fragment. That keeps the dangerous step small
+enough to test exhaustively, and it is what lets a future CLI reuse resolution and planning
+without inheriting command generation.
+
+`presentSetupPlan` runs all three and flattens the result into **the canonical setup plan**
+— the single wire shape. It exists because the flattening was previously done twice, once
+per adapter:
+
+```
+                    ┌─────────────────────────────────────────┐
+                    │        packages/installer               │
+   catalog ids ───► │  resolve → buildPlan → renderPlan       │
+   + environment    │                 │                       │
+                    │                 ▼                       │
+                    │        presentSetupPlan()  ◄─ validate   │
+                    └─────────────────┬───────────────────────┘
+                                      │  one PresentedSetupPlan
+                        ┌─────────────┴─────────────┐
+                        ▼                           ▼
+              apps/server (HTTP)            packages/mcp (stdio)
+              POST /api/plan                generate_setup
+                        │                           │
+                        ▼                           ▼
+                    apps/web                    MCP host
+```
+
+Each adapter still does its own **input** handling — resolving ids and refusing an unknown
+one, because a refusal looks different over HTTP than it does over MCP — and nothing else.
+The plan itself is built once.
+
+That matters because the two adapters do not call each other: MCP does not go over HTTP, so
+nothing at the transport level forces them to agree. When each shaped its own plan they
+drifted — HTTP grew `summary.executed` while MCP grew a richer `execution` block, and HTTP's
+manual steps leaked internal step fields that MCP's did not — and the cross-adapter tests
+compared the fields both happened to share, so neither difference failed anything.
+`packages/contract-tests` now compares the whole object, which is the assertion that would
+have caught it.
+
+`presentSetupPlan` validates its own output before returning it (`validateSetupPlan`): the
+counts must add up, the privileged count must match the commands, and every command must
+match a narrow allowlist — checked on the finished string, after interpolation. A plan that
+fails throws rather than being returned with a warning. The plan is also **deterministic**:
+no clock, no randomness, no generated ids, asserted by comparing two serialised runs.
 
 It is also why the core lives in a package rather than in `apps/web` or `apps/server`. Both
 are consumers. Neither owns the logic, and neither may reimplement it.
@@ -132,9 +173,10 @@ deleted, so there is exactly one source of truth. The `Distro` union is likewise
 the catalog and imported by `apps/web/src/data/distros.ts`, which now only supplies the
 selector's presentation copy.
 
-Nothing downstream of the catalog exists yet: no installer resolver, no command generation,
-no execution. The catalog carries the structured metadata those layers will need
-(`method`, `identifier`, `origin`, `distros`) and stops there.
+The catalog carries the structured metadata the layers downstream of it consume (`method`,
+`identifier`, `origin`, `distros`) and stops there — it holds no command text and no
+execution. Resolution, planning and command generation live in `packages/installer`;
+execution exists nowhere and belongs to the local agent (`docs/agent.md`).
 
 ### `packages/catalog` — the shared catalog
 

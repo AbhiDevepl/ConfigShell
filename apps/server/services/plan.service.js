@@ -2,9 +2,13 @@
  * Setup-plan generation.
  *
  * A thin adapter over `@configshell/installer`. Every decision — which source,
- * in what order, with what privileges, and what the command actually is — is
- * made by that package's pure functions. This module exists to call them in the
- * right order and shape the result for HTTP.
+ * in what order, with what privileges, what the command is, and what the
+ * response looks like — is made by that package. This module resolves catalog
+ * ids to applications and calls it.
+ *
+ * The plan shape itself is `presentSetupPlan`'s, not this module's, so the HTTP
+ * response and the MCP tool result are the same object built by the same code
+ * rather than two shapes a test has to keep in agreement.
  *
  * ## The boundary this module must not cross
  *
@@ -20,9 +24,8 @@
  * model rules out permanently rather than as a matter of sequencing.
  */
 
-import { buildPlan, renderPlan, resolveAll } from "@configshell/installer";
+import { presentSetupPlan, resolveAll } from "@configshell/installer";
 import { getApplications } from "./catalog.service.js";
-import { presentResolution } from "./resolution.presenter.js";
 
 /**
  * Resolve a selection against an environment, without planning.
@@ -35,42 +38,12 @@ export function resolveSelection(applicationIds, environment) {
 }
 
 /**
- * The full chain: resolve → plan → render.
+ * The canonical setup plan for a selection.
  *
- * Returns the plan as data *and* the rendered commands, because the client
- * needs both — the steps to review and the exact text to copy. The plan itself
- * never contains command text; see `packages/installer/src/types.ts`.
+ * `getApplications` refuses an unknown id — which is this adapter's job, since
+ * an HTTP refusal looks different from an MCP one. Everything after that is the
+ * installer's.
  */
 export function createSetupPlan(applicationIds, environment) {
-  const resolutions = resolveSelection(applicationIds, environment);
-  const plan = buildPlan(resolutions, environment);
-  const rendered = renderPlan(plan);
-
-  return {
-    environment,
-    /** What was decided for each selected application, and why. */
-    resolutions: resolutions.map(presentResolution),
-    /** Ordered steps, as data. No command strings at this level. */
-    steps: plan.steps,
-    /** The commands to copy, in order, each marked privileged or not. */
-    commands: rendered.commands,
-    /** Applications the user must install themselves, with somewhere to go. */
-    manualSteps: rendered.manualSteps,
-    /** Applications with no verified route here, stated rather than dropped. */
-    unavailable: plan.unavailable.map((entry) => ({
-      applicationId: entry.application.id,
-      applicationName: entry.application.name,
-      reason: entry.reason,
-      explanation: entry.explanation,
-    })),
-    summary: {
-      selected: applicationIds.length,
-      installable: resolutions.filter((r) => r.outcome === "resolved").length,
-      manual: resolutions.filter((r) => r.outcome === "manual").length,
-      unavailable: resolutions.filter((r) => r.outcome === "unavailable").length,
-      privilegedCommands: rendered.privilegedCount,
-      /** Always false. Stated explicitly so no client has to infer it. */
-      executed: false,
-    },
-  };
+  return presentSetupPlan(getApplications(applicationIds), environment);
 }

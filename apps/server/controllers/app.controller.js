@@ -2,9 +2,8 @@
  * Application endpoints: browse the catalog, and look one application up.
  */
 
-import { resolve } from "@configshell/installer";
+import { presentResolution, resolve } from "@configshell/installer";
 import { getApplication, listApplications } from "../services/catalog.service.js";
-import { presentResolution } from "../services/resolution.presenter.js";
 import { parseApplicationId, parseSearchQuery } from "../validators/catalog.validator.js";
 import { parseOptionalEnvironmentQuery } from "../validators/app.validator.js";
 import { ApiError, sendData } from "../utils/response.js";

@@ -94,6 +94,13 @@ export interface PlanStep {
 
 export interface SetupPlan {
   environment: { os: string; distro: Distro; ecosystem: string; architecture?: string };
+  /**
+   * Whether every selected application resolved to a command.
+   *
+   * `partial` is a normal outcome, not an error: a selection can mix things
+   * that install with a command and things the user has to fetch themselves.
+   */
+  status: 'complete' | 'partial' | 'none';
   resolutions: PlanResolution[];
   steps: PlanStep[];
   commands: PlanCommand[];
@@ -105,9 +112,9 @@ export interface SetupPlan {
     manual: number;
     unavailable: number;
     privilegedCommands: number;
-    /** Always false. The server plans; it never executes. */
-    executed: boolean;
   };
+  /** Always `executed: false`. ConfigShell plans; it never runs anything. */
+  execution: { executed: boolean; executedBy: null; note: string };
 }
 
 // -------------------------------------------------------------------- errors

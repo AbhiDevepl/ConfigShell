@@ -17,6 +17,15 @@ export { buildPlan } from './plan.ts';
 export { catalogCoverage, type CatalogCoverage } from './coverage.ts';
 export { renderPlan, UnsafeIdentifierError, safeBinary, safeIdentifier } from './commands.ts';
 export {
+  SAFE_COMMAND_PATTERN,
+  presentResolution,
+  presentSetupPlan,
+  validateSetupPlan,
+  type PlanStatus,
+  type PresentedResolution,
+  type PresentedSetupPlan,
+} from './setup-plan.ts';
+export {
   exclusionNote,
   isNativeEcosystemMethod,
   isPrivilegedMethod,

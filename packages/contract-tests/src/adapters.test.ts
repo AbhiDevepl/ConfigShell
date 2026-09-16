@@ -2,14 +2,20 @@
  * Cross-adapter contract: HTTP and MCP must answer the same question the same way.
  *
  * ConfigShell exposes one core through two adapters. They do **not** call each
- * other — MCP does not go over HTTP — so nothing structural forces them to
- * agree. They each flatten a `Resolution` for the wire in their own module
- * (`apps/server/services/resolution.presenter.js` and `shapeResolution` in
- * `packages/mcp/src/tools.ts`), and those were aligned by hand.
+ * other — MCP does not go over HTTP — so nothing at the transport level forces
+ * them to agree.
  *
- * Aligned by hand is exactly the kind of agreement that rots. These tests fail
- * the moment one adapter starts describing a resolution differently from the
- * other, which is the drift a per-package test suite cannot see.
+ * Both now build their plan with `presentSetupPlan` from
+ * `@configshell/installer`, so agreement is structural rather than maintained
+ * by hand. These tests exist to keep it that way: each adapter used to shape
+ * the plan itself, the two drifted (`summary.executed` on one side, a richer
+ * `execution` block on the other, and manual steps that leaked internal step
+ * fields over HTTP only), and the tests here compared the fields both happened
+ * to share — so neither difference failed anything.
+ *
+ * The plan test below therefore compares the **whole object**, not a chosen
+ * subset. A field that appears on one adapter's plan and not the other's fails
+ * it, which is the only assertion that would have caught the original drift.
  *
  * Both adapters are exercised in-process — the real Express app on an ephemeral
  * port, the real MCP tool handlers — so this is the actual code paths, not a
@@ -144,22 +150,37 @@ test('the same selection produces the same commands through both adapters', asyn
     const viaHttp = await http('/api/plan', { environment: { distro }, applicationIds });
     const viaMcp = mcp('generate_setup', { applicationIds, environment: { distro } });
 
-    assert.deepEqual(
-      viaHttp.data.commands.map((c: any) => [c.command, c.privileged]),
-      viaMcp.commands.map((c: any) => [c.command, c.privileged]),
-      `${distro}: generated commands differ`,
-    );
-    assert.deepEqual(
-      viaHttp.data.manualSteps.map((s: any) => s.applicationId),
-      viaMcp.manualSteps.map((s: any) => s.applicationId),
-      `${distro}: manual steps differ`,
-    );
-    assert.deepEqual(
-      viaHttp.data.unavailable.map((u: any) => u.applicationId),
-      viaMcp.unavailable.map((u: any) => u.applicationId),
-      `${distro}: unavailable applications differ`,
-    );
-    assert.equal(viaHttp.data.summary.installable, viaMcp.summary.installable, distro);
+    // The whole plan, field for field. `viaHttp` has been through JSON, so
+    // this also asserts the plan survives serialisation unchanged.
+    assert.deepEqual(viaHttp.data, viaMcp, `${distro}: setup plans differ`);
+  }
+});
+
+test('the plan carries an honest status for a partial selection', async () => {
+  // `cursor` is a vendor download on every supported distribution; `firefox`
+  // resolves on all of them. `git` would not do here — it has no verified
+  // zypper identifier, so on openSUSE it is unavailable rather than
+  // installable, which is exactly the per-distro difference this asserts.
+  for (const distro of DISTROS) {
+    const partial = mcp('generate_setup', {
+      applicationIds: ['firefox', 'cursor'],
+      environment: { distro },
+    });
+    assert.equal(partial.status, 'partial', `${distro}: mixed selection is a partial plan`);
+    assert.equal(partial.summary.selected, 2, distro);
+    assert.equal(partial.summary.installable + partial.summary.manual, 2, distro);
+
+    const complete = mcp('generate_setup', {
+      applicationIds: ['firefox'],
+      environment: { distro },
+    });
+    assert.equal(complete.status, 'complete', `${distro}: firefox alone is a complete plan`);
+
+    const none = mcp('generate_setup', {
+      applicationIds: ['cursor'],
+      environment: { distro },
+    });
+    assert.equal(none.status, 'none', `${distro}: cursor alone yields no commands`);
   }
 });
 
@@ -171,8 +192,11 @@ test('neither adapter ever reports having executed anything', async () => {
     environment: args.environment,
   });
 
-  assert.equal(viaHttp.data.summary.executed, false);
-  assert.equal(viaMcp.execution.executed, false);
+  for (const plan of [viaHttp.data, viaMcp]) {
+    assert.equal(plan.execution.executed, false);
+    assert.equal(plan.execution.executedBy, null);
+    assert.equal(plan.commands.length > 0, true, 'a plan with commands still executes nothing');
+  }
 });
 
 // ------------------------------------------------------- rejection identity

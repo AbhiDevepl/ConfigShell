@@ -61,7 +61,7 @@ import {
   type Distro,
   type Environment,
 } from '@configshell/catalog';
-import { buildPlan, renderPlan, resolveAll, type Resolution } from '@configshell/installer';
+import { presentResolution, presentSetupPlan, renderPlan, resolveAll, buildPlan } from '@configshell/installer';
 import { z } from 'zod';
 import { ToolError } from './errors.ts';
 import {
@@ -218,51 +218,16 @@ function shapeApplication(application: Application) {
 }
 
 /**
- * Flatten a resolution, including `considered`.
+ * Resolve → plan → render, for `validate_setup`'s comparison only.
  *
- * The rejected sources are part of the answer, not debug output: "which source
- * did you pick and why, and what did you turn down" is what makes the choice
- * auditable by whoever is reading the result.
+ * `generate_setup` does not use this: it returns `presentSetupPlan`, the same
+ * canonical plan the HTTP API returns. This exists because validation needs the
+ * expected command strings and nothing else.
  */
-function shapeResolution(resolution: Resolution) {
-  const base = {
-    applicationId: resolution.application.id,
-    applicationName: resolution.application.name,
-    outcome: resolution.outcome,
-    considered: resolution.considered.map((candidate) => ({
-      method: candidate.source.method,
-      identifier: candidate.source.identifier,
-      origin: candidate.source.origin,
-      eligible: candidate.rank !== null,
-      note: candidate.note,
-    })),
-  };
-
-  if (resolution.outcome === 'resolved') {
-    return {
-      ...base,
-      source: {
-        method: resolution.source.method,
-        identifier: resolution.source.identifier,
-        origin: resolution.source.origin,
-      },
-      reason: resolution.reason,
-    };
-  }
-
-  return {
-    ...base,
-    reason: resolution.reason,
-    explanation: resolution.explanation,
-    ...(resolution.outcome === 'manual' && resolution.url ? { url: resolution.url } : {}),
-  };
-}
-
-/** Resolve → plan → render, in one place so every tool agrees. */
-function planFor(ids: readonly string[], environment: Environment) {
-  const resolutions = resolveAll(applicationsFor(ids), environment);
-  const plan = buildPlan(resolutions, environment);
-  return { resolutions, plan, rendered: renderPlan(plan) };
+function commandsFor(ids: readonly string[], environment: Environment): readonly string[] {
+  const applications = applicationsFor(ids);
+  const plan = buildPlan(resolveAll(applications, environment), environment);
+  return renderPlan(plan).commands.map((command) => command.command);
 }
 
 // -------------------------------------------------------------------- tools
@@ -354,7 +319,7 @@ const getApplication = defineTool({
     return {
       application: shapeApplication(application),
       environment,
-      resolution: shapeResolution(resolution!),
+      resolution: presentResolution(resolution!),
     };
   },
 });
@@ -420,7 +385,7 @@ const checkCompatibility = defineTool({
     const resolutions = resolveAll(applicationsFor(ids), environment);
     return {
       environment,
-      resolutions: resolutions.map(shapeResolution),
+      resolutions: resolutions.map(presentResolution),
       summary: {
         installable: resolutions.filter((r) => r.outcome === 'resolved').length,
         manual: resolutions.filter((r) => r.outcome === 'manual').length,
@@ -449,48 +414,7 @@ const generateSetup = defineTool({
     const ids = parseApplicationIds(applicationIds);
     const environment = parseEnvironmentArgument(requested);
 
-    const { resolutions, plan, rendered } = planFor(ids, environment);
-
-    return {
-      environment,
-      resolutions: resolutions.map(shapeResolution),
-      steps: plan.steps,
-      commands: rendered.commands.map((command) => ({
-        command: command.command,
-        privileged: command.privileged,
-        summary: command.summary,
-        stepKind: command.stepKind,
-        ...(command.note ? { note: command.note } : {}),
-      })),
-      manualSteps: rendered.manualSteps.map((step) => ({
-        applicationId: step.applicationId,
-        applicationName: step.applicationName,
-        reason: step.reason,
-        summary: step.summary,
-        ...(step.url ? { url: step.url } : {}),
-      })),
-      unavailable: plan.unavailable.map((entry) => ({
-        applicationId: entry.application.id,
-        applicationName: entry.application.name,
-        reason: entry.reason,
-        explanation: entry.explanation,
-      })),
-      summary: {
-        selected: ids.length,
-        installable: resolutions.filter((r) => r.outcome === 'resolved').length,
-        manual: resolutions.filter((r) => r.outcome === 'manual').length,
-        unavailable: resolutions.filter((r) => r.outcome === 'unavailable').length,
-        privilegedCommands: rendered.privilegedCount,
-      },
-      execution: {
-        executed: false,
-        executedBy: null,
-        note:
-          'ConfigShell never runs these. Installing is the user\'s own act in their own ' +
-          'terminal. Automated execution would belong to the local agent, which does not ' +
-          'exist.',
-      },
-    };
+    return presentSetupPlan(applicationsFor(ids), environment);
   },
 });
 
@@ -524,8 +448,7 @@ const validateSetup = defineTool({
     const ids = parseApplicationIds(applicationIds);
     const environment = parseEnvironmentArgument(requested);
 
-    const { rendered } = planFor(ids, environment);
-    const expected = rendered.commands.map((command) => command.command);
+    const expected = commandsFor(ids, environment);
 
     const expectedSet = new Set(expected);
     const submittedSet = new Set(submitted);
