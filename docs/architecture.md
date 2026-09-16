@@ -187,6 +187,11 @@ browse/search/lookup, supported-environment discovery, and `POST /api/plan`. Con
 are thin (validate → call a service → send); no application data and no installation
 decision lives in this workspace.
 
+In production it also serves `apps/web/dist` when a build exists, so the web app and the API
+share an origin — one process, one port, no proxy and no CORS. Static files mount after the
+API routes, and the SPA fallback skips `/api`, so an unknown endpoint still returns the JSON
+error envelope rather than a page.
+
 **It plans and validates; it never executes.** There is no `child_process` import in the
 workspace and an integration test asserts there never is one. A server that ran
 package-manager commands on a user's behalf would be remote sudo — permanently out of
@@ -258,8 +263,10 @@ See `docs/mcp.md`.
 
 ### `packages/ai`
 
-Placeholder for the AI planning layer: a `package.json` and a README, no source. No work
-started, and none planned for the current release. See `docs/ai.md`.
+Reserves the package name for the AI planning layer: a `package.json` and a README saying so,
+and nothing else. No source, and deliberately no empty controller or route anywhere in
+`apps/server` either — a placeholder that looks like code makes a repository seem more
+finished than it is. The design lives in `docs/ai.md` until there is something to put in it.
 
 ## Repository tooling
 

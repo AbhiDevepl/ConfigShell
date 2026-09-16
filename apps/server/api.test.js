@@ -434,6 +434,86 @@ describe("errors", () => {
   });
 });
 
+// ------------------------------------------------------- serving the web app
+
+describe("serving the built web app", () => {
+  // In production the web app and the API share an origin, because the web app
+  // calls this API for anything the resolver decides. Serving the build from
+  // here is how they do that: one process, one port, no CORS story.
+  let distServer;
+  let distBase;
+  let distDir;
+
+  before(async () => {
+    const { mkdtempSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+
+    distDir = mkdtempSync(join(tmpdir(), "configshell-dist-"));
+    writeFileSync(join(distDir, "index.html"), "<!doctype html><title>ConfigShell</title>");
+    writeFileSync(join(distDir, "app.js"), "// built asset");
+
+    distServer = createApp({ webDist: distDir }).listen(0);
+    await new Promise((resolve) => distServer.once("listening", resolve));
+    distBase = `http://127.0.0.1:${distServer.address().port}`;
+  });
+
+  after(() => new Promise((resolve) => distServer.close(resolve)));
+
+  test("serves index.html at the root and real files as themselves", async () => {
+    const root = await fetch(`${distBase}/`);
+    assert.equal(root.status, 200);
+    assert.match(root.headers.get("content-type") ?? "", /text\/html/);
+
+    const asset = await fetch(`${distBase}/app.js`);
+    assert.equal(asset.status, 200);
+    assert.match(await asset.text(), /built asset/);
+  });
+
+  test("falls back to index.html for client-side routes", async () => {
+    const response = await fetch(`${distBase}/some/spa/route`);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type") ?? "", /text\/html/);
+  });
+
+  test("never shadows the API or health with a static file", async () => {
+    // The fallback must skip /api, or an unknown endpoint would answer with the
+    // SPA's HTML and a client would parse a page as a plan.
+    const unknown = await fetch(`${distBase}/api/nope`);
+    assert.equal(unknown.status, 404);
+    assert.match(unknown.headers.get("content-type") ?? "", /application\/json/);
+    assert.equal((await unknown.json()).error.code, "NOT_FOUND");
+
+    const health = await fetch(`${distBase}/health`);
+    assert.equal(health.status, 200);
+    assert.equal((await health.json()).data.status, "ok");
+
+    const plan = await fetch(`${distBase}/api/plan`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ environment: { distro: "Fedora" }, applicationIds: ["git"] }),
+    });
+    assert.equal(plan.status, 200);
+  });
+
+  test("the API works on its own when no build is present", async () => {
+    // `pnpm dev` and a fresh clone both run without a build; the API must not
+    // depend on one existing.
+    const server = createApp({ webDist: null }).listen(0);
+    await new Promise((resolve) => server.once("listening", resolve));
+    try {
+      const base = `http://127.0.0.1:${server.address().port}`;
+      assert.equal((await fetch(`${base}/health`)).status, 200);
+
+      const spa = await fetch(`${base}/some/spa/route`);
+      assert.equal(spa.status, 404, "with no build there is nothing to fall back to");
+      assert.match(spa.headers.get("content-type") ?? "", /application\/json/);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+});
+
 // ------------------------------------------------------------ safety invariant
 
 describe("safety invariants", () => {

@@ -119,7 +119,7 @@ See [Security](#security) and [`docs/security-model.md`](docs/security-model.md)
   **No model is involved anywhere.**
 
 - **Repository tooling** — pnpm workspaces, repository-wide ESLint, per-workspace
-  typechecking, 199 tests across five workspaces, and CI that runs all of it on Node 20
+  typechecking, 206 tests across five workspaces, and CI that runs all of it on Node 20
   and 22.
 
 **Not implemented (planned):** system detection beyond "does the browser look like Linux",
@@ -278,7 +278,6 @@ apps/
     │   ├── data/distros.ts    selector copy (the Distro type comes from the catalog)
     │   ├── hooks/             useLinuxDetection, useTheme, useSetupPlan, useClipboard
     │   └── lib/api.ts         typed client for the planning API
-    ├── server.js              static server for the production build
     ├── components.json        shadcn/ui config
     └── vite.config.ts
 
@@ -332,7 +331,7 @@ cp apps/server/.env.example apps/server/.env
 
 | Variable | Used by | Required | Default |
 | -------- | ------- | -------- | ------- |
-| `PORT` | `apps/server` (and `apps/web`'s `server.js`, from the process environment) | no | `3000` |
+| `PORT` | `apps/server` — the API, and the built web app when one exists | no | `3000` |
 | `NODE_ENV` | `apps/server` | no | `development` |
 | `DISABLE_HMR` | `apps/web` dev server | no | unset |
 
@@ -358,8 +357,7 @@ Per workspace:
 pnpm dev:web                # web app only, port 5173 (plan step needs the API)
 pnpm --filter web dev       # the same thing
 pnpm --filter web build     # production build → apps/web/dist
-pnpm --filter web preview   # preview the production build
-pnpm --filter web start     # serve apps/web/dist (needs a build first)
+pnpm --filter web preview   # preview the production build (Vite, no API)
 pnpm --filter server dev    # planning API (tsx watch) — http://localhost:3000/health
 ```
 
@@ -373,40 +371,43 @@ pnpm check       # lint → typecheck → test → build (what CI runs)
 pnpm lint        # ESLint across the repository
 pnpm typecheck   # tsc --noEmit for apps/web and packages/catalog
 pnpm test        # catalog test suite (+ apps/server, which has no test files yet)
-pnpm build       # production build of apps/web
+pnpm build       # production build of apps/web → apps/web/dist
 ```
 
 There is no formatter to run — `.editorconfig` covers the basics; match the file you are
 editing.
 
-## Testing
-
-**199 tests** on Node's built-in runner (via `tsx`), across five workspaces:
+## Running the built app
 
 ```sh
-pnpm test                                        # all of them
-pnpm --filter @configshell/catalog test          # 45 — catalog data, environment, presets
-pnpm --filter @configshell/installer test        # 46 — resolution, plans, command safety
-pnpm --filter @configshell/mcp test              # 52 — tools, official-client interop, hostile input
-pnpm --filter server test                        # 45 — API integration, against the real app
-pnpm --filter web test                           # 11 — API client contract + safety invariants
+pnpm build
+pnpm start       # http://localhost:3000 — the whole product on one port
 ```
 
-They test real data and the real application rather than fixtures and mocks: the catalog
-suite validates all 31 entries, the installer suite asserts that no generated command can
-contain a shell metacharacter on any distribution, and the server suite drives the actual
-Express app over HTTP.
+`pnpm start` runs the API server, which also serves `apps/web/dist` when a build exists. One
+process, one port: the web app and the API share an origin, which is what the web app needs
+since it calls the API for anything the resolver decides. There is no proxy to configure and
+no CORS.
 
-`apps/web` tests cover the **API client's contract** — error classification, and that a plan
-request carries catalog ids and a distribution and nothing else — plus **structural safety
-invariants**: the web source contains no package-manager command vocabulary at all, never
-imports `@configshell/installer`, and has no `eval`, `new Function` or
-`dangerouslySetInnerHTML`. (A production build confirms it: `grep` for `apt-get install`,
-`dnf install`, `pacman -S`, `snap install` or `sudo ` in `dist/` returns zero matches.) There is deliberately no DOM
-test runner yet: adding one means Vitest plus a DOM implementation plus Testing Library, and
-that is a dependency decision worth making on purpose rather than in passing. **Component
-behaviour is therefore untested** — the largest remaining gap. See
-[`.github/GOOD_FIRST_ISSUES.md`](.github/GOOD_FIRST_ISSUES.md).
+Without a build the API still runs on its own and serves JSON only — useful for a CLI or MCP
+client that does not need the interface.
+
+## Testing
+
+**206 tests** across five workspaces, on Node's built-in runner via `tsx`.
+
+```sh
+pnpm test        # all of them
+pnpm check       # lint → typecheck → test → build, what CI runs
+```
+
+They exercise real data and the real application rather than fixtures and mocks: the catalog
+suite validates all 31 entries, the installer suite asserts no generated command can contain
+a shell metacharacter on any distribution, the server suite drives the actual Express app,
+and the MCP suite connects the **official MCP client** over the real protocol.
+
+Full detail — per-workspace coverage, the security test cases, and an honest list of what is
+**not** tested — is in [`docs/testing.md`](docs/testing.md).
 
 ---
 
@@ -457,6 +458,7 @@ follow [`SECURITY.md`](docs/SECURITY.md) — not a public issue.
 | [`docs/ProductRequirements.md`](docs/ProductRequirements.md) | The PRD — product vision, scope, and MVP definition |
 | [`docs/TechnicalAudit.md`](docs/TechnicalAudit.md) | Audit of the repository against the PRD: gap analysis, risks, resolved decisions, and the prioritised backlog |
 | [`docs/development.md`](docs/development.md) | Setup, commands, environment, troubleshooting |
+| [`docs/testing.md`](docs/testing.md) | What is tested, the security cases, and what is not |
 | [`docs/architecture.md`](docs/architecture.md) | Layer separation; implemented vs. planned |
 | [`docs/catalog.md`](docs/catalog.md) | Catalog schema, verification rules, how to add an application or a distribution |
 | [`docs/security-model.md`](docs/security-model.md) | The security model |

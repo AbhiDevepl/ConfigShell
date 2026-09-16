@@ -22,8 +22,10 @@ Non-negotiable safety principles that govern any feature work here:
 
 ## Current implementation state (read before assuming anything works)
 
-This repo is a scaffold — most files exist as empty placeholders, not stubs with TODOs.
-Before editing, check whether a file actually has content; many don't:
+The deterministic core is implemented and tested: catalog → environment → resolution →
+setup plan → command generation → verification, reachable from the web app, an HTTP API and
+an MCP server. What is *not* built is listed explicitly at the end of this section — it is
+not represented by empty files.
 
 - **`apps/server/`**: **implemented** — a read-only planning API. `app.js` is an Express app
   factory; `index.js` is the only file that binds a port and imports `./config/env.js`
@@ -38,8 +40,9 @@ Before editing, check whether a file actually has content; many don't:
   - It is **JavaScript run under `tsx`**, so it can import the TypeScript workspace packages
     with no build step. `tsconfig.json` runs `checkJs` (with `noImplicitAny: false` — the
     point is the package boundary, not annotating Express handlers) and excludes `*.test.js`.
-  - `controllers/ai.controller.js`, `services/ai.service.js`, `routes/ai.routes.js` and
-    `middleware/auth.middleware.js` are still **0 bytes on purpose**. Leave them that way.
+  - There is **no AI route and no auth middleware**, and none should be added as an empty
+    file. Placeholder controllers make the repo look more finished than it is; the design
+    lives in `docs/ai.md` until there is code to put in it.
   - Variables are documented in `apps/server/.env.example`; `.env` is git-ignored. There are
     deliberately no AI keys, database URLs or auth secrets, and a test checks for them.
 - **`apps/web/`**: a Vite + React + TypeScript + Tailwind v4 + **shadcn/ui** app, now
@@ -134,9 +137,9 @@ Before editing, check whether a file actually has content; many don't:
   `eslint.config.js`, covering every workspace). `typecheck` is `tsc --noEmit` per
   TypeScript workspace. The old per-workspace `"lint": "tsc --noEmit"` scripts were
   renamed to `typecheck`, and `apps/server`'s broken `lint`/`check` scripts were removed.
-- **Tests**: **199**, on Node's built-in runner via `tsx`, in five workspaces —
-  `packages/catalog` (45), `packages/installer` (46), `packages/mcp` (52), `apps/server` (45),
-  `apps/web` (11).
+- **Tests**: **206**, on Node's built-in runner via `tsx`, in five workspaces —
+  `packages/catalog` (45), `packages/installer` (46), `packages/mcp` (52), `apps/server` (51),
+  `apps/web` (12). `docs/testing.md` is the authority on coverage and gaps.
   They exercise real data and the real app, not fixtures and mocks. **`apps/web` has no DOM
   test runner**, so component behaviour is untested — the largest remaining gap.
 - **`apps/web` typecheck (`tsc --noEmit`) needs `@types/react`/`@types/react-dom`**, added
@@ -196,7 +199,7 @@ pnpm build                       # == pnpm --filter web build
 pnpm start                       # == pnpm --filter web start
 pnpm lint                        # eslint . across the whole repo (real ESLint)
 pnpm typecheck                   # tsc --noEmit for web, catalog, installer, server (checkJs)
-pnpm test                        # 199 tests: catalog 45, installer 46, mcp 52, server 45, web 11
+pnpm test                        # 206 tests: catalog 45, installer 46, mcp 52, server 51, web 12
 pnpm mcp                         # start the MCP server on stdio
 pnpm check                       # lint -> typecheck -> test -> build (what CI runs)
 ```
@@ -206,7 +209,7 @@ Per workspace (name-based filters work; path-based ones still do too):
 pnpm --filter web dev                   # Vite dev server on port 5173
 pnpm --filter web build                 # production build -> apps/web/dist
 pnpm --filter web preview               # preview the production build
-pnpm --filter web start                 # node server.js, serves apps/web/dist as a static SPA
+pnpm start                              # apps/server — API + apps/web/dist on one port
 pnpm --filter web typecheck             # tsc --noEmit
 pnpm --filter web test                  # tsx --test (API client)
 

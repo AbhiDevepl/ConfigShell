@@ -44,7 +44,7 @@ cp apps/server/.env.example apps/server/.env
 
 | Variable | Used by | Required | Default | Notes |
 | -------- | ------- | -------- | ------- | ----- |
-| `PORT` | `apps/server` | no | `3000` | Integer 1–65535; validated at startup. Also read by `apps/web`'s `server.js` (from the process environment, not `.env`). |
+| `PORT` | `apps/server` | no | `3000` | Integer 1–65535; validated at startup. Serves the API and, when a build exists, the web app. |
 | `NODE_ENV` | `apps/server` | no | `development` | One of `development`, `test`, `production`. |
 | `DISABLE_HMR` | `apps/web` dev server | no | unset | Set to `true` to disable HMR and file watching (used by AI Studio tooling). |
 
@@ -80,7 +80,7 @@ From the repository root:
 | ------- | ------------ |
 | `pnpm lint` | ESLint across the repo (flat config in `eslint.config.js`) |
 | `pnpm typecheck` | `tsc --noEmit` for `apps/web`, `packages/catalog`, `packages/installer` and `apps/server` |
-| `pnpm test` | 199 tests: catalog (45), installer (46), mcp (52), server (45), web (11) |
+| `pnpm test` | 206 tests: catalog (45), installer (46), mcp (52), server (51), web (12) |
 | `pnpm build` | production build of the web app → `apps/web/dist` |
 | `pnpm check` | all four, in that order — run this before opening a pull request |
 
@@ -98,32 +98,23 @@ pnpm --filter server test
 pnpm --filter server typecheck
 ```
 
-### Testing, honestly
+### Testing
 
-All 199 tests run on Node's built-in test runner via `tsx`, against real data and the real
-application rather than fixtures and mocks.
+`pnpm test` runs all 206 across five workspaces. Coverage per workspace, the security test
+cases, and what is deliberately **not** tested are documented in
+[`testing.md`](testing.md) — the authority on this.
 
-- `packages/catalog` — **37 tests.** Validates all 31 real catalog entries, the environment
-  model, and that a binary name which could reach a shell is rejected.
-- `packages/installer` — **44 tests.** Resolution against every application on every
-  distribution, plan ordering and determinism, golden command output per package manager,
-  and an assertion that no generated command can contain a shell metacharacter.
-- `packages/mcp` — **52 tests.** The tool surface, hostile arguments, and the structural
-  guarantees (no execution, no filesystem, no sockets, no command vocabulary, and that the
-  three agent-owned capabilities stay unregistered) — plus **interoperability**: the official
-  MCP client connects to the server over the real protocol, and a second test spawns the
-  binary over stdio exactly as an AI host does.
-- `apps/server` — **45 tests.** Drives the actual Express app over an ephemeral port:
-  endpoints, every rejection path, that errors never leak a stack trace or a filesystem
-  path, and that no module in the workspace imports `child_process`.
-- `apps/web` — **11 tests**, on the same runner. They cover the API client's contract: how
-  each failure mode is classified, and that a plan request carries catalog ids and a
-  distribution and nothing else. There is **no DOM test runner**, so component behaviour is
-  untested; adding one (Vitest + a DOM implementation + Testing Library) is a deliberate
-  dependency decision, not an oversight. See
-  [`.github/GOOD_FIRST_ISSUES.md`](../.github/GOOD_FIRST_ISSUES.md).
+### Running the built app
 
-### Running both processes
+```sh
+pnpm build && pnpm start      # http://localhost:3000
+```
+
+`pnpm start` runs the API, which serves `apps/web/dist` when a build is present — one
+process, one port, so the web app and the API share an origin. `apps/web` has no server of
+its own; `pnpm --filter web preview` is Vite's preview of the build alone, without the API.
+
+### Running both processes in development
 
 `pnpm dev` starts the web app (port **5173**) and the API (port **3000**) together. Vite
 proxies `/api` to the API server, so the browser stays on one origin.
@@ -178,7 +169,7 @@ makes review harder and will be asked for removal.
 ```sh
 pnpm build                  # → apps/web/dist
 pnpm --filter web preview   # Vite's own preview server
-pnpm start                  # node apps/web/server.js (serves dist as a static SPA)
+pnpm start                  # the API server, which also serves apps/web/dist
 ```
 
 `pnpm start` requires a prior `pnpm build`; it serves whatever is in `apps/web/dist`.

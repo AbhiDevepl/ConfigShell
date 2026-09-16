@@ -18,10 +18,14 @@
  *   POST /api/plan                    selection + environment → plan + commands
  *   POST /api/plan/resolve            selection + environment → resolutions only
  *
- * Not mounted, and not implemented: anything AI-related. `ai.routes.js`,
- * `ai.controller.js` and `ai.service.js` remain empty placeholders that record
- * the intended shape — see docs/ai.md. MCP is likewise out of scope here; it is
- * a separate integration layer over the same installer package (docs/mcp.md).
+ * That is the whole surface. Everything is read-only: no endpoint changes state
+ * on the server or on the caller's machine.
+ *
+ * There is deliberately no AI route and no authentication route. Neither exists
+ * as an empty file either — a placeholder controller makes a repository look
+ * more complete than it is. The intended shape of the AI layer lives in
+ * docs/ai.md, which is where a design belongs until there is code. MCP is a
+ * separate integration layer over the same installer package (docs/mcp.md).
  */
 
 import { Router } from "express";

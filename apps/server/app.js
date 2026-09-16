@@ -24,6 +24,9 @@
  * and every endpoint is a pure function of the request.
  */
 
+import { existsSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import express from "express";
 
 import { apiRouter } from "./routes/index.js";
@@ -41,7 +44,13 @@ import { requestContextMiddleware } from "./middleware/request-context.middlewar
  */
 const MAX_BODY_SIZE = "16kb";
 
-export function createApp() {
+/**
+ * @param {{ webDist?: string | null }} [options] `webDist` overrides where the
+ *   built web app is looked for, which is what lets the tests cover both the
+ *   "a build exists" and "it does not" paths without depending on whether one
+ *   happens to be present. `null` disables static serving outright.
+ */
+export function createApp(options = {}) {
   const app = express();
 
   // Do not advertise the framework. Cheap, and there is no reason to.
@@ -58,10 +67,44 @@ export function createApp() {
   app.get("/health", healthHandler);
   app.use("/api", apiRouter);
 
+  serveBuiltWebApp(app, options.webDist === undefined ? defaultWebDist() : options.webDist);
+
   app.use(notFoundMiddleware);
   app.use(errorMiddleware);
 
   return app;
+}
+
+/**
+ * Serve the built web app, when there is one.
+ *
+ * The web app calls this API for anything the resolver decides, so in
+ * production the two have to share an origin. Serving the build from here is
+ * the simplest way to get that: one process, one port, no proxy to configure
+ * and no CORS story. `pnpm build && pnpm start` then serves the whole product.
+ *
+ * Absent in development — `pnpm dev` runs Vite separately and proxies `/api`
+ * here — and absent before a build, where this is simply a no-op and the API
+ * still works on its own.
+ *
+ * Static files are mounted **after** `/health` and `/api`, so an API route can
+ * never be shadowed by a file, and the SPA fallback explicitly skips `/api` so
+ * an unknown endpoint still returns the JSON error envelope rather than HTML.
+ */
+function defaultWebDist() {
+  return resolve(dirname(fileURLToPath(import.meta.url)), "..", "web", "dist");
+}
+
+function serveBuiltWebApp(app, distDir) {
+  if (!distDir || !existsSync(distDir)) return;
+
+  app.use(express.static(distDir));
+
+  app.use((req, res, next) => {
+    if (req.method !== "GET" && req.method !== "HEAD") return next();
+    if (req.path === "/health" || req.path.startsWith("/api")) return next();
+    res.sendFile(join(distDir, "index.html"));
+  });
 }
 
 export { MAX_BODY_SIZE };

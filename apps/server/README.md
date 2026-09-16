@@ -102,9 +102,11 @@ middleware/            request context, 404, error handling
 utils/                 structured logger, response envelope
 ```
 
-`controllers/ai.controller.js`, `services/ai.service.js`, `routes/ai.routes.js` and
-`middleware/auth.middleware.js` are **empty placeholders** that record intended shape. AI is
-future scope ([`docs/ai.md`](../../docs/ai.md)); there is nothing to authenticate yet.
+There is **no AI route and no authentication middleware**, not even as empty files — an
+empty controller makes a repository look more complete than it is. AI is future scope, and
+its intended shape lives in [`docs/ai.md`](../../docs/ai.md) where a design belongs until
+there is code. There is nothing to authenticate yet: every endpoint is read-only and the
+server holds no secrets.
 
 ## Running it
 

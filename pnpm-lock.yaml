@@ -69,9 +69,6 @@ importers:
       cn:
         specifier: ^0.2.6
         version: 0.2.6
-      express:
-        specifier: ^5.2.1
-        version: 5.2.1
       lucide-react:
         specifier: ^0.546.0
         version: 0.546.0(react@19.3.0)
@@ -97,9 +94,6 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.1.14
         version: 4.3.3(vite@6.4.3(@types/node@22.20.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.13))
-      '@types/express':
-        specifier: ^5.0.0
-        version: 5.0.6
       '@types/node':
         specifier: ^22.14.0
         version: 22.20.2

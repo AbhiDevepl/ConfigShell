@@ -25,7 +25,7 @@ These end up in `apps/web/dist` and are therefore distributed to users of a depl
 | `tw-animate-css` | MIT | animation utilities imported by `src/index.css` |
 | `shadcn` | MIT | `shadcn/tailwind.css` is imported by `src/index.css` |
 | `@fontsource-variable/geist` | **OFL-1.1** | see "Fonts" below |
-| `express` | MIT | used by `apps/web/server.js` to serve the built app |
+| `express` | MIT | the API server in `apps/server`; also serves the built web app |
 | `@modelcontextprotocol/server` | MIT | the official MCP TypeScript SDK (v2), used by `packages/mcp` |
 | `@modelcontextprotocol/core` | MIT | shared protocol types and schemas, pulled in by the server package |
 | `zod` | MIT | tool input schemas in `packages/mcp`; the SDK derives JSON Schema from them |
@@ -46,8 +46,10 @@ Not shipped to users, but part of the repository's toolchain.
 | `@modelcontextprotocol/client` | MIT |
 | `dotenv` | BSD-2-Clause |
 | `@types/node`, `@types/react`, `@types/react-dom`, `@types/express` | MIT (DefinitelyTyped) |
+| `zod` | MIT | (also a runtime dependency — see above) |
 
-`express` is also a runtime dependency of `apps/server` (MIT).
+`apps/web` has no server-side dependency of its own: the built app is static files, served
+in production by `apps/server`.
 
 `@modelcontextprotocol/client` is a development dependency only: it is the official MCP
 client, used by `packages/mcp`'s interoperability tests to connect to our own server over the

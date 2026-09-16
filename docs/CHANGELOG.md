@@ -14,6 +14,16 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 
 ### Added
 
+- **`pnpm start` now serves the whole product on one port.** `apps/server` serves
+  `apps/web/dist` when a build is present, which is what the web app needs: it calls the API
+  for anything the resolver decides, so the two must share an origin. Previously the built
+  web app was served by its own process with no API behind it, so in production the setup-plan
+  step and per-source availability both failed. Four regression tests cover it, including
+  that the SPA fallback never shadows `/api` or `/health`.
+- `docs/testing.md` — the authority on what is tested, the security test cases, and an honest
+  list of what is **not** (no DOM tests, no e2e, no coverage threshold). README and
+  `development.md` now link to it instead of each describing testing separately.
+
 - **MCP resources and a prompt.** Two reference resources
   (`configshell://reference/environments`, `configshell://reference/safety`) give an AI host
   static context in one read instead of a tool call, and the `plan_a_setup` prompt hands over
@@ -206,6 +216,15 @@ version is below `1.0.0`, the public surface may change in a minor release — s
   Express 5 no longer accepts.
 
 ### Removed
+
+- **Empty placeholder files that made the repository look more complete than it is**:
+  `apps/server/controllers/ai.controller.js`, `services/ai.service.js`, `routes/ai.routes.js`
+  and `middleware/auth.middleware.js` were all 0 bytes, sitting in directories otherwise full
+  of working code. The AI design is in `docs/ai.md`, which is where it belongs until there is
+  something to put in a file. `packages/ai/src/` (an empty directory) went too; the package
+  itself stays, since its README's first line says it is a placeholder.
+- `apps/web/server.js` and `apps/web`'s `express` dependency — the API server now serves the
+  built web app, so a second static server had no reason to exist.
 
 - **Dead AI Studio scaffolding**: `aistudioMediaPlugin` from `apps/web/vite.config.ts` (60
   lines of dev-server middleware serving `public/assets/aistudio/`, a directory whose only

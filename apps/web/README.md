@@ -23,11 +23,11 @@ Run from the repository root (or from this directory without the `--filter`):
 pnpm --filter web dev        # Vite dev server on http://localhost:3000
 pnpm --filter web build      # production build → apps/web/dist
 pnpm --filter web preview    # serve the production build with Vite
-pnpm --filter web start      # serve apps/web/dist with server.js (needs a build first)
+pnpm start                   # from the repo root: apps/server serves the build + the API
 pnpm --filter web typecheck  # tsc --noEmit
 ```
 
-Environment variables: none are required. `PORT` (used by `server.js`, default 3000) and
+Environment variables: none are required. `PORT` (used by `apps/server`, default 3000) and
 `DISABLE_HMR` (dev server only) are read from the process environment; this app does not
 load `.env` files.
 
@@ -47,7 +47,6 @@ src/
 ├── hooks/                  useLinuxDetection, useTheme
 ├── lib/utils.ts            re-export of `cn`
 └── index.css               Tailwind entry + shadcn theme tokens
-server.js                   static file server used by `pnpm start`
 vite.config.ts              Vite config (includes an AI Studio media plugin)
 components.json             shadcn/ui config
 metadata.json               Google AI Studio manifest (dev tooling, not shipped)

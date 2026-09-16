@@ -3,7 +3,8 @@
 ## Status: not started
 
 Nothing in this repository implements AI functionality. There is no model client, no
-prompt, no API key handling, and no AI dependency. `packages/ai` is an empty placeholder.
+prompt, no API key handling, and no AI dependency. `packages/ai` reserves the package name
+and nothing else — there is no source, and no empty controller or route pretends otherwise.
 
 This document records the constraints an implementation must satisfy, so that the first
 pull request in this area starts from the project's rules rather than from scratch. It
