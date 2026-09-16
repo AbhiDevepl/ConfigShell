@@ -66,12 +66,11 @@ pnpm dev                    # web app → http://localhost:3000
 Per-workspace:
 
 ```sh
-pnpm --filter web dev       # Vite dev server, port 3000
+pnpm --filter web dev       # Vite dev server, port 5173
 pnpm --filter server dev    # planning API (tsx watch) — http://localhost:3000/health
 ```
 
-> Both default to port 3000. To run them together, set `PORT` in `apps/server/.env`
-> (the template suggests 4000).
+> The web dev server is on 5173 and the API on 3000; `pnpm dev` runs both in parallel.
 
 ## Check your work
 
@@ -81,7 +80,7 @@ From the repository root:
 | ------- | ------------ |
 | `pnpm lint` | ESLint across the repo (flat config in `eslint.config.js`) |
 | `pnpm typecheck` | `tsc --noEmit` for `apps/web`, `packages/catalog`, `packages/installer` and `apps/server` |
-| `pnpm test` | 122 tests: `packages/catalog` (37), `packages/installer` (44), `apps/server` (41) |
+| `pnpm test` | 199 tests: catalog (45), installer (46), mcp (52), server (45), web (11) |
 | `pnpm build` | production build of the web app → `apps/web/dist` |
 | `pnpm check` | all four, in that order — run this before opening a pull request |
 
@@ -93,13 +92,15 @@ pnpm --filter @configshell/catalog test
 pnpm --filter @configshell/catalog typecheck
 pnpm --filter @configshell/installer test
 pnpm --filter @configshell/installer typecheck
+pnpm --filter @configshell/mcp test
+pnpm --filter @configshell/mcp typecheck
 pnpm --filter server test
 pnpm --filter server typecheck
 ```
 
 ### Testing, honestly
 
-All 122 tests run on Node's built-in test runner via `tsx`, against real data and the real
+All 199 tests run on Node's built-in test runner via `tsx`, against real data and the real
 application rather than fixtures and mocks.
 
 - `packages/catalog` — **37 tests.** Validates all 31 real catalog entries, the environment
@@ -107,12 +108,46 @@ application rather than fixtures and mocks.
 - `packages/installer` — **44 tests.** Resolution against every application on every
   distribution, plan ordering and determinism, golden command output per package manager,
   and an assertion that no generated command can contain a shell metacharacter.
-- `apps/server` — **41 tests.** Drives the actual Express app over an ephemeral port:
+- `packages/mcp` — **52 tests.** The tool surface, the JSON-RPC transport, hostile arguments,
+  and the structural guarantees: no execution, no filesystem, no sockets, no command
+  vocabulary, and that the three agent-owned capabilities stay unregistered.
+- `apps/server` — **45 tests.** Drives the actual Express app over an ephemeral port:
   endpoints, every rejection path, that errors never leak a stack trace or a filesystem
   path, and that no module in the workspace imports `child_process`.
-- `apps/web` has **no tests at all** — no test runner is installed. That is now the largest
-  gap in the repository. Adding one (Vitest is the obvious choice for a Vite project) is an
-  open task; see [`.github/GOOD_FIRST_ISSUES.md`](../.github/GOOD_FIRST_ISSUES.md).
+- `apps/web` — **11 tests**, on the same runner. They cover the API client's contract: how
+  each failure mode is classified, and that a plan request carries catalog ids and a
+  distribution and nothing else. There is **no DOM test runner**, so component behaviour is
+  untested; adding one (Vitest + a DOM implementation + Testing Library) is a deliberate
+  dependency decision, not an oversight. See
+  [`.github/GOOD_FIRST_ISSUES.md`](../.github/GOOD_FIRST_ISSUES.md).
+
+### Running both processes
+
+`pnpm dev` starts the web app (port **5173**) and the API (port **3000**) together. Vite
+proxies `/api` to the API server, so the browser stays on one origin.
+
+Browsing, search and role presets work without the API — the catalog is compiled into the
+bundle. **Generating a setup plan needs it**, and the UI says so explicitly rather than
+degrading quietly. `pnpm dev:web` runs the web app alone.
+
+### Trying the MCP server
+
+```sh
+pnpm mcp
+```
+
+It speaks MCP over stdio, so it is normally launched by the client that uses it rather than
+run by hand. To probe it directly, pipe JSON-RPC messages in:
+
+```sh
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+  | pnpm --filter @configshell/mcp start
+```
+
+Diagnostics go to stderr; stdout carries protocol messages only. See
+[`docs/mcp.md`](mcp.md).
 
 ### Trying the API
 

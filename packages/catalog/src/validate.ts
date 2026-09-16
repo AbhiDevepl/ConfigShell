@@ -21,7 +21,27 @@ const ORIGINS = new Set(['distro', 'vendor', 'community']);
  */
 const METHOD_DISTROS: Partial<Record<InstallMethod, readonly Distro[]>> = ECOSYSTEM_DISTROS;
 
-const ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+/**
+ * The shape of a catalog id. Exported because every consumer that accepts an id
+ * from outside — the API server, the MCP layer — has to check it, and three
+ * copies of the same regex is three chances for them to drift apart.
+ */
+export const APPLICATION_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/** Upper bound on an id, so an unbounded string is rejected before matching. */
+export const MAX_APPLICATION_ID_LENGTH = 64;
+
+/** Shape only — says nothing about whether the catalog contains it. */
+export function isApplicationIdShape(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    value.length <= MAX_APPLICATION_ID_LENGTH &&
+    APPLICATION_ID_PATTERN.test(value)
+  );
+}
+
+const ID_PATTERN = APPLICATION_ID_PATTERN;
 
 /**
  * What may appear in a verification binary name.

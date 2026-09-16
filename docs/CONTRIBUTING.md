@@ -72,7 +72,7 @@ pnpm dev                    # web app → http://localhost:3000
 pnpm --filter server dev    # planning API (tsx watch) — http://localhost:3000/health
 ```
 
-Both default to port 3000 — set `PORT` in `apps/server/.env` if you run them together.
+The web dev server is on 5173 and the API on 3000; `pnpm dev` runs both in parallel.
 
 ## Check your work
 

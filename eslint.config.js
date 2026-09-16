@@ -38,6 +38,17 @@ export default tseslint.config(
     },
   },
 
+  // Test files assert on deliberately untyped payloads — a JSON-RPC result, a
+  // tool's heterogeneous return value. Forcing `unknown` plus a cast at every
+  // assertion adds noise without catching anything, since the assertion *is*
+  // the type check. Narrowed to test files so source keeps the stricter rule.
+  {
+    files: ['**/*.test.ts', '**/*.test.tsx'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+
   // React components and hooks (apps/web only). Only the two classic hook
   // rules are enabled — they catch real bugs and their messages are easy to
   // act on. The plugin's newer React Compiler rules are left off on purpose.

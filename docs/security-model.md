@@ -24,9 +24,13 @@ These hold at every phase, not just once the local agent or AI exist:
 
 ## Current state
 
-The web app (`apps/web`) is still a static-content React SPA with no backend calls and no
-command generation: distribution and application selection only update in-memory UI state.
-Two things have changed, and both are security-relevant.
+The web app (`apps/web`) is a React SPA that generates no commands of its own: it displays
+what the API returns. Its only network call is `POST /api/plan`, and a test asserts the
+package-manager vocabulary appears nowhere in its source, so the browser never holds the
+means to build a command even if something else went wrong.
+
+Three things have changed since this project shipped only a catalog, and all are
+security-relevant.
 
 **Commands now exist.** `packages/installer` generates real package-manager command strings.
 Nothing executes them — they are text a user reads and pastes into their own terminal — but
@@ -35,8 +39,12 @@ interpret, so the "arbitrary strings reach a shell" risk is live rather than hyp
 See "Command generation" below for how it is contained.
 
 **The API server has endpoints.** `apps/server` serves a read-only planning API. It accepts
-untrusted input for the first time (`POST /api/plan`), which is a real attack surface. See
-"The API server" below.
+untrusted input (`POST /api/plan`), which is a real attack surface. See "The API server"
+below.
+
+**An MCP server exists.** `packages/mcp` accepts untrusted tool arguments from whatever
+client launched it — the interface most likely to be driven by something that is not a
+person. See "The MCP interface" below.
 
 ### Command generation
 
@@ -148,8 +156,9 @@ distro detection rule" for why exact detection is out of scope for the browser e
 - **Local agent** (post-V1): the security boundary for any actual system change. Validates
   every operation against the trusted catalog and requires explicit user confirmation
   before executing anything.
-- **MCP** (post-V1): exposes only controlled, explicitly authorized capabilities to AI
-  systems — never raw shell access.
+- **MCP resources and per-capability authorization** (post-V1): the tool surface is built
+  and read-only (see "The MCP interface" above); resources and explicit per-capability
+  authorization are not. Anything that could lead to a system change waits for the agent.
 - **AI / planning** (post-V1): plans and recommends; every planned operation still flows
   through the same validation and confirmation path as a manual one.
 

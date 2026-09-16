@@ -39,7 +39,20 @@ export {
 } from './environment.ts';
 
 export { APPLICATIONS } from './applications.ts';
-export { validateCatalog, assertValidCatalog } from './validate.ts';
+export {
+  ROLES,
+  applicationsForRole,
+  findRole,
+  validateRoles,
+  type Role,
+} from './roles.ts';
+export {
+  APPLICATION_ID_PATTERN,
+  MAX_APPLICATION_ID_LENGTH,
+  assertValidCatalog,
+  isApplicationIdShape,
+  validateCatalog,
+} from './validate.ts';
 
 /** Look up one application by id. Returns `undefined` for an unknown id. */
 export { findApplication, searchApplications } from './query.ts';

@@ -4,36 +4,46 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { APPLICATIONS, CATEGORIES, type Category } from '@configshell/catalog';
+import {
+  APPLICATIONS,
+  CATEGORIES,
+  searchApplications,
+  type Application,
+  type Category,
+} from '@configshell/catalog';
 import { AppCard } from './AppCard';
 
 interface AppCatalogProps {
   selectedIds: Set<string>;
   onToggle: (id: string) => void;
+  onOpenDetails: (app: Application) => void;
 }
 
-export function AppCatalog({ selectedIds, onToggle }: AppCatalogProps) {
+export function AppCatalog({ selectedIds, onToggle, onOpenDetails }: AppCatalogProps) {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<Category | 'All'>('All');
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return APPLICATIONS.filter((app) => {
-      const matchesCategory = activeCategory === 'All' || app.category === activeCategory;
-      const matchesQuery =
-        q.length === 0 ||
-        app.name.toLowerCase().includes(q) ||
-        app.description.toLowerCase().includes(q) ||
-        app.category.toLowerCase().includes(q);
-      return matchesCategory && matchesQuery;
-    });
-  }, [query, activeCategory]);
+  // Search lives in the catalog package so the web app, the API and any future
+  // client answer the same question the same way. It also matches on `id`,
+  // which the old local filter did not — "vscode" now finds Visual Studio Code.
+  const filtered = useMemo(
+    () =>
+      searchApplications({
+        query,
+        category: activeCategory === 'All' ? undefined : activeCategory,
+      }),
+    [query, activeCategory],
+  );
 
   return (
     <section aria-labelledby="catalog-heading">
       <h2 id="catalog-heading" className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-        2. Browse applications
+        3. Browse applications
       </h2>
+      <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
+        {APPLICATIONS.length} verified applications. Open an application for its installation
+        sources and who packages them.
+      </p>
 
       <div className="mt-4">
         <Label htmlFor="app-search" className="sr-only">
@@ -82,13 +92,23 @@ export function AppCatalog({ selectedIds, onToggle }: AppCatalogProps) {
                 <Search />
               </EmptyMedia>
               <EmptyTitle>No applications found</EmptyTitle>
-              <EmptyDescription>Try another search or category.</EmptyDescription>
+              <EmptyDescription>
+                Nothing matches {query.trim() ? `“${query.trim()}”` : 'this filter'}
+                {activeCategory !== 'All' ? ` in ${activeCategory}` : ''}. Try another search
+                or category.
+              </EmptyDescription>
             </EmptyHeader>
           </Empty>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {filtered.map((app) => (
-              <AppCard key={app.id} app={app} selected={selectedIds.has(app.id)} onToggle={onToggle} />
+              <AppCard
+                key={app.id}
+                app={app}
+                selected={selectedIds.has(app.id)}
+                onToggle={onToggle}
+                onOpenDetails={onOpenDetails}
+              />
             ))}
           </div>
         )}

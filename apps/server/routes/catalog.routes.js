@@ -6,10 +6,18 @@
  */
 
 import { Router } from "express";
-import { getStats, listCategories, listEnvironments } from "../controllers/catalog.controller.js";
+import {
+  getRoleHandler,
+  getStats,
+  listCategories,
+  listEnvironments,
+  listRoles,
+} from "../controllers/catalog.controller.js";
 
 export const catalogRouter = Router();
 
 catalogRouter.get("/categories", listCategories);
 catalogRouter.get("/environments", listEnvironments);
+catalogRouter.get("/roles", listRoles);
+catalogRouter.get("/roles/:id", getRoleHandler);
 catalogRouter.get("/stats", getStats);

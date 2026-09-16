@@ -142,6 +142,8 @@ export interface VerifyStep {
   /** Binary names from the catalog, already pattern-checked. */
   binaries: readonly string[];
   applicationIds: readonly string[];
+  /** Parallel to `binaries`, so each rendered check can name its application. */
+  applicationNames: readonly string[];
   summary: string;
 }
 
@@ -170,6 +172,15 @@ export interface RenderedCommand {
   privileged: Privileged;
   summary: string;
   stepKind: PlanStep['kind'];
+  /**
+   * A precondition for *this* command, carried through from its step.
+   *
+   * Attached here rather than left on the step for a consumer to match up:
+   * a renderer that has to guess which command a note belongs to will
+   * eventually attach it to the wrong one, and a misplaced "requires the
+   * Flathub remote" on an APT command is worse than no note at all.
+   */
+  note?: string;
 }
 
 /**

@@ -30,9 +30,12 @@ Two components now do more than that:
 - `apps/server` serves a **read-only planning API** and accepts untrusted input at
   `POST /api/plan`. It never executes anything; there is no `child_process` import in the
   workspace and a test asserts there never will be.
+- `packages/mcp` is a **stdio MCP server** exposing seven read-only tools, and accepts
+  untrusted tool arguments from whatever client launched it. It executes nothing, reads no
+  files and opens no sockets — all asserted structurally. It has no listening port, so it has
+  no remote attack surface.
 
-There is still no AI layer, no MCP server, no local agent, no database, and no
-authentication.
+There is still no AI layer, no local agent, no database, and no authentication.
 
 The realistic security issues right now are therefore: **incorrect or malicious catalog
 data** (it reaches command generation, so a bad entry is the highest-value target — which is

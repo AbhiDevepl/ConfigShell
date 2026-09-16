@@ -1,3 +1,4 @@
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -8,16 +9,29 @@ interface SelectionBarProps {
   selectedIds: Set<string>;
   onRemove: (id: string) => void;
   onClear: () => void;
+  /** Null until a distribution is chosen — a plan cannot be built without one. */
+  canContinue: boolean;
+  blockedReason: string | null;
+  onContinue: () => void;
 }
 
 /**
  * Sticky bottom bar, visible at every breakpoint. On small screens (where
  * the sidebar SelectionSummary is hidden) "View" opens the full list in a
- * sheet. "Continue" is intentionally non-functional in Phase 1 — no command
- * generation exists yet — so it's kept inert with an explanatory tooltip
- * rather than faking a next step.
+ * sheet.
+ *
+ * "Continue" generates the setup plan. When it cannot — no distribution chosen,
+ * or nothing selected — it stays disabled and the tooltip says which, rather
+ * than being greyed out for an unstated reason.
  */
-export function SelectionBar({ selectedIds, onRemove, onClear }: SelectionBarProps) {
+export function SelectionBar({
+  selectedIds,
+  onRemove,
+  onClear,
+  canContinue,
+  blockedReason,
+  onContinue,
+}: SelectionBarProps) {
   const selectedApps = APPLICATIONS.filter((app) => selectedIds.has(app.id));
   const count = selectedApps.length;
 
@@ -26,7 +40,11 @@ export function SelectionBar({ selectedIds, onRemove, onClear }: SelectionBarPro
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-6 py-3 sm:px-8">
         <div className="min-w-0">
           <p className="text-sm font-medium">
-            {count} application{count === 1 ? '' : 's'} selected
+            {/* Short on phones, where the bar shares a row with two buttons. */}
+            <span className="sm:hidden">{count} selected</span>
+            <span className="hidden sm:inline">
+              {count} application{count === 1 ? '' : 's'} selected
+            </span>
           </p>
           {count > 0 && (
             <p className="truncate text-xs text-muted-foreground lg:hidden">
@@ -57,19 +75,31 @@ export function SelectionBar({ selectedIds, onRemove, onClear }: SelectionBarPro
             </SheetContent>
           </Sheet>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                aria-disabled="true"
-                className="cursor-not-allowed opacity-60"
-                onClick={(e) => e.preventDefault()}
-              >
-                Continue
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Command generation isn't part of Phase 1 yet.</TooltipContent>
-          </Tooltip>
+          {canContinue ? (
+            <Button type="button" onClick={onContinue}>
+              <span className="sm:hidden">Build plan</span>
+              <span className="hidden sm:inline">Build setup plan</span>
+              <ArrowRight aria-hidden="true" />
+            </Button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {/* Kept focusable and aria-disabled rather than `disabled`, so
+                    the reason is reachable by keyboard and screen reader. */}
+                <Button
+                  type="button"
+                  aria-disabled="true"
+                  className="cursor-not-allowed opacity-60"
+                  onClick={(event) => event.preventDefault()}
+                >
+                  <span className="sm:hidden">Build plan</span>
+                  <span className="hidden sm:inline">Build setup plan</span>
+                  <ArrowRight aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{blockedReason}</TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
     </div>

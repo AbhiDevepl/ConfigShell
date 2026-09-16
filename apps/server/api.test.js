@@ -43,6 +43,13 @@ async function post(path, body) {
 // ------------------------------------------------------------------- health
 
 describe("GET /health", () => {
+  test("integrity covers role presets too, not just applications", async () => {
+    // A preset naming a removed application is stale trusted data, which is the
+    // same class of problem as an invalid catalog entry.
+    const { body } = await get("/health");
+    assert.equal(body.data.catalog.errorCount, 0);
+  });
+
   test("reports liveness and catalog integrity", async () => {
     const { status, body } = await get("/health");
     assert.equal(status, 200);
@@ -53,6 +60,13 @@ describe("GET /health", () => {
   test("states that this process never executes commands", async () => {
     const { body } = await get("/health");
     assert.equal(body.data.capabilities.executesCommands, false);
+  });
+
+  test("is reachable at /api/health too, so one proxy rule covers the whole API", async () => {
+    const direct = await get("/health");
+    const underApi = await get("/api/health");
+    assert.equal(underApi.status, 200);
+    assert.equal(underApi.body.data.status, direct.body.data.status);
   });
 
   test("leaks nothing about the host", async () => {
@@ -138,6 +152,32 @@ describe("GET /api/catalog/*", () => {
     const ubuntu = environments.body.data.distros.find((d) => d.distro === "Ubuntu");
     assert.equal(ubuntu.ecosystem, "apt");
     assert.equal(environments.body.data.architectureAffectsResolution, false);
+  });
+
+  test("role presets are served whole, so a client can show what they contain", async () => {
+    const { status, body } = await get("/api/catalog/roles");
+    assert.equal(status, 200);
+    assert.ok(body.data.roles.length >= 4);
+
+    const web = body.data.roles.find((r) => r.id === "web-developer");
+    assert.ok(web, "expected a web-developer preset");
+    assert.ok(web.recommended.length > 0);
+    assert.ok(web.name && web.description);
+
+    // Every id a preset names must be a real catalog entry.
+    const catalog = await get("/api/applications");
+    const ids = new Set(catalog.body.data.applications.map((a) => a.id));
+    for (const role of body.data.roles) {
+      for (const id of [...role.recommended, ...role.optional]) {
+        assert.ok(ids.has(id), `${role.id} names "${id}", which is not in the catalog`);
+      }
+    }
+  });
+
+  test("one preset by id, with the usual 400/404 distinction", async () => {
+    assert.equal((await get("/api/catalog/roles/web-developer")).status, 200);
+    assert.equal((await get("/api/catalog/roles/no-such-role")).status, 404);
+    assert.equal((await get("/api/catalog/roles/NOT%20AN%20ID")).status, 400);
   });
 
   test("stats are computed from the data, not hardcoded", async () => {

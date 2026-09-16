@@ -1,7 +1,9 @@
 import { Check } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import { DISTROS, type Distro } from '@/data/distros';
+import { ecosystemForDistro } from '@configshell/catalog';
 
 interface DistroSelectorProps {
   selected: Distro | null;
@@ -10,22 +12,23 @@ interface DistroSelectorProps {
 
 export function DistroSelector({ selected, onSelect }: DistroSelectorProps) {
   return (
-    <section aria-labelledby="distro-heading">
-      <h2 id="distro-heading" className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-        1. Choose your distribution
-      </h2>
-      <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
+    <fieldset>
+      <legend className="text-sm font-medium">Distribution</legend>
+      <p className="mt-1 max-w-prose text-xs text-muted-foreground">
         Browsers can't reliably identify your exact Linux distribution, so pick it manually.
+        It decides which package manager your commands use.
       </p>
 
       <RadioGroup
         value={selected ?? undefined}
         onValueChange={(value) => onSelect(value as Distro)}
-        className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4"
+        className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4"
       >
         {DISTROS.map((distro) => {
           const active = selected === distro.name;
           const inputId = `distro-${distro.name}`;
+          // Derived from the catalog, never written down twice here.
+          const ecosystem = ecosystemForDistro(distro.name);
           return (
             <label
               key={distro.name}
@@ -39,7 +42,18 @@ export function DistroSelector({ selected, onSelect }: DistroSelectorProps) {
             >
               <span className="flex items-center justify-between">
                 <span className="text-sm font-medium">{distro.name}</span>
-                <RadioGroupItem value={distro.name} id={inputId} className="sr-only" />
+                {/*
+                  aria-label is required, not belt-and-braces: Radix renders this
+                  as <button role="radio">, and a <label for> names form controls,
+                  not buttons. Without it a screen reader announces four unnamed
+                  radios.
+                */}
+                <RadioGroupItem
+                  value={distro.name}
+                  id={inputId}
+                  aria-label={`${distro.name} (${ecosystem})`}
+                  className="sr-only"
+                />
                 <span
                   aria-hidden="true"
                   className={cn(
@@ -50,11 +64,14 @@ export function DistroSelector({ selected, onSelect }: DistroSelectorProps) {
                   {active && <Check className="size-3" />}
                 </span>
               </span>
+              <Badge variant="outline" className="w-fit font-mono text-[0.7rem]">
+                {ecosystem}
+              </Badge>
               <span className="text-xs leading-snug text-muted-foreground">{distro.description}</span>
             </label>
           );
         })}
       </RadioGroup>
-    </section>
+    </fieldset>
   );
 }

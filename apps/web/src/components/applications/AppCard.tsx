@@ -1,6 +1,7 @@
-import { Code2, Globe, MessageCircle, PlayCircle, SlidersHorizontal, Terminal, Wrench } from 'lucide-react';
+import { Code2, Globe, Info, MessageCircle, PlayCircle, SlidersHorizontal, Terminal, Wrench } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import type { Application, Category } from '@configshell/catalog';
@@ -22,9 +23,10 @@ interface AppCardProps {
   app: Application;
   selected: boolean;
   onToggle: (id: string) => void;
+  onOpenDetails: (app: Application) => void;
 }
 
-export function AppCard({ app, selected, onToggle }: AppCardProps) {
+export function AppCard({ app, selected, onToggle, onOpenDetails }: AppCardProps) {
   const Icon = CATEGORY_ICON[app.category];
   const inputId = `app-${app.id}`;
 
@@ -46,12 +48,32 @@ export function AppCard({ app, selected, onToggle }: AppCardProps) {
         >
           <Icon className="size-4.5" />
         </span>
-        <Checkbox
-          id={inputId}
-          checked={selected}
-          onCheckedChange={() => onToggle(app.id)}
-          aria-label={`Select ${app.name}`}
-        />
+        <span className="flex shrink-0 items-center gap-1">
+          {/*
+            Inside the label on purpose, so it stays within the card's hit area
+            and tab order. preventDefault stops the click from also toggling the
+            label's checkbox — without it, opening details would select the app.
+          */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Details for ${app.name}`}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onOpenDetails(app);
+            }}
+          >
+            <Info aria-hidden="true" />
+          </Button>
+          <Checkbox
+            id={inputId}
+            checked={selected}
+            onCheckedChange={() => onToggle(app.id)}
+            aria-label={`Select ${app.name}`}
+          />
+        </span>
       </div>
 
       <div className="min-w-0">
@@ -59,9 +81,12 @@ export function AppCard({ app, selected, onToggle }: AppCardProps) {
         <p className="mt-1 text-xs leading-snug text-muted-foreground">{app.description}</p>
       </div>
 
-      <Badge variant="outline" className="w-fit">
-        {app.category}
-      </Badge>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge variant="outline">{app.category}</Badge>
+        {app.installation.length === 0 && (
+          <Badge variant="secondary">No verified source</Badge>
+        )}
+      </div>
     </label>
   );
 }

@@ -66,13 +66,15 @@ See [Security](#security) and [`docs/security-model.md`](docs/security-model.md)
 
 ## What exists today
 
-- **A working web interface** (`apps/web`) — Vite + React 19 + TypeScript + Tailwind CSS v4
-  + [shadcn/ui](https://ui.shadcn.com) (Radix UI base). A browser-only "does this look like
-  Linux" indicator, manual distribution selection (Ubuntu, Debian, Fedora, Arch Linux), a
-  searchable and filterable application browser, selectable application cards, a selection
-  summary (sidebar on desktop, sheet + sticky bottom bar on mobile), and a dark/light theme
-  toggle that defaults to dark. **Nothing on this page installs, executes, or generates a
-  command** — the "Continue" button is intentionally inert.
+- **The full deterministic workflow in the browser** (`apps/web`) — Vite + React 19 +
+  TypeScript + Tailwind CSS v4 + [shadcn/ui](https://ui.shadcn.com) (Radix UI base):
+  environment selection (with an honest browser-only "does this look like Linux" hint, and
+  macOS/Windows shown as not-yet-supported), optional role presets, a searchable and
+  filterable application browser, per-application detail showing every verified source and
+  who packages it, a selection summary (sidebar on desktop, sheet + sticky bar on mobile),
+  and a **setup-plan view with the generated commands** — privileged steps marked, manual
+  steps explained, copy-to-clipboard. Dark/light theme, dark by default.
+  **The page never executes anything**; it displays commands you run yourself.
 
 - **A real, verified application catalog** (`packages/catalog`) — 31 applications across
   seven categories, with 116 installation sources whose identifiers were each checked
@@ -95,20 +97,30 @@ See [Security](#security) and [`docs/security-model.md`](docs/security-model.md)
   tests, including that no generated command can contain a shell metacharacter.
 
 - **A read-only planning API** (`apps/server`) — Express, with a health endpoint, catalog
-  browse/search/lookup, supported-environment discovery, and `POST /api/plan`. It **plans and
-  validates; it never executes** — there is no `child_process` import in the workspace and a
-  test asserts there never is one. No database, no authentication, no sessions. 41 tests.
+  browse/search/lookup, role presets, supported-environment discovery, and `POST /api/plan`.
+  The web app calls it to generate plans. It **plans and validates; it never executes** —
+  there is no `child_process` import in the workspace and a test asserts there never is one.
+  No database, no authentication, no sessions. 45 tests.
+
+- **An MCP server** (`packages/mcp`) — seven read-only, deterministic tools over stdio:
+  environment discovery, catalog search, application detail, role presets, compatibility
+  checking, setup-plan generation, and plan validation. A thin adapter over the same
+  installer functions, with **zero runtime dependencies**. `detect_system`, `check_installed`
+  and `execute_setup` are deliberately **absent, not stubbed** — they belong to the local
+  agent. See [`docs/mcp.md`](docs/mcp.md).
+
+- **Deterministic role presets** (`packages/catalog`) — curated role → application-id
+  bundles (General use, Student, Developer, Web developer, DevOps). Fixed, reviewable lists.
+  **No model is involved anywhere.**
 
 - **Repository tooling** — pnpm workspaces, repository-wide ESLint, per-workspace
-  typechecking, 122 tests across three workspaces, and CI that runs all of it on Node 20
+  typechecking, 199 tests across five workspaces, and CI that runs all of it on Node 20
   and 22.
 
-**Not implemented (planned):** the setup-plan and command-generation **user interface** —
-the core exists and is tested, but the web app does not yet show a plan or a command, and its
-"Continue" button is still inert. Also unimplemented: system detection beyond "does the
-browser look like Linux", application detail pages, application icons, AI features, the MCP
-server, the local Linux agent, database storage, and authentication. See
-[`ROADMAP.md`](docs/ROADMAP.md).
+**Not implemented (planned):** system detection beyond "does the browser look like Linux",
+application icons, selection persistence across reloads, component-level tests for the web
+app, MCP resources and per-capability authorization, AI features, the local Linux agent,
+database storage, and authentication. See [`ROADMAP.md`](docs/ROADMAP.md).
 
 *There is no screenshot or demo in this README yet — run it locally with `pnpm dev`; it
 takes about a minute.*
@@ -144,12 +156,14 @@ flowchart LR
     CATALOG["packages/catalog<br/>verified application data"] -- "bundled at build time" --> WEB["apps/web<br/>React interface"]
     CATALOG --> INSTALLER["packages/installer<br/>resolve · plan · commands"]
     INSTALLER --> SERVER["apps/server<br/>read-only planning API"]
-    WEB -. "not wired up yet" .-> INSTALLER
+    WEB -- "POST /api/plan" --> SERVER
     SERVER -. "does not exist" .-> REST["AI · MCP · local agent"]
 ```
 
-The dashed edge from the web app is the honest part: the core is built and tested, but the
-interface does not yet render a plan or a command.
+Two paths on purpose: the catalog is **compiled into** the web bundle, so browsing, search
+and presets work with no server and there is no catalog-fetch path to intercept. Plan
+generation goes over HTTP to the one implementation of command generation, rather than
+shipping that security-critical code to the browser as a second copy.
 
 Each layer is intentionally decoupled so security boundaries can be enforced at each hop:
 nothing downstream runs arbitrary input, and nothing upstream can touch the operating
@@ -185,8 +199,11 @@ Website → Linux detection state → Distribution selection → Application cat
 | Terminal command generation | **implemented** (`packages/installer`) |
 | Installation verification commands | **implemented** (`packages/installer`) |
 | Read-only planning API | **implemented** (`apps/server`) |
-| Plan/command **user interface** + copy to clipboard | not started |
-| Application details | not started |
+| Role / use-case presets (deterministic, no model) | **implemented** (`packages/catalog`) |
+| Application detail view | **implemented** (`apps/web`) |
+| Setup-plan UI, command display, copy to clipboard | **implemented** (`apps/web`) |
+| Selection persistence across reloads | not started |
+| Application icons | not started |
 
 V1 does **not** include real package installation, arbitrary shell execution, MCP, AI, or a
 local agent — those are out of scope for V1 entirely.
@@ -215,12 +232,14 @@ Every application belongs to exactly one category. See
 | ----- | ---------- |
 | Web interface | React 19, Vite, TypeScript, Tailwind CSS v4, shadcn/ui (Radix UI), Lucide icons, Geist font |
 | API server | Node.js, Express — read-only catalog and planning endpoints |
+| Web ↔ API | `fetch` to same-origin `/api` (Vite proxy in dev). No client library. |
 | Deterministic core | TypeScript, no dependencies (`packages/installer`) |
 | Shared packages | TypeScript, no build step (`tsx` runs the server directly) |
 | Monorepo | pnpm workspaces (no Turborepo pipeline — root pnpm scripts orchestrate) |
 | Lint / types / tests | ESLint (flat config), `tsc --noEmit`, Node's built-in test runner |
 | CI | GitHub Actions, Node 20 and 22 |
-| Planned | AI/LLM providers, MCP, a local Linux agent, PostgreSQL, Zod, Vitest, Playwright |
+| MCP | Hand-written JSON-RPC 2.0 over stdio — no SDK, no runtime dependencies |
+| Planned | AI/LLM providers, a local Linux agent, PostgreSQL, Zod, Vitest, Playwright |
 
 ---
 
@@ -245,11 +264,14 @@ apps/
     │   │   ├── layout/        header, theme toggle
     │   │   ├── detection/     Linux detection card
     │   │   ├── distro/        distribution selector
-    │   │   ├── applications/  catalog list, search/filter, cards
-    │   │   └── selection/     selection summary, list, sticky bar
+    │   │   ├── environment/   OS selector + environment step
+    │   │   ├── roles/         deterministic role presets
+    │   │   ├── applications/  catalog list, search/filter, cards, detail sheet
+    │   │   ├── selection/     selection summary, list, sticky bar
+    │   │   └── plan/          setup plan, command blocks, copy
     │   ├── data/distros.ts    selector copy (the Distro type comes from the catalog)
-    │   ├── hooks/             useLinuxDetection, useTheme
-    │   └── lib/utils.ts       `cn` re-export
+    │   ├── hooks/             useLinuxDetection, useTheme, useSetupPlan, useClipboard
+    │   └── lib/api.ts         typed client for the planning API
     ├── server.js              static server for the production build
     ├── components.json        shadcn/ui config
     └── vite.config.ts
@@ -260,7 +282,8 @@ packages/
 │   └── src/           types.ts · applications.ts · environment.ts · query.ts · validate.ts
 ├── installer/         the deterministic core — resolution, plan, commands
 │   └── src/           policy.ts · resolve.ts · plan.ts · commands.ts · types.ts
-└── mcp/               placeholder — no source (docs/mcp.md)
+└── mcp/               MCP server (stdio) — read-only tools over the core
+    └── src/           tools.ts · validate.ts · protocol.ts · server.ts · bin.ts
 
 docs/                  architecture · catalog · security · development · ai · agent · mcp
 .github/               CI workflow, issue/PR templates, CODEOWNERS, Dependabot, good first issues
@@ -315,20 +338,26 @@ real secret in a `.env.example`. Details in [`docs/development.md`](docs/develop
 ## Development
 
 ```sh
-pnpm dev                    # web app → http://localhost:3000
+pnpm dev                    # web app → http://localhost:5173, API → http://localhost:3000
 ```
+
+`pnpm dev` runs **both** processes. The web app generates setup plans by calling the API, so
+browsing works without it but the plan step does not — and the UI says so plainly rather than
+failing quietly. Vite proxies `/api` to the API server, so the browser stays on one origin
+and there is no CORS configuration.
 
 Per workspace:
 
 ```sh
-pnpm --filter web dev       # Vite dev server, port 3000
+pnpm dev:web                # web app only, port 5173 (plan step needs the API)
+pnpm --filter web dev       # the same thing
 pnpm --filter web build     # production build → apps/web/dist
 pnpm --filter web preview   # preview the production build
 pnpm --filter web start     # serve apps/web/dist (needs a build first)
 pnpm --filter server dev    # planning API (tsx watch) — http://localhost:3000/health
 ```
 
-> Both default to port 3000. Set `PORT` in `apps/server/.env` to run them together.
+> The web dev server is on 5173 and the API on 3000, so they no longer collide.
 
 ### Checks
 
@@ -346,13 +375,15 @@ editing.
 
 ## Testing
 
-**122 tests** on Node's built-in runner (via `tsx`), across three workspaces:
+**199 tests** on Node's built-in runner (via `tsx`), across five workspaces:
 
 ```sh
 pnpm test                                        # all of them
-pnpm --filter @configshell/catalog test          # 37 — validates the real catalog data
-pnpm --filter @configshell/installer test        # 44 — resolution, plans, command safety
-pnpm --filter server test                        # 41 — API integration, against the real app
+pnpm --filter @configshell/catalog test          # 45 — catalog data, environment, presets
+pnpm --filter @configshell/installer test        # 46 — resolution, plans, command safety
+pnpm --filter @configshell/mcp test              # 52 — tool surface, protocol, hostile input
+pnpm --filter server test                        # 45 — API integration, against the real app
+pnpm --filter web test                           # 11 — API client contract + safety invariants
 ```
 
 They test real data and the real application rather than fixtures and mocks: the catalog
@@ -360,7 +391,15 @@ suite validates all 31 entries, the installer suite asserts that no generated co
 contain a shell metacharacter on any distribution, and the server suite drives the actual
 Express app over HTTP.
 
-`apps/web` still has **no test runner at all** — that is the largest remaining gap. See
+`apps/web` tests cover the **API client's contract** — error classification, and that a plan
+request carries catalog ids and a distribution and nothing else — plus **structural safety
+invariants**: the web source contains no package-manager command vocabulary at all, never
+imports `@configshell/installer`, and has no `eval`, `new Function` or
+`dangerouslySetInnerHTML`. (A production build confirms it: `grep` for `apt-get install`,
+`dnf install`, `pacman -S`, `snap install` or `sudo ` in `dist/` returns zero matches.) There is deliberately no DOM
+test runner yet: adding one means Vitest plus a DOM implementation plus Testing Library, and
+that is a dependency decision worth making on purpose rather than in passing. **Component
+behaviour is therefore untested** — the largest remaining gap. See
 [`.github/GOOD_FIRST_ISSUES.md`](.github/GOOD_FIRST_ISSUES.md).
 
 ---
@@ -416,7 +455,7 @@ follow [`SECURITY.md`](docs/SECURITY.md) — not a public issue.
 | [`docs/catalog.md`](docs/catalog.md) | Catalog schema, verification rules, how to add an application or a distribution |
 | [`docs/security-model.md`](docs/security-model.md) | The security model |
 | [`docs/ai.md`](docs/ai.md) | AI planning layer — **not started**; constraints for any implementation |
-| [`docs/mcp.md`](docs/mcp.md) | MCP interface — **not started**; intended shape and rules |
+| [`docs/mcp.md`](docs/mcp.md) | MCP interface — the tool surface, and what it deliberately withholds |
 | [`docs/agent.md`](docs/agent.md) | Local Linux agent — **not started**; rules it must follow |
 | [`ROADMAP.md`](docs/ROADMAP.md) | Done, current, planned, and explicitly out of scope |
 | [`CHANGELOG.md`](docs/CHANGELOG.md) | Notable changes and the versioning policy |
@@ -433,7 +472,7 @@ required reading for contributors, but it is kept accurate.
 | --------- | -------- |
 | **V1 — Discovery** | Web foundation ✅, application catalog ✅, search/filtering ✅, selection flow ✅, installer resolution ✅, setup plan ✅, command generation ✅, planning API ✅ — remaining: the plan/command **interface**, application details |
 | **V2 — Intelligence** | AI recommendations, compatibility analysis, natural-language discovery, installation planning |
-| **V3 — MCP** | MCP server, resources, tools, tool authorization |
+| **V3 — MCP** | MCP server ✅, tools ✅ — remaining: resources, per-capability authorization |
 | **V4 — Local agent** | Linux system detection, package-manager detection, installation validation, confirmed installation |
 | **V5 — Production** | Database, accounts, catalog management, community contributions, infrastructure |
 

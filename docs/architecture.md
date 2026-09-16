@@ -18,7 +18,7 @@ System Detection      What the user's Linux system looks like
    ↓
 AI / Planning         Recommendation, compatibility, and plan generation
    ↓
-MCP                   A controlled, tool-based interface for external clients
+MCP                   A controlled, tool-based interface for external clients ✅
    ↓
 Local Agent           Runs on the user's machine — Future scope, nothing implements it
    ↓
@@ -46,8 +46,8 @@ flowchart TD
 
     classDef done fill:#1f6f43,stroke:#0f3d24,color:#fff
     classDef todo fill:#2b2b2b,stroke:#555,color:#ddd,stroke-dasharray: 4 3
-    class UI,CAT done
-    class DET,AI,MCP,AGENT,OP todo
+    class UI,CAT,MCP done
+    class DET,AI,AGENT,OP todo
 ```
 
 Solid boxes exist today; dashed boxes do not.
@@ -86,12 +86,17 @@ flowchart LR
     CATALOG --> INSTALLER
     INSTALLER --> SERVER
     CATALOG --> SERVER
-    WEB -. "not wired up yet" .-> INSTALLER
+    WEB -- "POST /api/plan" --> SERVER
 ```
 
-The catalog is *compiled into* the web bundle; it is not fetched at runtime. The web app
-still makes **no network requests** — it does not call the API, and it does not yet render a
-setup plan or a command. Wiring the installer into the interface is unstarted work.
+The catalog is *compiled into* the web bundle; it is not fetched at runtime. Browsing,
+search, category filtering and role presets therefore work with no server at all.
+
+The web app makes **exactly one kind of network request**: `POST /api/plan`. That split is
+deliberate. The web app could import `packages/installer` directly, but that would put the
+one security-critical function in the browser bundle and give two consumers two places to
+drift apart. The cost is visible rather than hidden: without the API you can browse and
+select but not generate a plan, and the UI says exactly that instead of degrading quietly.
 
 ### The three stages, and why they are separate
 
@@ -130,6 +135,15 @@ runner via `tsx`). See `docs/catalog.md` for the schema, the verification rules,
 is deliberately absent.
 
 ### `apps/web` — the UI layer
+
+Implements the whole deterministic flow: environment (OS + distribution) → optional role
+presets → browse/search/filter → application detail → selection → setup plan → commands.
+Two views held in `App.tsx`, which owns selection state: `build` (one scrollable page,
+because every part of it is revised while looking at the rest) and `plan`.
+
+It must **not** import `@configshell/installer` — one implementation of command generation,
+not two. Plan generation goes through `src/lib/api.ts`.
+
 
 Built primarily from **shadcn/ui** (Radix UI base) components under
 `src/components/ui/` (button, card, badge, checkbox, radio-group, input, toggle-group,
@@ -199,11 +213,28 @@ through which arbitrary strings would reach a shell.
 
 See `packages/installer/README.md`.
 
-### `packages/ai`, `packages/mcp`
+### `packages/mcp` — the MCP interface
 
-Placeholders for the AI planning and MCP layers: a `package.json` and a README each, no
-source. No work started. See `docs/ai.md` and `docs/mcp.md` for the constraints any
-implementation must satisfy.
+A stdio MCP server exposing **seven read-only, deterministic tools** over the catalog and the
+installer: environment discovery, catalog search, application detail, role presets,
+compatibility checking, setup-plan generation, and plan validation.
+
+It is a thin adapter — every decision comes from `packages/installer`, so an MCP client
+cannot get a different answer from the web app or the API. It does not go through the HTTP
+API: both are adapters over the same pure functions, and a network hop between them would add
+a failure mode without adding a guarantee.
+
+**Three capabilities are deliberately absent rather than stubbed:** `detect_system`,
+`check_installed` and `execute_setup` all require the local agent. A tool that always fails is
+still a tool a caller must handle; one that returns a plausible guess would be a lie.
+
+Zero runtime dependencies — the JSON-RPC layer is hand-written rather than pulling in the
+official SDK's seventeen transitive dependencies. See `docs/mcp.md`.
+
+### `packages/ai`
+
+Placeholder for the AI planning layer: a `package.json` and a README, no source. No work
+started, and none planned for the current release. See `docs/ai.md`.
 
 ## Repository tooling
 
@@ -222,9 +253,9 @@ See `docs/development.md` for the commands and `CONTRIBUTING.md` for the workflo
 
 ## What is deliberately still missing
 
-- **The plan and command user interface.** The core generates both and the API serves them,
-  but `apps/web` renders neither, and its "Continue" button remains inert. This is the
-  largest gap between what works and what a user can see.
+- **Component-level tests for `apps/web`.** The flow works and the API client is tested, but
+  no DOM test runner is installed, so component behaviour is unverified. This is the largest
+  gap in the repository.
 - **Repository-setup steps.** Sources needing a third-party repository are skipped by
   design, provisionally (Q1). ConfigShell adds no apt sources file and no signing key.
 - **Execution of any kind**, anywhere. The browser does not run commands, and neither does

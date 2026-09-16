@@ -144,15 +144,19 @@ function renderStep(step: PlanStep): readonly RenderedCommand[] {
           privileged: install.privileged,
           summary: install.summary,
           stepKind: install.kind,
+          ...(install.note ? { note: install.note } : {}),
         },
       ];
     }
 
     case 'verify':
-      return verifyCommands(step.binaries).map((command) => ({
+      // One command per application, each with its own summary. Repeating
+      // "Verify 4 installations" on four consecutive lines tells the reader
+      // nothing about which line checks what.
+      return verifyCommands(step.binaries).map((command, index) => ({
         command,
         privileged: false,
-        summary: step.summary,
+        summary: `Check ${step.applicationNames[index] ?? step.binaries[index]} is installed`,
         stepKind: step.kind,
       }));
 

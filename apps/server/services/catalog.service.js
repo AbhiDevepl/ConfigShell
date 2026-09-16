@@ -15,6 +15,7 @@
 import {
   APPLICATIONS,
   ARCHITECTURES,
+  ROLES,
   CATEGORIES,
   DISTROS,
   ECOSYSTEM_DISTROS,
@@ -22,6 +23,8 @@ import {
   PACKAGE_ECOSYSTEMS,
   ecosystemForDistro,
   findApplication,
+  findRole,
+  validateRoles,
   searchApplications,
   validateCatalog,
 } from "@configshell/catalog";
@@ -75,6 +78,27 @@ export function getSupportedEnvironments() {
   };
 }
 
+/**
+ * Role / use-case presets (PRD §15).
+ *
+ * Curated catalog ids, nothing more — no scoring, no model. Returned whole so a
+ * client can show what a preset contains *before* the user commits to it.
+ */
+export function getRoles() {
+  return ROLES.map((role) => ({
+    id: role.id,
+    name: role.name,
+    description: role.description,
+    recommended: [...role.recommended],
+    optional: [...role.optional],
+  }));
+}
+
+/** @returns {import("@configshell/catalog").Role | undefined} */
+export function getRole(id) {
+  return findRole(id);
+}
+
 /** Counts, computed from the data rather than maintained by hand. */
 export function getCatalogStats() {
   const sources = APPLICATIONS.flatMap((app) => app.installation);
@@ -90,6 +114,7 @@ export function getCatalogStats() {
     byMethod: tally("method"),
     byOrigin: tally("origin"),
     categories: CATEGORIES.length,
+    roles: ROLES.length,
     withVerification: APPLICATIONS.filter((app) => app.verify !== undefined).length,
   };
 }
@@ -102,5 +127,11 @@ export function getCatalogStats() {
  */
 export function checkCatalogIntegrity() {
   const errors = validateCatalog(APPLICATIONS);
-  return { valid: errors.length === 0, errorCount: errors.length };
+  // Presets name catalog ids, so a preset pointing at a removed application is
+  // the same class of problem as an invalid entry: trusted data gone stale.
+  const roleErrors = validateRoles();
+  return {
+    valid: errors.length === 0 && roleErrors.length === 0,
+    errorCount: errors.length + roleErrors.length,
+  };
 }

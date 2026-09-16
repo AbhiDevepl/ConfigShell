@@ -227,3 +227,28 @@ test('an empty plan renders to no commands rather than an error', () => {
   assert.deepEqual(rendered.commands, []);
   assert.equal(rendered.privilegedCount, 0);
 });
+
+test('a step note travels with its own command and no other', () => {
+  // The Flathub precondition belongs to the Flatpak step. Attaching it to the
+  // APT command would tell a user to configure a remote they do not need.
+  const rendered = render(['git', 'google-chrome'], UBUNTU);
+
+  const flatpak = rendered.commands.find((c) => c.command.startsWith('flatpak'));
+  assert.ok(flatpak);
+  assert.match(flatpak.note ?? '', /Flathub remote/);
+
+  for (const command of rendered.commands) {
+    if (command.command.startsWith('flatpak')) continue;
+    assert.equal(command.note, undefined, `unexpected note on: ${command.command}`);
+  }
+});
+
+test('each verification command names the application it checks', () => {
+  const rendered = render(['git', 'htop'], UBUNTU);
+  const checks = rendered.commands.filter((c) => c.stepKind === 'verify');
+  assert.equal(checks.length, 2);
+  assert.deepEqual(
+    checks.map((c) => c.summary),
+    ['Check Git is installed', 'Check htop is installed'],
+  );
+});

@@ -36,8 +36,8 @@ export function SelectionSummary({ selectedIds, onRemove, onClear }: SelectionSu
         )}
 
         <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
-          Installation command generation isn't available yet — this is a preview of what
-          you've picked.
+          Choose a distribution, then build the setup plan to see the exact commands.
+          ConfigShell never installs anything itself.
         </p>
       </CardContent>
     </Card>

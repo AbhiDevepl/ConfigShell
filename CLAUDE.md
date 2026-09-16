@@ -41,19 +41,24 @@ Before editing, check whether a file actually has content; many don't:
     `middleware/auth.middleware.js` are still **0 bytes on purpose**. Leave them that way.
   - Variables are documented in `apps/server/.env.example`; `.env` is git-ignored. There are
     deliberately no AI keys, database URLs or auth secrets, and a test checks for them.
-- **`apps/web/`**: a Vite + React + TypeScript + Tailwind v4 + **shadcn/ui** app. As of
-  Phase 1 it has a working UI foundation for the actual product, built primarily from
-  shadcn components (`components/ui/*` — button, card, badge, checkbox, radio-group,
-  input, toggle-group, separator, scroll-area, alert, sheet, empty, label, tooltip),
-  composed under `components/{layout,detection,distro,applications,selection}/`. See
-  "shadcn/ui setup" below before adding more components or new UI code.
-  Application data comes from `@configshell/catalog` (see below); the web app holds
-  no catalog of its own, and `src/data/distros.ts` now only carries selector copy, with the
-  `Distro` type imported from the catalog. There is no command generation, no
-  package-manager resolution, and no backend calls yet — see `docs/architecture.md` for
-  what's planned vs. implemented.
-  The workspace is named `web` (it was `react-example`, a scaffold leftover, until the
-  open-source cleanup), so both `--filter web` and `--filter ./apps/web` resolve.
+- **`apps/web/`**: a Vite + React + TypeScript + Tailwind v4 + **shadcn/ui** app, now
+  implementing the **whole deterministic flow**: environment (OS + distribution) → optional
+  role presets → browse/search/filter → application detail → selection → setup plan →
+  commands. Two views (`build` and `plan`) held in `App.tsx`, which owns selection state.
+  See "shadcn/ui setup" below before adding UI.
+  - **It calls the API for plan generation** (`src/lib/api.ts` → `POST /api/plan`) and
+    nothing else. The catalog is still compiled in, so browsing works offline; the plan step
+    does not, and the UI says so rather than degrading quietly. Do **not** import
+    `@configshell/installer` here — one implementation of command generation, not two.
+  - **Dev server is port 5173**, the API is 3000, and Vite proxies `/api`. `pnpm dev` from
+    the root runs both in parallel; `pnpm dev:web` runs the web app alone.
+  - 11 tests on `tsx --test`: `src/lib/api.test.ts` (the API client's contract) and
+    `src/lib/safety.test.ts` (structural invariants — the web source must contain no
+    package-manager command vocabulary, must never import `@configshell/installer`, and must
+    have no `eval`/`new Function`/`dangerouslySetInnerHTML`). There is **no DOM test
+    runner**, so component behaviour is untested; adding Vitest is a deliberate dependency
+    decision, not an oversight.
+  - The workspace is named `web`, so both `--filter web` and `--filter ./apps/web` resolve.
 - **`packages/catalog`**: real, and as of Phase 2 the **single source of truth for
   application metadata** — 31 verified applications, the data model, a dependency-free
   validation function, and its own tests. Published to the workspace as
@@ -87,10 +92,22 @@ Before editing, check whether a file actually has content; many don't:
     decides; change it there, not at the call sites.
   - No application is silently dropped: every one resolves, becomes manual, or is reported
     unavailable, each with an explanation.
-- **`packages/ai`, `packages/mcp`**: a `package.json` and a README each, no source —
-  placeholders for the AI planning and MCP layers. They are real (empty) workspace members.
-  **AI is future scope: do not implement it.** MCP is retained as a separate future
-  integration layer over `packages/installer` and is *not* blocked on AI.
+- **`packages/mcp`**: **implemented** — a stdio MCP server with seven read-only,
+  deterministic tools over the catalog and the installer. **52 tests.** Rules:
+  - It is a **thin adapter**. No business logic, and no command vocabulary: a test fails if
+    `apt-get install`, `sudo ` and friends appear anywhere in the package. Command text comes
+    only from `@configshell/installer`.
+  - **`detect_system`, `check_installed` and `execute_setup` must never be registered** —
+    not even as stubs that return an error. They need the local agent. `WITHHELD_CAPABILITIES`
+    records why, and a test asserts they stay absent.
+  - **No tool may take a package name, command, flag, URL or repository argument.** A test
+    walks the registered schemas. `validate_setup`'s `commands` is the sole exception and is
+    only ever compared, never executed or re-emitted.
+  - **Zero runtime dependencies** — hand-written JSON-RPC. Do not add the MCP SDK without
+    reading the rationale in `docs/mcp.md`.
+  - `src/tools.ts` is transport-independent; keep it that way.
+- **`packages/ai`**: a `package.json` and a README, no source — placeholder for the AI
+  planning layer. **AI is future scope: do not implement it.**
 - **`docs/*.md`**: `architecture.md`, `catalog.md`, `security-model.md` and `development.md` are
   the source of truth for the implementation state, the V1 flow boundary, the security
   model, and the commands — read them before making architecture-adjacent changes.
@@ -104,10 +121,11 @@ Before editing, check whether a file actually has content; many don't:
   `eslint.config.js`, covering every workspace). `typecheck` is `tsc --noEmit` per
   TypeScript workspace. The old per-workspace `"lint": "tsc --noEmit"` scripts were
   renamed to `typecheck`, and `apps/server`'s broken `lint`/`check` scripts were removed.
-- **Tests**: **122**, on Node's built-in runner via `tsx`, in three workspaces —
-  `packages/catalog` (37), `packages/installer` (44), `apps/server` (41). They exercise real
-  data and the real app, not fixtures and mocks. **`apps/web` still has no test runner at
-  all** — the largest remaining gap.
+- **Tests**: **199**, on Node's built-in runner via `tsx`, in five workspaces —
+  `packages/catalog` (45), `packages/installer` (46), `packages/mcp` (52), `apps/server` (45),
+  `apps/web` (11).
+  They exercise real data and the real app, not fixtures and mocks. **`apps/web` has no DOM
+  test runner**, so component behaviour is untested — the largest remaining gap.
 - **`apps/web` typecheck (`tsc --noEmit`) needs `@types/react`/`@types/react-dom`**, added
   in Phase 1 — they were missing entirely before that (JSX/React props typechecked as
   effectively `any`, so `tsc --noEmit` looked clean but wasn't actually validating React
@@ -159,22 +177,25 @@ pnpm install                     # install all workspace deps, from repo root
 
 Root scripts (pnpm filters — there is no Turbo pipeline):
 ```sh
-pnpm dev                         # == pnpm --filter web dev  (web only, no server)
+pnpm dev                         # web (5173) + API (3000) in parallel
+pnpm dev:web                     # web only — the plan step needs the API
 pnpm build                       # == pnpm --filter web build
 pnpm start                       # == pnpm --filter web start
 pnpm lint                        # eslint . across the whole repo (real ESLint)
 pnpm typecheck                   # tsc --noEmit for web, catalog, installer, server (checkJs)
-pnpm test                        # 122 tests: catalog (37), installer (44), server (41)
+pnpm test                        # 199 tests: catalog 45, installer 46, mcp 52, server 45, web 11
+pnpm mcp                         # start the MCP server on stdio
 pnpm check                       # lint -> typecheck -> test -> build (what CI runs)
 ```
 
 Per workspace (name-based filters work; path-based ones still do too):
 ```sh
-pnpm --filter web dev                   # Vite dev server on port 3000
+pnpm --filter web dev                   # Vite dev server on port 5173
 pnpm --filter web build                 # production build -> apps/web/dist
 pnpm --filter web preview               # preview the production build
 pnpm --filter web start                 # node server.js, serves apps/web/dist as a static SPA
 pnpm --filter web typecheck             # tsc --noEmit
+pnpm --filter web test                  # tsx --test (API client)
 
 pnpm --filter @configshell/catalog typecheck    # tsc --noEmit
 pnpm --filter @configshell/catalog test         # validates the real catalog data
@@ -182,14 +203,18 @@ pnpm --filter @configshell/catalog test         # validates the real catalog dat
 pnpm --filter @configshell/installer typecheck  # tsc --noEmit
 pnpm --filter @configshell/installer test       # resolution, plans, command safety
 
+pnpm --filter @configshell/mcp typecheck        # tsc --noEmit
+pnpm --filter @configshell/mcp test             # tool surface, protocol, hostile input
+pnpm --filter @configshell/mcp start            # stdio MCP server
+
 pnpm --filter server dev                # tsx watch index.js
 pnpm --filter server start              # tsx index.js
 pnpm --filter server test               # tsx --test — API integration tests
 pnpm --filter server typecheck          # tsc --noEmit with checkJs
 ```
 
-The web dev server and the server both default to port 3000 — set `PORT` in
-`apps/server/.env` (see `apps/server/.env.example`) before running both at once.
+The web dev server is on 5173 and the API on 3000, so they no longer collide. Vite proxies
+`/api` to the API (`apps/web/vite.config.ts`); override the target with `CONFIGSHELL_API_URL`.
 
 CI (`.github/workflows/ci.yml`) runs `pnpm install --frozen-lockfile` then lint, typecheck,
 test and build on Node 20 and 22, for pushes to `main` and pull requests. If you change a

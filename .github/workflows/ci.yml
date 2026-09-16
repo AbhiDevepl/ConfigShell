@@ -51,10 +51,13 @@ jobs:
         run: pnpm typecheck
 
       - name: Test
-        # packages/catalog validates the real catalog data, packages/installer
-        # covers resolution, planning and command generation (including the
-        # shell-injection cases), and apps/server runs its API integration tests
-        # against the real application.
+        # packages/catalog validates the real catalog data and the role presets,
+        # packages/installer covers resolution, planning and command generation
+        # (including the shell-injection cases), packages/mcp covers the tool
+        # surface and its JSON-RPC transport (including hostile arguments and the
+        # capabilities it deliberately withholds), apps/server runs its API
+        # integration tests against the real application, and apps/web covers the
+        # API client plus the web app's structural safety invariants.
         run: pnpm test
 
       - name: Build

@@ -60,29 +60,45 @@ future integration layer and is *not* blocked on AI — see [`mcp.md`](mcp.md).
   validates; it never executes, and a test asserts the workspace cannot.
 - Tests go from 20 to **122**, across three workspaces.
 
+### Phase 5 — the deterministic flow, end to end in the browser
+- `apps/web` now implements the whole flow: environment (OS + distribution) → optional role
+  presets → browse/search/filter → application detail → selection → setup plan → commands.
+- The web app calls `POST /api/plan`; the catalog stays compiled into the bundle, so
+  browsing works with no server while plan generation needs one — and says so.
+- Deterministic **role presets** in `packages/catalog` (General use, Student, Developer, Web
+  developer, DevOps). Curated id lists; no model anywhere.
+- Loading, empty and error states throughout, including a distinct offline state.
+- Accessibility fixes (unnamed distribution radios, indistinguishable preset buttons),
+  responsive behaviour down to 375px, and first tests for `apps/web`.
+
+### Phase 6 — the MCP interface
+- `packages/mcp`: a stdio MCP server with seven read-only, deterministic tools over the
+  catalog and the installer. A thin adapter — no business logic, no forked command
+  generation.
+- Hand-written JSON-RPC 2.0, so the package has **zero runtime dependencies**.
+- `detect_system`, `check_installed` and `execute_setup` deliberately **withheld**, with
+  their reasons recorded in code and asserted by test. They belong to the local agent.
+- 52 tests covering the tool surface, the protocol, hostile arguments, and the structural
+  guarantees (no execution, no filesystem, no sockets, no command vocabulary).
+
 ## Current — completing the V1 flow
 
 V1 is a **command generator, not an installer**: it ends at a command the user copies into
 their own terminal. The remaining pieces, in the order they make sense:
 
-The deterministic core is built and tested. What remains is the part a user can see:
+The flow works end to end. What remains is polish and the gaps it exposed:
 
-1. **Wire the environment through `apps/web`.** `App.tsx` still holds `distro` as
-   write-only state that nothing downstream reads. Replace it with the catalog's
-   `Environment` and pass it to the catalog view.
-2. **Setup-plan review screen** — the ordered steps, privileged steps marked, manual steps
-   explained, and per-application "no verified route here" stated plainly.
-3. **Command display and copy-to-clipboard** — the full command visible before it can be
-   copied. The browser never runs it.
-4. **Application details** — a per-application view showing the verified sources, what
-   `distro`/`vendor`/`community` mean, and which source would be used here and why.
-5. **Failure and empty states** for every outcome the resolver can produce, plus an error
-   boundary.
-6. **Tests for `apps/web`** — a test runner and coverage of selection, filtering and the new
-   plan rendering. `apps/web` is now the only workspace with no tests at all.
-
-Then, immediately after: **deterministic role/use-case presets** (Web Developer, Student,
-General User, …) as curated role → application-id bundles in the catalog. No model.
+1. **A DOM test runner for `apps/web`.** Component behaviour is untested — the largest gap
+   in the repository. Needs Vitest plus a DOM implementation plus Testing Library, which is
+   a dependency decision worth making deliberately.
+2. **Selection persistence across reloads**, so a half-built selection survives a refresh.
+3. **An error boundary**, so a render failure does not blank the page.
+4. **Application icons**, once the licensing and trademark questions are settled.
+5. **Search by tags and aliases** (PRD §14) — needs a catalog field; `id` matching landed
+   with the shared search function.
+6. **More verified applications**, and the missing PRD §13 categories. The role presets are
+   currently limited by what the catalog holds: AI/ML Developer, Designer and Video Editor
+   have no honest preset because the applications are not there yet.
 
 The V1 flow, end to end:
 
@@ -118,8 +134,9 @@ the core release.**
 
 - **AI planning layer** ([`docs/ai.md`](ai.md)) — recommendations, compatibility
   reasoning, natural-language discovery, plan drafting. AI plans; it never executes.
-- **MCP interface** ([`docs/mcp.md`](mcp.md)) — a fixed, authorized set of tools for
-  AI systems. No raw shell tool, ever.
+- **MCP resources and per-capability authorization** ([`docs/mcp.md`](mcp.md)) — the tool
+  surface is implemented and read-only; resources, subscriptions and explicit per-capability
+  authorization are not. Anything that could lead to a system change waits for the agent.
 - **Local Linux agent** ([`docs/agent.md`](agent.md)) — real system detection and the
   only component permitted to change a system, with validation and explicit confirmation.
 - **Production platform** — database, accounts, catalog management, community-submitted

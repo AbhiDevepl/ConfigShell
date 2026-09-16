@@ -155,6 +155,7 @@ export function buildPlan(
       privileged: false,
       binaries: verifiable.map((i) => i.application.verify!.binary),
       applicationIds: verifiable.map((i) => i.application.id),
+      applicationNames: verifiable.map((i) => i.application.name),
       summary: `Verify ${verifiable.length} installation${verifiable.length === 1 ? '' : 's'}`,
     };
     steps.push(verifyStep);

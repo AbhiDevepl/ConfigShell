@@ -7,7 +7,11 @@
  * filter.
  */
 
-import { CATEGORIES } from "@configshell/catalog";
+import {
+  APPLICATION_ID_PATTERN,
+  CATEGORIES,
+  MAX_APPLICATION_ID_LENGTH,
+} from "@configshell/catalog";
 import { ApiError } from "../utils/response.js";
 
 /**
@@ -17,9 +21,8 @@ import { ApiError } from "../utils/response.js";
  */
 const MAX_QUERY_LENGTH = 100;
 
-/** Application ids are lowercase slugs; the catalog enforces the same shape. */
-const APPLICATION_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const MAX_APPLICATION_ID_LENGTH = 64;
+// Application-id shape comes from the catalog package, which is where that rule
+// belongs — the catalog validator enforces the same pattern on its own data.
 
 /**
  * Narrowing guard rather than a bare `includes` check, so the value that leaves
@@ -64,6 +67,19 @@ export function parseApplicationId(raw) {
   if (raw.length > MAX_APPLICATION_ID_LENGTH || !APPLICATION_ID_PATTERN.test(raw)) {
     throw ApiError.invalidRequest(
       "Malformed application id. Expected a lowercase slug such as 'vscode'.",
+    );
+  }
+  return raw;
+}
+
+/** Role ids use the same slug shape as application ids. */
+export function parseRoleId(raw) {
+  if (typeof raw !== "string" || raw.length === 0) {
+    throw ApiError.invalidRequest("A role id is required.");
+  }
+  if (raw.length > MAX_APPLICATION_ID_LENGTH || !APPLICATION_ID_PATTERN.test(raw)) {
+    throw ApiError.invalidRequest(
+      "Malformed role id. Expected a lowercase slug such as 'web-developer'.",
     );
   }
   return raw;

@@ -24,11 +24,13 @@ is a pure function of the request.
 
 | Method | Path | Returns |
 | ------ | ---- | ------- |
-| `GET` | `/health` | Liveness and catalog integrity |
+| `GET` | `/health` (and `/api/health`) | Liveness and catalog integrity |
 | `GET` | `/api/applications` | Browse, search (`?query=`), filter (`?category=`) |
 | `GET` | `/api/applications/:id` | One entry; with `?distro=` also its resolution |
 | `GET` | `/api/catalog/categories` | Supported categories |
 | `GET` | `/api/catalog/environments` | Supported distributions and their ecosystems |
+| `GET` | `/api/catalog/roles` | Deterministic role/use-case presets |
+| `GET` | `/api/catalog/roles/:id` | One preset |
 | `GET` | `/api/catalog/stats` | Counts, computed from the data |
 | `POST` | `/api/plan` | Selection + environment → plan, commands, manual steps |
 | `POST` | `/api/plan/resolve` | Selection + environment → resolutions only |
@@ -109,7 +111,7 @@ future scope ([`docs/ai.md`](../../docs/ai.md)); there is nothing to authenticat
 ```sh
 pnpm --filter server dev     # tsx watch
 pnpm --filter server start   # tsx index.js
-pnpm --filter server test    # 41 tests
+pnpm --filter server test    # 45 tests
 pnpm --filter server typecheck
 ```
 
@@ -118,19 +120,23 @@ The server is JavaScript that imports the workspace's TypeScript packages
 fly, which is why there is no build step and no `dist/`. `tsconfig.json` runs `checkJs` over
 this code so a mistake in how it calls those packages is caught by `pnpm typecheck`.
 
-The web dev server also defaults to port 3000 — set `PORT` in `.env` to run both
-(see `.env.example`).
+The web dev server runs on 5173, so the two no longer collide. `pnpm dev` from the
+repository root starts both.
 
-## The web app does not call this
+## What the web app uses this for
 
-Not yet, and possibly not ever for the catalog itself. `apps/web` compiles
-`@configshell/catalog` into its bundle, which is simpler, faster and strictly safer than a
-network round trip.
+`apps/web` calls **`POST /api/plan`, and nothing else.** It compiles
+`@configshell/catalog` into its bundle, so browsing, search and role presets work with no
+server at all — simpler, faster, and with no catalog-fetch path to intercept.
 
-**The web UI does not yet show a setup plan at all** — wiring `@configshell/installer` into
-the interface is separate, still-unstarted work (`docs/TechnicalAudit.md`, Phase H). When it
-happens, the web app can import the installer package directly, exactly as this server does;
-it does not need this API to do it.
+Plan generation is the deliberate exception. The web app could import
+`@configshell/installer` directly, but that would put the one security-critical function in
+the browser bundle and give two consumers two places to drift apart. One implementation, one
+answer. The cost is visible rather than hidden: without this server you can browse and
+select but not generate a plan, and the UI says exactly that.
 
-So what is this API for? Consumers that cannot compile the catalog in — a CLI, an MCP
-server, or any other client that should reuse resolution rather than reimplement it.
+In development, Vite proxies `/api` here (see `apps/web/vite.config.ts`), so the browser
+stays on one origin and there is no CORS configuration and no credentials story.
+
+The API is equally for consumers that cannot compile the catalog in — a CLI, an MCP server,
+or any other client that should reuse resolution rather than reimplement it.
