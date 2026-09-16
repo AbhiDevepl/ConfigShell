@@ -22,7 +22,7 @@ packages/catalog          ← the catalog (single source of truth)
   src/index.ts            ← public API
 ```
 
-The package is published to the workspace as `@linux-app-platform/catalog` and consumed by
+The package is published to the workspace as `@configshell/catalog` and consumed by
 `apps/web` through a `workspace:*` dependency. It is TypeScript source with no build step:
 `main`/`types`/`exports` point directly at `src/index.ts`, and Vite and `tsc` both resolve
 it through the pnpm workspace symlink. That keeps the smallest correct setup — no `dist/`,
@@ -31,7 +31,7 @@ no bundler config, no Turborepo pipeline needed just to read a list of applicati
 Consumers import only from the package root:
 
 ```ts
-import { APPLICATIONS, CATEGORIES, type Application } from '@linux-app-platform/catalog';
+import { APPLICATIONS, CATEGORIES, type Application } from '@configshell/catalog';
 ```
 
 ## Schema
@@ -226,8 +226,8 @@ Budget most of the effort for verification, not for typing.
 5. **Run the checks:**
 
    ```sh
-   pnpm --filter @linux-app-platform/catalog test
-   pnpm --filter @linux-app-platform/catalog typecheck
+   pnpm --filter @configshell/catalog test
+   pnpm --filter @configshell/catalog typecheck
    ```
 
 6. **Update the counts** in the "Current contents" table above if they have moved.
@@ -269,5 +269,5 @@ Run `pnpm check` from the repository root before opening the pull request.
 
 Not implemented, by design: the installer resolver, terminal command generation,
 clipboard install commands, any execution of any kind, a backend or database behind the
-catalog, and icon assets. The catalog is inert, descriptive data — see `docs/security.md`
+catalog, and icon assets. The catalog is inert, descriptive data — see `docs/security-model.md`
 for why that matters and what guards it.

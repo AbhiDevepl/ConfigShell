@@ -12,7 +12,7 @@
  * always a manual, explicit selection — never inferred.
  */
 
-import type { Distro } from '@linux-app-platform/catalog';
+import type { Distro } from '@configshell/catalog';
 
 export type { Distro };
 

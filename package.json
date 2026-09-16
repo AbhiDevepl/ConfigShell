@@ -1,8 +1,8 @@
 {
-  "name": "linux-app-platform",
+  "name": "configshell",
   "version": "0.1.0",
   "private": true,
-  "description": "Linux App Platform — AI-native Linux software discovery and management platform",
+  "description": "ConfigShell — open-source Linux software discovery and setup-plan generation",
   "type": "module",
   "packageManager": "pnpm@9.15.5",
   "engines": {
@@ -13,8 +13,8 @@
     "build": "pnpm --filter web build",
     "start": "pnpm --filter web start",
     "lint": "eslint .",
-    "typecheck": "pnpm --filter web typecheck && pnpm --filter @linux-app-platform/catalog typecheck",
-    "test": "pnpm --filter @linux-app-platform/catalog test && pnpm --filter server test",
+    "typecheck": "pnpm --filter web typecheck && pnpm --filter @configshell/catalog typecheck",
+    "test": "pnpm --filter @configshell/catalog test && pnpm --filter server test",
     "check": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build"
   },
   "license": "Apache-2.0",

@@ -12,9 +12,16 @@ not an API.
 ## Purpose
 
 MCP (Model Context Protocol) is intended to be the **controlled interface** through which
-AI systems interact with the platform — a fixed, explicitly authorized set of capabilities
-instead of general access. If an AI system can do something, it is because a tool for it
-exists, was reviewed, and was authorized.
+*external clients* interact with the platform — a fixed, explicitly authorized set of
+capabilities instead of general access. If a client can do something, it is because a tool
+for it exists, was reviewed, and was authorized.
+
+**MCP does not depend on the AI layer.** An AI system is one possible client; so is a CLI,
+an editor extension, or a script. Every tool below is a thin adapter over the same
+deterministic core the web app uses (`packages/catalog` + the installer resolver), which is
+why MCP stays on the roadmap while AI is deferred. Nothing here requires a model to exist,
+and MCP must never become the AI layer's private back door — an AI client gets exactly the
+same authorized tools, and exactly the same validation, as any other caller.
 
 ## Sketch of the intended tools
 
@@ -53,9 +60,16 @@ confirmation.
 
 ## Before you start
 
-Post-V1 work (see [`ROADMAP.md`](../ROADMAP.md)), and it depends on layers that do not
-exist yet — there is nothing to expose until installer resolution and the local agent are
-real. Open an issue first.
+Post-core work (see [`ROADMAP.md`](ROADMAP.md)), and it depends on layers that do not
+exist yet — there is nothing to expose until installer resolution is real, and
+`get_system_info` / `execute_install_plan` additionally wait on the local agent. Open an
+issue first.
 
-Related: [`architecture.md`](architecture.md), [`security.md`](security.md),
+The single thing the core release does to keep MCP buildable is architectural, and it is
+already planned: the resolver, setup plan and command generation live in `packages/installer`
+as **pure, UI-independent functions over (catalog, environment)**. Each read-only tool above
+then maps 1:1 onto one of them. No MCP SDK, transport or tool registry should be added
+before that core exists.
+
+Related: [`architecture.md`](architecture.md), [`security-model.md`](security-model.md),
 [`agent.md`](agent.md), [`ai.md`](ai.md).

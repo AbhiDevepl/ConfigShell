@@ -2,7 +2,7 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Empty, EmptyDescription, EmptyTitle } from '@/components/ui/empty';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Application } from '@linux-app-platform/catalog';
+import type { Application } from '@configshell/catalog';
 
 interface SelectionListProps {
   selectedApps: Application[];

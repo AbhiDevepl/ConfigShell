@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import type { Application, Category } from '@linux-app-platform/catalog';
+import type { Application, Category } from '@configshell/catalog';
 
 // Safe, generic per-category placeholders — not brand logos. We don't have
 // verified rights or assets for real application icons yet (that's a later

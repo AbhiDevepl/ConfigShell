@@ -13,7 +13,7 @@ export function SiteHeader() {
           >
             L
           </span>
-          <span className="text-sm font-semibold tracking-tight">Linux App Platform</span>
+          <span className="text-sm font-semibold tracking-tight">ConfigShell</span>
         </div>
 
         <div className="flex items-center gap-1">
@@ -22,7 +22,7 @@ export function SiteHeader() {
           </p>
           <Button type="button" variant="ghost" size="icon" asChild>
             <a
-              href="https://github.com/AbhiDevepl/linux-app-platform"
+              href="https://github.com/AbhiDevepl/configshell"
               target="_blank"
               rel="noreferrer"
               aria-label="View source on GitHub"

@@ -2,7 +2,7 @@
   "name": "server",
   "version": "0.1.0",
   "private": true,
-  "description": "API server for Linux App Platform (scaffold — no endpoints yet)",
+  "description": "API server for ConfigShell (scaffold — no endpoints yet)",
   "main": "index.js",
   "type": "module",
   "scripts": {

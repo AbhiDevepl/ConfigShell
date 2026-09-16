@@ -6,7 +6,8 @@
 **Future Platforms:** macOS, Windows
 **Primary Users:** Developers, students, new Linux users
 **Status:** Planning / MVP definition
-**Repository:** Existing Turborepo implementation
+**Repository:** Existing pnpm-workspace monorepo (no Turborepo — see §29)
+**Amended:** 2026-09-16, per `docs/TechnicalAudit.md` §9
 
 ---
 
@@ -166,12 +167,18 @@ Fully functional.
 
 Initial package ecosystems:
 
-| Ecosystem       | Package Manager |
-| --------------- | --------------- |
-| Debian family   | APT             |
-| Fedora family   | DNF             |
-| Arch family     | Pacman          |
-| openSUSE family | Zypper          |
+| Ecosystem       | Package Manager | Status |
+| --------------- | --------------- | ------ |
+| Debian family   | APT             | in scope — verified (Ubuntu, Debian) |
+| Fedora family   | DNF             | in scope — verified (Fedora) |
+| Arch family     | Pacman          | in scope — verified (Arch Linux) |
+| openSUSE family | Zypper          | **deferred** — see below |
+
+> **Amended (Q4).** Active scope is the repository's actual verified coverage: apt / dnf /
+> pacman across Ubuntu, Debian, Fedora and Arch Linux, plus the distribution-agnostic
+> `flatpak` and `snap` methods. **openSUSE / Zypper is a later ecosystem**, not a Phase 1
+> one — adding it makes every existing catalog entry's coverage a fresh research question,
+> and nothing in the core release depends on it. A scope decision, not a rejection.
 
 ConfigShell should reason primarily around the **package ecosystem**, rather than creating completely separate logic for every distribution.
 
@@ -215,17 +222,27 @@ The MVP should focus on the Linux experience.
 4. Application catalog
 5. Application search
 6. Application selection
-7. User role/use-case selection
-8. AI-assisted recommendations
-9. Installation-plan generation
-10. User review before execution/instructions
-11. Secure command generation
-12. Basic installation verification
+7. Installation-plan generation
+8. User review before execution/instructions
+9. Secure command generation
+10. Basic installation verification
+
+> **Amended.** The core release is built **without external AI model integration.** Two
+> items were moved off this list:
+>
+> - *AI-assisted recommendations* → **Future** (§16, §18). No model, no provider, no key.
+> - *User role/use-case selection* → **P1**, immediately after the deterministic core, and
+>   satisfied **deterministically** by curated role → application-id bundles in the catalog
+>   (§15). It needs no model and must not wait for one.
+>
+> The deterministic chain — catalog → environment → selection → resolution → setup plan →
+> command generation → verification — is the whole of the core release.
 
 ### Not required for initial MVP
 
 * macOS implementation
 * Windows implementation
+* **AI-assisted recommendations of any kind** (§16, §18)
 * Fully autonomous AI agent
 * Complex system modification
 * Complete workstation provisioning
@@ -448,6 +465,12 @@ could resolve to the same application.
 
 # 15. User Intent
 
+> **P1, deterministic, no model.** Role selection is *not* an AI feature. It is implemented
+> as curated, reviewable **role → application-id bundles** stored in the catalog, shipped
+> immediately after the deterministic core chain is stable. Keeping it catalog-driven means
+> it is auditable, contributable, and testable — and it satisfies §42's "receive relevant
+> recommendations" criterion without a provider.
+
 Instead of forcing users to manually select every application, ConfigShell should understand their objective.
 
 Example roles:
@@ -467,6 +490,12 @@ This list should remain configurable.
 ---
 
 # 16. AI Recommendation Engine
+
+> **Future scope — not in the core release.** The core product is built without external AI
+> model integration. Nothing in this section is implemented, scheduled, or a dependency of
+> anything that is. The constraints any future implementation must satisfy live in
+> [`ai.md`](ai.md); the architectural seam is preserved (see §17) so this can be added later
+> without restructuring. Deterministic recommendations are covered by §15's role presets.
 
 The AI receives structured context.
 
@@ -545,6 +574,11 @@ This makes the system significantly safer and more deterministic.
 ---
 
 # 18. Recommendation Explainability
+
+> **Future scope**, with one part brought forward: the *deterministic* core must already
+> explain **which installation source it chose and why** (distro vs. vendor vs. community),
+> because that is a user-trust question independent of AI. Explaining a *recommendation*
+> waits on §16.
 
 ConfigShell should ideally explain recommendations.
 
@@ -810,7 +844,12 @@ This can become one of ConfigShell's strongest open-source contribution mechanis
 
 # 29. Repository Architecture
 
-Your existing repository already uses a Turborepo structure with:
+> **Corrected.** Turborepo was never actually installed — `turbo.json` was empty and has
+> been deleted. The monorepo is **pnpm workspaces**, orchestrated by root `package.json`
+> scripts with pnpm filters. Do not add a Turbo pipeline unless the dependency graph
+> genuinely needs one.
+
+The existing repository uses a pnpm-workspace monorepo with:
 
 ```text
 apps/
@@ -1159,15 +1198,15 @@ Linux environment detection + catalog.
 
 ### v0.2
 
-Application selection + setup generation.
+Application selection + installer resolution + setup-plan generation.
 
 ### v0.3
 
-AI recommendations.
+Safe command generation + installation verification.
 
 ### v0.4
 
-Installation verification and reliability improvements.
+Reliability, failure handling, and deterministic role/use-case presets (no model).
 
 ### v1.0
 
@@ -1194,9 +1233,9 @@ Open ConfigShell
        ↓
 Detect their environment
        ↓
-Choose what they're using the computer for
+Choose what they're using the computer for      (P1 — deterministic role presets)
        ↓
-Receive relevant recommendations
+Receive relevant recommendations                (P1 — from curated bundles, not a model)
        ↓
 Review applications
        ↓
@@ -1208,6 +1247,11 @@ Verify the result
 ```
 
 without needing to manually research every application.
+
+> **Amended.** The two marked steps are satisfied **deterministically** by §15's curated
+> role → application-id bundles and land at **P1**, immediately after the core chain. The
+> core release itself (browse → select → resolve → plan → commands → verify) does not
+> depend on them, and neither depends on a model.
 
 ---
 
@@ -1341,18 +1385,23 @@ Based on the repository you shared, you're already beyond the pure idea stage.
 
 You currently have the beginnings of:
 
+> **Corrected 2026-09-16 against the actual repository.** The original table overstated
+> two rows. Verified state:
+
 ```text
-Turborepo                 ✓
+pnpm workspaces           ✓   (Turborepo ✗ — never installed, turbo.json deleted)
 React + Vite + TS         ✓
-Express backend           ✓
-Catalog package           ✓
-AI package                ✓
-MCP package               ✓
-Linux detection           ✓
-Distro selection          ✓
+Express backend           ~   scaffold only: starts, registers no routes;
+                              18 files across controllers/services/routes/
+                              middleware/validators/utils are 0 bytes
+Catalog package           ✓   31 verified apps, 116 sources, validator, 20 tests
+AI package                ~   package.json + README, no source (intentional placeholder)
+MCP package               ~   package.json + README, no source (intentional placeholder)
+Linux detection           ~   browser-only "looks like Linux"; never names a distribution
+Distro selection          ~   selector works, but the result is currently unused downstream
 Application catalog UI    ✓
 Application selection     ✓
-AI backend structure      ✓
+AI backend structure      ✗   ai.controller.js / ai.service.js / ai.routes.js are 0 bytes
 Security documentation    ✓
 Architecture docs         ✓
 ```
@@ -1362,6 +1411,10 @@ So the next step **after this PRD is not "start coding."**
 It should be:
 
 ## **ConfigShell Technical Audit → Gap Analysis → Architecture v1**
+
+> **Done.** See [`TechnicalAudit.md`](TechnicalAudit.md) — the full gap analysis,
+> documentation audit, architectural risks, AI-to-future-scope record, phased backlog, and
+> the resolved product decisions (§9) that amend this PRD.
 
 We take your current repository and map:
 

@@ -4,17 +4,17 @@ blank_issues_enabled: true
 
 contact_links:
   - name: Security vulnerability
-    url: https://github.com/AbhiDevepl/linux-app-platform/security/policy
+    url: https://github.com/AbhiDevepl/configshell/security/policy
     about: Do not open a public issue. Report vulnerabilities privately — see SECURITY.md.
 
   - name: Question or help with setup
-    url: https://github.com/AbhiDevepl/linux-app-platform/blob/main/SUPPORT.md
+    url: https://github.com/AbhiDevepl/configshell/blob/main/SUPPORT.md
     about: How to get help, and what to include so the first reply is useful.
 
   - name: How to contribute
-    url: https://github.com/AbhiDevepl/linux-app-platform/blob/main/CONTRIBUTING.md
+    url: https://github.com/AbhiDevepl/configshell/blob/main/CONTRIBUTING.md
     about: Setup, branch and commit conventions, and what reviewers look for.
 
   - name: Good first issues
-    url: https://github.com/AbhiDevepl/linux-app-platform/blob/main/.github/GOOD_FIRST_ISSUES.md
+    url: https://github.com/AbhiDevepl/configshell/blob/main/.github/GOOD_FIRST_ISSUES.md
     about: Real, self-contained tasks in this codebase, with the files each one touches.

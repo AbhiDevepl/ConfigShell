@@ -31,7 +31,7 @@ grants no shortcut.
 1. **Output must be structured and validated.** Model output is untrusted input. It must
    be parsed into a known shape and rejected on failure — never passed through.
 2. **Plans reference catalog entries by id.** The model may only select from
-   `@linux-app-platform/catalog`; it may not invent an application, a package identifier,
+   `@configshell/catalog`; it may not invent an application, a package identifier,
    or a URL. Anything that does not resolve against the trusted catalog is rejected.
 3. **No command strings anywhere.** The AI layer must not produce, and must not be asked
    to produce, shell commands, flags, or arguments. Turning a plan into a command is the
@@ -52,10 +52,10 @@ would not talk to a model itself.
 ## Before you start
 
 This is post-V1 work, after installer resolution and command generation land (see
-[`ROADMAP.md`](../ROADMAP.md)). Open an issue describing the boundary you intend to
+[`ROADMAP.md`](ROADMAP.md)). Open an issue describing the boundary you intend to
 implement before writing code — a design conversation is expected here, and a large
 unsolicited AI pull request is likely to be declined on architectural grounds rather than
 on quality.
 
-Related: [`architecture.md`](architecture.md), [`security.md`](security.md),
+Related: [`architecture.md`](architecture.md), [`security-model.md`](security-model.md),
 [`mcp.md`](mcp.md).

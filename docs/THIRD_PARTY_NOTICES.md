@@ -1,6 +1,6 @@
 # Third-party notices
 
-Linux App Platform is distributed under the [Apache License 2.0](LICENSE). It uses the
+ConfigShell is distributed under the [Apache License 2.0](../LICENSE). It uses the
 third-party software listed below, each under its own license. Nothing here is vendored
 into the repository except where explicitly stated — dependencies are installed from npm
 via `pnpm-lock.yaml`.

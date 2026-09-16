@@ -14,6 +14,12 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 
 ### Added
 
+- `docs/ProductRequirements.md` — the product requirements document (vision, scope, MVP
+  definition, long-term architecture).
+- `docs/TechnicalAudit.md` — a full audit of the repository against the PRD and README:
+  gap analysis, documentation audit, architectural risks, the AI-to-future-scope record,
+  the prioritised P0/P1/P2/Future backlog, and the resolved product decisions.
+
 - Open-source project files: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`,
   `SUPPORT.md`, `MAINTAINERS.md`, `ROADMAP.md`, `THIRD_PARTY_NOTICES.md`, `NOTICE`, and
   this changelog.
@@ -33,6 +39,23 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 
 ### Changed
 
+- **Renamed the project to ConfigShell** throughout: workspace package names, the npm scope
+  (`@linux-app-platform/*` → `@configshell/*`), the page title, UI copy, and every
+  repository URL.
+- **Product direction: the core release is built without external AI model integration.**
+  AI recommendations and explainability move to Future; role/use-case selection is
+  retained but will be satisfied deterministically with curated catalog bundles. MCP is
+  *not* removed — it is retained as a separate future integration layer and `docs/mcp.md`
+  is reframed so it no longer depends on AI existing. The PRD was amended accordingly
+  (MVP list, version ladder, success criteria).
+- Community-health documents are now consistently referenced at their real location under
+  `docs/`; all 50 broken relative links left by the earlier move have been repaired.
+- `docs/security.md` renamed to `docs/security-model.md`. It previously collided with
+  `docs/SECURITY.md` on case-insensitive filesystems, which breaks clones on macOS and
+  Windows.
+- Corrected stale PRD claims: Turborepo was never installed, and the AI backend "structure"
+  is a set of 0-byte placeholder files.
+
 - `apps/server` now starts successfully. It previously crashed immediately with
   `ERR_MODULE_NOT_FOUND` because it imported `dotenv` without declaring it; `dotenv` is now
   a declared dependency and the port comes from validated configuration.
@@ -48,6 +71,11 @@ version is below `1.0.0`, the public surface may change in a minor release — s
   Express 5 no longer accepts.
 
 ### Removed
+
+- `MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API` from `apps/web/metadata.json` — the only place
+  in the repository that asserted a live model dependency, for a feature that does not
+  exist.
+- The "AI-native" tagline from `README.md` and the root `package.json` description.
 
 - Unused dependencies from `apps/web`: `@google/genai`, `motion`, `dotenv`, `autoprefixer`,
   `esbuild`, `tsx`, and a duplicate `vite` entry.

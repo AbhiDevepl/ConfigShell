@@ -1,16 +1,20 @@
 # ConfigShell
 
-[![CI](https://github.com/AbhiDevepl/linux-app-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/AbhiDevepl/linux-app-platform/actions/workflows/ci.yml)
+[![CI](https://github.com/AbhiDevepl/configshell/actions/workflows/ci.yml/badge.svg)](https://github.com/AbhiDevepl/configshell/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org)
 [![pnpm](https://img.shields.io/badge/pnpm-9.15.5-orange.svg)](https://pnpm.io)
 
-An open-source, AI-native Linux software discovery and management platform.
+An open-source Linux software discovery and setup-plan generator.
 
-The long-term goal is to help users discover Linux applications, understand how compatible
-those applications are with their system, and — with explicit consent — plan and validate
-installation workflows. AI is intended to reason about software and plan actions; it is
-never granted unrestricted access to the operating system.
+ConfigShell helps users discover Linux applications, understand how compatible those
+applications are with their system, and — with explicit consent — generate a validated
+setup plan they run themselves. The core is **deterministic**: every recommendation and
+every command comes from the verified catalog, not from a model.
+
+AI is *stated future work*, not a dependency. When it lands it will reason about software
+and propose plans; it will never be granted unrestricted access to the operating system,
+and the product must remain fully usable without it.
 
 > **Status: V1 in development. Nothing here installs software yet.**
 > This README separates what is implemented from what is planned, and says so at every
@@ -18,8 +22,8 @@ never granted unrestricted access to the operating system.
 
 **Quick links:** [What works today](#what-exists-today) ·
 [Install](#installation) · [Development](#development) ·
-[Contributing](CONTRIBUTING.md) · [Roadmap](ROADMAP.md) ·
-[Good first issues](.github/GOOD_FIRST_ISSUES.md) · [Security](SECURITY.md)
+[Contributing](docs/CONTRIBUTING.md) · [Roadmap](docs/ROADMAP.md) ·
+[Good first issues](.github/GOOD_FIRST_ISSUES.md) · [Security](docs/SECURITY.md)
 
 ---
 
@@ -56,7 +60,7 @@ The intended end-to-end experience:
 - Applications must resolve against the **trusted catalog** — untrusted manifests are never
   installed.
 
-See [Security](#security) and [`docs/security.md`](docs/security.md) for the full model.
+See [Security](#security) and [`docs/security-model.md`](docs/security-model.md) for the full model.
 
 ---
 
@@ -74,7 +78,7 @@ See [Security](#security) and [`docs/security.md`](docs/security.md) for the ful
   seven categories, with 116 installation sources whose identifiers were each checked
   against an authoritative source (the distribution's own package database, Flathub, the
   Snap Store, or vendor documentation). It is the single source of truth for application
-  metadata; the web app consumes it via `@linux-app-platform/catalog` and owns no
+  metadata; the web app consumes it via `@configshell/catalog` and owns no
   application data of its own. Support is explicit per distribution rather than assumed,
   unverified identifiers are omitted rather than guessed, version numbers are never
   recorded, and each source is labelled `distro` / `vendor` / `community` so third-party
@@ -93,7 +97,7 @@ See [Security](#security) and [`docs/security.md`](docs/security.md) for the ful
 **Not implemented (planned):** package-manager resolution (turning catalog metadata into an
 install plan), terminal command generation, system detection beyond "does the browser look
 like Linux", application detail pages, application icons, AI features, the MCP server, the
-local Linux agent, database storage, and authentication. See [`ROADMAP.md`](ROADMAP.md).
+local Linux agent, database storage, and authentication. See [`ROADMAP.md`](docs/ROADMAP.md).
 
 *There is no screenshot or demo in this README yet — run it locally with `pnpm dev`; it
 takes about a minute.*
@@ -113,7 +117,9 @@ System Detection      What the user's Linux system looks like
    ↓
 AI / Planning         Recommendation, compatibility, and plan generation
    ↓
-MCP                   A controlled, tool-based interface for AI systems
+MCP                   A controlled, tool-based interface for external clients
+   ↓
+Local Agent           Runs on the user's machine — Future scope, nothing implements it
    ↓
 Validated System
 Operation             The only layer that can change the system
@@ -126,7 +132,7 @@ design, not code:
 flowchart LR
     CATALOG["packages/catalog<br/>verified application data"] -- "bundled at build time" --> WEB["apps/web<br/>React interface"]
     WEB -. "not wired up" .-> SERVER["apps/server<br/>Express scaffold"]
-    SERVER -. "does not exist" .-> REST["AI · MCP · "]
+    SERVER -. "does not exist" .-> REST["AI · MCP · local agent"]
 ```
 
 Each layer is intentionally decoupled so security boundaries can be enforced at each hop:
@@ -257,8 +263,8 @@ machine.
 ## Installation
 
 ```sh
-git clone https://github.com/AbhiDevepl/linux-app-platform.git
-cd linux-app-platform
+git clone https://github.com/AbhiDevepl/configshell.git
+cd configshell
 pnpm install
 ```
 
@@ -320,7 +326,7 @@ editing.
 runner (via `tsx`) that validate the real catalog data, not just fixtures.
 
 ```sh
-pnpm --filter @linux-app-platform/catalog test
+pnpm --filter @configshell/catalog test
 ```
 
 `apps/server` runs `node --test` and finds no test files (a pass with zero tests).
@@ -334,13 +340,13 @@ pnpm --filter @linux-app-platform/catalog test
 Contributions are welcome, and the most useful ones right now are catalog additions, tests,
 and documentation fixes.
 
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — setup, branch and commit conventions, pull request
+- [`CONTRIBUTING.md`](docs/CONTRIBUTING.md) — setup, branch and commit conventions, pull request
   process, and what reviewers look for.
 - [`.github/GOOD_FIRST_ISSUES.md`](.github/GOOD_FIRST_ISSUES.md) — 16 real tasks with the
   files each one touches.
-- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — expected conduct in every project space.
-- [`MAINTAINERS.md`](MAINTAINERS.md) — who maintains what and who decides what.
-- [`SUPPORT.md`](SUPPORT.md) — where questions go.
+- [`CODE_OF_CONDUCT.md`](docs/CODE_OF_CONDUCT.md) — expected conduct in every project space.
+- [`MAINTAINERS.md`](docs/MAINTAINERS.md) — who maintains what and who decides what.
+- [`SUPPORT.md`](docs/SUPPORT.md) — where questions go.
 
 House rules, in short: keep features modular, avoid unnecessary dependencies, keep catalog
 data separate from the UI, never introduce unsafe command execution, add tests for
@@ -364,8 +370,8 @@ Security is a design constraint, not an afterthought:
   a system.
 - **Security-sensitive operations are logged** and auditable.
 
-The full model is in [`docs/security.md`](docs/security.md). To **report a vulnerability**,
-follow [`SECURITY.md`](SECURITY.md) — not a public issue.
+The full model is in [`docs/security-model.md`](docs/security-model.md). To **report a vulnerability**,
+follow [`SECURITY.md`](docs/SECURITY.md) — not a public issue.
 
 ---
 
@@ -373,16 +379,18 @@ follow [`SECURITY.md`](SECURITY.md) — not a public issue.
 
 | Document | What it covers |
 | -------- | -------------- |
+| [`docs/ProductRequirements.md`](docs/ProductRequirements.md) | The PRD — product vision, scope, and MVP definition |
+| [`docs/TechnicalAudit.md`](docs/TechnicalAudit.md) | Audit of the repository against the PRD: gap analysis, risks, resolved decisions, and the prioritised backlog |
 | [`docs/development.md`](docs/development.md) | Setup, commands, environment, troubleshooting |
 | [`docs/architecture.md`](docs/architecture.md) | Layer separation; implemented vs. planned |
 | [`docs/catalog.md`](docs/catalog.md) | Catalog schema, verification rules, how to add an application or a distribution |
-| [`docs/security.md`](docs/security.md) | The security model |
+| [`docs/security-model.md`](docs/security-model.md) | The security model |
 | [`docs/ai.md`](docs/ai.md) | AI planning layer — **not started**; constraints for any implementation |
 | [`docs/mcp.md`](docs/mcp.md) | MCP interface — **not started**; intended shape and rules |
 | [`docs/agent.md`](docs/agent.md) | Local Linux agent — **not started**; rules it must follow |
-| [`ROADMAP.md`](ROADMAP.md) | Done, current, planned, and explicitly out of scope |
-| [`CHANGELOG.md`](CHANGELOG.md) | Notable changes and the versioning policy |
-| [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) | Third-party licenses and attribution |
+| [`ROADMAP.md`](docs/ROADMAP.md) | Done, current, planned, and explicitly out of scope |
+| [`CHANGELOG.md`](docs/CHANGELOG.md) | Notable changes and the versioning policy |
+| [`THIRD_PARTY_NOTICES.md`](docs/THIRD_PARTY_NOTICES.md) | Third-party licenses and attribution |
 
 `CLAUDE.md` holds working notes for AI coding assistants used on this repository; it is not
 required reading for contributors, but it is kept accurate.
@@ -400,15 +408,15 @@ required reading for contributors, but it is kept accurate.
 | **V5 — Production** | Database, accounts, catalog management, community contributions, infrastructure |
 
 Details, including what is deliberately **not** on the roadmap, are in
-[`ROADMAP.md`](ROADMAP.md).
+[`ROADMAP.md`](docs/ROADMAP.md).
 
 ---
 
 ## License
 
 Distributed under the **Apache License 2.0** — see [`LICENSE`](LICENSE) for the full text
-and [`NOTICE`](NOTICE) for the copyright notice. Third-party components and their licenses
-are listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+and [`NOTICE`](docs/NOTICE) for the copyright notice. Third-party components and their licenses
+are listed in [`THIRD_PARTY_NOTICES.md`](docs/THIRD_PARTY_NOTICES.md).
 
 Application names in the catalog are trademarks of their respective owners; this project is
 not affiliated with or endorsed by any of them and redistributes none of their software.
@@ -416,6 +424,6 @@ not affiliated with or endorsed by any of them and redistributes none of their s
 ## Maintainers
 
 Created and maintained by **AbhiDevepl** and **tejjasdev** — see
-[`MAINTAINERS.md`](MAINTAINERS.md).
+[`MAINTAINERS.md`](docs/MAINTAINERS.md).
 
-GitHub: [AbhiDevepl/linux-app-platform](https://github.com/AbhiDevepl/linux-app-platform)
+GitHub: [AbhiDevepl/configshell](https://github.com/AbhiDevepl/configshell)

@@ -13,7 +13,7 @@ of this size.
 
 > The second row is taken from the author line in `README.md` and the commit history. The
 > repository owner should confirm the exact GitHub handle and then add it to
-> [`.github/CODEOWNERS`](.github/CODEOWNERS), which currently lists only `@AbhiDevepl` —
+> [`.github/CODEOWNERS`](../.github/CODEOWNERS), which currently lists only `@AbhiDevepl` —
 > an unrecognised username silently invalidates the whole CODEOWNERS file.
 
 No other names appear here, and none should be added without that person's agreement.
@@ -39,7 +39,7 @@ maintainer, by doing the work over time:
 - A sustained record of merged, high-quality pull requests.
 - Reviews of other people's pull requests that a maintainer would have written anyway.
 - Good judgement about scope — knowing what this project should *not* do, especially around
-  the [security invariants](docs/security.md).
+  the [security invariants](security-model.md).
 - Reliability: following through on what they pick up, and saying so when they cannot.
 
 Existing maintainers propose and agree on the change, and the person has to want the role.
@@ -54,7 +54,7 @@ hard feelings; a maintainer who is unreachable for a long stretch may be moved t
 | Routine bug fix, docs, catalog entry | Any maintainer, one approval |
 | New dependency | Any maintainer, but it must be justified in the pull request |
 | Architectural change — new layer, API boundary, workspace restructuring, build tooling | Agreement between **both** maintainers, discussed in an issue first |
-| Anything touching the security invariants in [`docs/security.md`](docs/security.md) | Agreement between **both** maintainers; the invariants themselves are not up for trade |
+| Anything touching the security invariants in [`docs/security-model.md`](security-model.md) | Agreement between **both** maintainers; the invariants themselves are not up for trade |
 | Releases and version numbers | Repository owner |
 | Code of Conduct enforcement | Maintainers, per [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) |
 

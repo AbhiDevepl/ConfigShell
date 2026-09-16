@@ -1,5 +1,5 @@
 # =============================================================================
-# linux-app-platform — monorepo .gitignore
+# configshell — monorepo .gitignore
 # Turborepo + pnpm workspaces (apps/*, packages/*)
 # Applies from the repository root to every workspace.
 # Patterns without a leading slash match at any depth (root, apps/*, packages/*).

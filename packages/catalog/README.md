@@ -1,4 +1,4 @@
-# `@linux-app-platform/catalog`
+# `@configshell/catalog`
 
 The verified application catalog — the **single source of truth** for application metadata
 in this repository. 31 applications, 116 verified installation sources.
@@ -10,7 +10,7 @@ Do not add a bundler or a `dist/` pipeline unless something actually needs one.
 ## Use it
 
 ```ts
-import { APPLICATIONS, CATEGORIES, DISTROS, type Application } from '@linux-app-platform/catalog';
+import { APPLICATIONS, CATEGORIES, DISTROS, type Application } from '@configshell/catalog';
 ```
 
 Consumers import from the package root only. The web app depends on it via `workspace:*`
@@ -19,8 +19,8 @@ and keeps no application data of its own.
 ## Commands
 
 ```sh
-pnpm --filter @linux-app-platform/catalog test       # node test runner via tsx
-pnpm --filter @linux-app-platform/catalog typecheck  # tsc --noEmit
+pnpm --filter @configshell/catalog test       # node test runner via tsx
+pnpm --filter @configshell/catalog typecheck  # tsc --noEmit
 ```
 
 The test suite validates the **real** catalog, not just synthetic fixtures, so a malformed

@@ -62,9 +62,9 @@ it honestly — see the note on distro detection in the
 
 ## Before you start
 
-This is the last planned layer (see [`ROADMAP.md`](../ROADMAP.md)) and the highest-risk one
+This is the last planned layer (see [`ROADMAP.md`](ROADMAP.md)) and the highest-risk one
 in the project. It is not a good first contribution, and it will not be merged without a
 design discussion in an issue first.
 
-Related: [`architecture.md`](architecture.md), [`security.md`](security.md),
+Related: [`architecture.md`](architecture.md), [`security-model.md`](security-model.md),
 [`mcp.md`](mcp.md).

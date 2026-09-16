@@ -2,7 +2,7 @@
 
 This file is about **reporting** security problems. For how the platform is *designed* to
 be safe — the trust boundaries, the catalog-as-trusted-data model, and the rules that
-govern future AI/MCP/agent work — see [`docs/security.md`](docs/security.md).
+govern future AI/MCP/agent work — see [`docs/security-model.md`](security-model.md).
 
 ## Supported versions
 
@@ -110,5 +110,5 @@ Please give us a reasonable chance to fix an issue before disclosing it publicly
 identifier there is not a cosmetic bug — it is what a future resolver would act on. Hence:
 identifiers must be verified against an authoritative source, no field may ever carry a
 command or shell fragment, and provenance (`origin`) must be recorded honestly. See
-[`docs/catalog.md`](docs/catalog.md). Report a malicious or dangerously wrong catalog entry
+[`docs/catalog.md`](catalog.md). Report a malicious or dangerously wrong catalog entry
 through the private channels above, not in a public issue.

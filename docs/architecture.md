@@ -18,15 +18,22 @@ System Detection      What the user's Linux system looks like
    ↓
 AI / Planning         Recommendation, compatibility, and plan generation
    ↓
-MCP                   A controlled, tool-based interface for AI systems
+MCP                   A controlled, tool-based interface for external clients
+   ↓
+Local Agent           Runs on the user's machine — Future scope, nothing implements it
    ↓
 Validated System
 Operation             The only layer that can change the system
 ```
 
+The **Local Agent** layer is deliberately listed here even though it is unstarted: the
+security model's "privileged operations belong in the local agent" principle only makes
+sense if the layer is named. See [`agent.md`](agent.md) for the rules it must follow, and
+[`ROADMAP.md`](ROADMAP.md) for where it sits (post-core, after MCP).
+
 Each layer is intentionally decoupled so security boundaries can be enforced at each hop:
 nothing downstream runs arbitrary input, and nothing upstream can touch the operating
-system directly. See `docs/security.md` for the security model this enables.
+system directly. See `docs/security-model.md` for the security model this enables.
 
 ```mermaid
 flowchart TD
@@ -121,8 +128,8 @@ section before adding more components or touching the `@/*` import alias.
   persisted to `localStorage`); the actual color tokens come from shadcn's own
   `src/index.css` output, not hand-rolled.
 - `src/data/distros.ts` — presentation copy for the four selectable distributions. The
-  `Distro` union itself is imported from `@linux-app-platform/catalog`, not redefined.
-- Application data comes entirely from `@linux-app-platform/catalog`. There is no local
+  `Distro` union itself is imported from `@configshell/catalog`, not redefined.
+- Application data comes entirely from `@configshell/catalog`. There is no local
   catalog file.
 - State (selected distro, selected application ids, search query, active category filter)
   lives in `App.tsx`/local component state — there is no global store, no backend calls,

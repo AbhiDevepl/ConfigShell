@@ -25,8 +25,8 @@ your machine or requires root.
 ## Install
 
 ```sh
-git clone https://github.com/AbhiDevepl/linux-app-platform.git
-cd linux-app-platform
+git clone https://github.com/AbhiDevepl/configshell.git
+cd configshell
 pnpm install
 ```
 
@@ -89,8 +89,8 @@ Per-workspace equivalents:
 
 ```sh
 pnpm --filter web typecheck
-pnpm --filter @linux-app-platform/catalog test
-pnpm --filter @linux-app-platform/catalog typecheck
+pnpm --filter @configshell/catalog test
+pnpm --filter @configshell/catalog typecheck
 pnpm --filter server test
 ```
 
@@ -129,7 +129,10 @@ apps/server       Express API scaffold — starts, no endpoints
 packages/catalog  verified application catalog (single source of truth)
 packages/ai       placeholder, empty
 packages/mcp      placeholder, empty
-docs/             architecture, catalog, security, development
+docs/             architecture, catalog, security-model, development, ai, mcp, agent,
+                  the PRD and technical audit, plus the community-health documents
+                  (CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, SUPPORT, MAINTAINERS,
+                  ROADMAP, CHANGELOG, THIRD_PARTY_NOTICES, NOTICE)
 .github/          issue/PR templates, CI, contribution aids
 ```
 
@@ -147,7 +150,7 @@ following [pnpm.io/installation](https://pnpm.io/installation).
 For the server, set `PORT` in `apps/server/.env`. For the web app, run Vite on another
 port directly: `pnpm --filter web exec vite --port 5173` (the `dev` script hardcodes 3000).
 
-**Editor cannot resolve `@linux-app-platform/catalog`** — run `pnpm install`; the package
+**Editor cannot resolve `@configshell/catalog`** — run `pnpm install`; the package
 is resolved through a workspace symlink and has no build step.
 
 **`pnpm --filter web …` matches nothing** — you are on a checkout from before the web

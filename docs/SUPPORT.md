@@ -1,6 +1,6 @@
 # Support
 
-Linux App Platform is an early-stage project maintained by two people in their spare time.
+ConfigShell is an early-stage project maintained by two people in their spare time.
 There is no commercial support, no SLA, and no chat channel. Everything happens in the
 GitHub repository.
 
@@ -8,23 +8,23 @@ GitHub repository.
 
 Most questions are answered by:
 
-- [`README.md`](README.md) — what the project is and what actually works today.
-- [`docs/development.md`](docs/development.md) — setup, commands, environment variables,
+- [`README.md`](../README.md) — what the project is and what actually works today.
+- [`docs/development.md`](development.md) — setup, commands, environment variables,
   troubleshooting.
-- [`docs/architecture.md`](docs/architecture.md) — how the layers fit together.
-- [`docs/catalog.md`](docs/catalog.md) — the application catalog and its rules.
+- [`docs/architecture.md`](architecture.md) — how the layers fit together.
+- [`docs/catalog.md`](catalog.md) — the application catalog and its rules.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — how to make a change.
-- Existing [issues](https://github.com/AbhiDevepl/linux-app-platform/issues), including
+- Existing [issues](https://github.com/AbhiDevepl/configshell/issues), including
   closed ones.
 
 ## Where to go
 
 | What you have | Where it goes |
 | ------------- | ------------- |
-| Something is broken or behaves wrong | [Bug report](https://github.com/AbhiDevepl/linux-app-platform/issues/new?template=bug_report.md) |
-| An idea or a missing capability | [Feature request](https://github.com/AbhiDevepl/linux-app-platform/issues/new?template=feature_request.md) |
-| Docs are wrong, unclear, or missing | [Documentation issue](https://github.com/AbhiDevepl/linux-app-platform/issues/new?template=documentation.md) |
-| An application is missing from the catalog | Feature request, with your verification sources — see [`docs/catalog.md`](docs/catalog.md) |
+| Something is broken or behaves wrong | [Bug report](https://github.com/AbhiDevepl/configshell/issues/new?template=bug_report.md) |
+| An idea or a missing capability | [Feature request](https://github.com/AbhiDevepl/configshell/issues/new?template=feature_request.md) |
+| Docs are wrong, unclear, or missing | [Documentation issue](https://github.com/AbhiDevepl/configshell/issues/new?template=documentation.md) |
+| An application is missing from the catalog | Feature request, with your verification sources — see [`docs/catalog.md`](catalog.md) |
 | A security vulnerability | **Not a public issue** — follow [`SECURITY.md`](SECURITY.md) |
 | A question about how something works | Open an issue and say it is a question; GitHub Discussions is not enabled yet |
 

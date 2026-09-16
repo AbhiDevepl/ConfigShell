@@ -4,7 +4,7 @@ Real, self-contained work in this codebase — not placeholder tasks. Each one n
 files it touches and what "done" looks like, so you can start without waiting for a
 maintainer to scope it for you.
 
-**Before you start:** read [`CONTRIBUTING.md`](../CONTRIBUTING.md), run `pnpm install` and
+**Before you start:** read [`CONTRIBUTING.md`](../docs/CONTRIBUTING.md), run `pnpm install` and
 `pnpm check` to confirm a clean baseline, and **open (or comment on) an issue saying you
 are taking it** so two people do not do the same work. Anything marked ⚠️ needs agreement
 on the approach before you write code.
@@ -26,7 +26,7 @@ a design decision.
 
 The catalog has 31 applications; obvious absences include GIMP, Inkscape, Blender, Thunderbird, LibreOffice, Neovim, Audacity, OBS Studio, and Kdenlive. Pick one, verify every installation identifier against an authoritative source, add the entry, update the counts.
 
-**Done when:** the entry is added, `pnpm --filter @linux-app-platform/catalog test` passes, and the pull request lists a source link for every identifier. Read the rules in [`docs/catalog.md`](../docs/catalog.md) first — the AUR is not `pacman`, and an unverified identifier is omitted, never guessed.
+**Done when:** the entry is added, `pnpm --filter @configshell/catalog test` passes, and the pull request lists a source link for every identifier. Read the rules in [`docs/catalog.md`](../docs/catalog.md) first — the AUR is not `pacman`, and an unverified identifier is omitted, never guessed.
 
 ---
 
@@ -120,7 +120,7 @@ Search matches name, description, and category. Typing `vscode` does not find "V
 
 ---
 
-### 8. Explain the inert "Continue" button
+### 8. Explain the inert "Continue" button — ✅ **already done**
 
 | | |
 | --- | --- |
@@ -131,7 +131,7 @@ Search matches name, description, and category. Typing `vscode` does not find "V
 
 "Continue" is deliberately non-functional (command generation does not exist yet) and carries `aria-disabled="true"`, but nothing tells the user why. Add a tooltip or short helper text — the `Tooltip` primitive is already installed and the app is already wrapped in a `TooltipProvider`.
 
-**Done when:** a user who clicks or focuses it learns that command generation is not implemented yet, the explanation is reachable by keyboard and screen reader, and it does not shout on mobile.
+**Status: completed.** `SelectionBar.tsx` already wraps the button in a `Tooltip` reading "Command generation isn't part of Phase 1 yet." Left here for the record — pick a different issue. It will be removed when the button becomes real (backlog item H5).
 
 ---
 
@@ -144,7 +144,7 @@ Search matches name, description, and category. Typing `vscode` does not find "V
 | **Files** | new `packages/catalog/src/stats.ts` (or a `scripts/` file), `packages/catalog/package.json`, `docs/catalog.md` |
 | **Skills** | TypeScript, Node |
 
-The "Current contents" table in `docs/catalog.md` (apps per category, sources per method and origin, per-distribution coverage) is maintained by hand and drifts every time an entry is added. Add `pnpm --filter @linux-app-platform/catalog stats` that computes and prints it.
+The "Current contents" table in `docs/catalog.md` (apps per category, sources per method and origin, per-distribution coverage) is maintained by hand and drifts every time an entry is added. Add `pnpm --filter @configshell/catalog stats` that computes and prints it.
 
 **Done when:** the script's output matches the table in the docs for the current data, and `docs/catalog.md` tells contributors to run it instead of counting by hand.
 
@@ -259,5 +259,5 @@ Linux Mint, openSUSE, and Pop!_OS are plausible candidates. The step-by-step pro
 
 The installer resolver, terminal command generation, the AI layer, the MCP server, and the
 local agent. They are either load-bearing for the project's security model or unstarted
-design work — see [`ROADMAP.md`](../ROADMAP.md) and the documents in `docs/`. Interest is
+design work — see [`ROADMAP.md`](../docs/ROADMAP.md) and the documents in `docs/`. Interest is
 welcome; start with an issue, not a pull request.

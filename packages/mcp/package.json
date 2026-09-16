@@ -1,5 +1,5 @@
 {
-  "name": "@linux-app-platform/mcp",
+  "name": "@configshell/mcp",
   "version": "0.0.0",
   "private": true,
   "description": "MCP interface layer — placeholder, nothing implemented yet (see docs/mcp.md)",

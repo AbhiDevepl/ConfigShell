@@ -55,6 +55,6 @@ is affected. Check both light and dark themes. -->
 - [ ] No new runtime dependency (or it is justified in the summary above)
 - [ ] Nothing claims functionality that does not exist — in code, docs, or UI
 - [ ] No secrets, tokens, or personal data in the diff, and no `.env` file committed
-- [ ] Respects the security invariants in `docs/security.md` — no shell execution from the
+- [ ] Respects the security invariants in `docs/security-model.md` — no shell execution from the
       browser, no unvalidated input reaching a command, no silent system changes
 - [ ] `CHANGELOG.md` updated under `## [Unreleased]` (user-visible changes only)

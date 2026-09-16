@@ -37,7 +37,7 @@ cp apps/server/.env.example apps/server/.env
 ```
 
 `.env` is git-ignored. Never commit real credentials; see
-[`SECURITY.md`](../../SECURITY.md).
+[`SECURITY.md`](../../docs/SECURITY.md).
 
 > The web dev server also defaults to port 3000. If you run both, set `PORT` here to
 > something else (the template suggests 4000).

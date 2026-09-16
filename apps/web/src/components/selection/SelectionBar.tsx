@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { APPLICATIONS } from '@linux-app-platform/catalog';
+import { APPLICATIONS } from '@configshell/catalog';
 import { SelectionList } from './SelectionList';
 
 interface SelectionBarProps {

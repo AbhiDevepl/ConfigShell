@@ -5,8 +5,18 @@ direction, **not a set of promises** — items move, change shape, or get droppe
 project learns. Nothing listed under "Planned" or later exists today.
 
 For what actually ships right now, see the README's
-[current status](README.md#what-exists-today); for why a given layer is designed the way it
-is, see [`docs/architecture.md`](docs/architecture.md).
+[current status](../README.md#what-exists-today); for why a given layer is designed the way it
+is, see [`docs/architecture.md`](architecture.md).
+
+The product requirements behind this roadmap are in
+[`ProductRequirements.md`](ProductRequirements.md), and
+[`TechnicalAudit.md`](TechnicalAudit.md) maps every requirement onto what actually exists,
+with the prioritised backlog (P0/P1/P2/Future) and the resolved product decisions. **The
+audit is the authority on sequencing**; this page is the readable summary.
+
+**Direction:** the core release is deterministic and is built **without external AI model
+integration**. AI stays in "Future / experimental" below. MCP is retained as a separate
+future integration layer and is *not* blocked on AI — see [`mcp.md`](mcp.md).
 
 ## Completed
 
@@ -41,16 +51,28 @@ is, see [`docs/architecture.md`](docs/architecture.md).
 V1 is a **command generator, not an installer**: it ends at a command the user copies into
 their own terminal. The remaining pieces, in the order they make sense:
 
-1. **Application details** — a per-application view showing the verified sources and what
+1. **Environment model** — make the selected distribution a real typed value that flows
+   downstream. Today it is write-only state that nothing reads.
+2. **Catalog schema for the core** — verification metadata, and whatever minimal signal the
+   resolver needs to tell a directly-installable source from a vendor source that requires
+   third-party repository setup. Data first: the resolver must never invent either.
+3. **Installer resolution** — choosing an appropriate `InstallationSource` for the selected
+   environment, reporting honestly when there is none, and saying *why* it chose what it
+   chose. Belongs in `packages/installer`, not in the UI.
+4. **Setup plan** — an ordered, deterministic plan; data, not command strings; privileged
+   steps marked; manual steps first-class.
+5. **Terminal command generation** — turning a plan into commands built *only* from trusted
+   catalog data, shown in full before they are copied, with copy-to-clipboard. The browser
+   never runs them.
+6. **Installation verification** — generated from a fixed template, never per-application
+   free text.
+7. **Application details** — a per-application view showing the verified sources and what
    each one means (distro vs. vendor vs. community).
-2. **Installer resolution** — choosing an appropriate `InstallationSource` for the selected
-   distribution, honestly reporting when there is none. Belongs in a package, not in the
-   UI.
-3. **Terminal command generation** — turning a resolved plan into a command built *only*
-   from trusted catalog data, shown in full before it is copied, with copy-to-clipboard.
-   The browser never runs it.
-4. **Tests for `apps/web`** — a test runner and coverage of the selection and filtering
-   logic. Blocking-adjacent: the resolver deserves tests from its first commit.
+8. **Tests for `apps/web`** — a test runner and coverage of the selection and filtering
+   logic. Not a follow-up: the resolver deserves tests from its first commit.
+
+Then, immediately after: **deterministic role/use-case presets** (Web Developer, Student,
+General User, …) as curated role → application-id bundles in the catalog. No model.
 
 The V1 flow, end to end:
 
@@ -66,7 +88,7 @@ Website → Linux detection state → Distribution selection → Application cat
 - More verified applications and broader distribution coverage.
 - Application icons, with the licensing and trademark questions settled first.
 - Additional distributions (each one makes every existing entry's coverage a question —
-  see [`docs/catalog.md`](docs/catalog.md)).
+  see [`docs/catalog.md`](catalog.md)).
 - Accessibility and keyboard-navigation passes.
 
 ### Platform
@@ -76,14 +98,15 @@ Website → Linux detection state → Distribution selection → Application cat
 
 ## Future / experimental
 
-Everything below is post-V1, unstarted, and gated on design discussion. Each has a document
-describing the constraints any implementation must satisfy.
+Everything below is post-core, unstarted, and gated on design discussion. Each has a document
+describing the constraints any implementation must satisfy. **None of it is a dependency of
+the core release.**
 
-- **AI planning layer** ([`docs/ai.md`](docs/ai.md)) — recommendations, compatibility
+- **AI planning layer** ([`docs/ai.md`](ai.md)) — recommendations, compatibility
   reasoning, natural-language discovery, plan drafting. AI plans; it never executes.
-- **MCP interface** ([`docs/mcp.md`](docs/mcp.md)) — a fixed, authorized set of tools for
+- **MCP interface** ([`docs/mcp.md`](mcp.md)) — a fixed, authorized set of tools for
   AI systems. No raw shell tool, ever.
-- **Local Linux agent** ([`docs/agent.md`](docs/agent.md)) — real system detection and the
+- **Local Linux agent** ([`docs/agent.md`](agent.md)) — real system detection and the
   only component permitted to change a system, with validation and explicit confirmation.
 - **Production platform** — database, accounts, catalog management, community-submitted
   entries, deployment infrastructure.
@@ -95,12 +118,12 @@ Some things are out of scope on purpose, and reopening them needs a strong argum
 - Executing shell commands from the browser.
 - Remote or unattended installation on someone's machine.
 - Distribution-guessing in the browser (it cannot be done honestly —
-  [why](README.md#important-distro-detection-rule)).
+  [why](../README.md#important-distro-detection-rule)).
 - Version numbers in the catalog.
 - Shell-script installers (`curl … | sh`) as catalog sources.
 
 ## Want to help?
 
-Pick something from [`.github/GOOD_FIRST_ISSUES.md`](.github/GOOD_FIRST_ISSUES.md), or open
+Pick something from [`.github/GOOD_FIRST_ISSUES.md`](../.github/GOOD_FIRST_ISSUES.md), or open
 an issue describing what you would like to work on. Items in "Current" are the most useful
 place to start; items in "Future / experimental" need a design conversation first.

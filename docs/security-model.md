@@ -1,7 +1,7 @@
 # Security model
 
 This document describes how the product is designed to be safe. **To report a
-vulnerability, see [`SECURITY.md`](../SECURITY.md) at the repository root** — do not open a
+vulnerability, see [`SECURITY.md`](SECURITY.md) at the repository root** — do not open a
 public issue for a suspected vulnerability.
 
 ## Non-negotiable principles

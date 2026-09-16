@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { APPLICATIONS } from '@linux-app-platform/catalog';
+import { APPLICATIONS } from '@configshell/catalog';
 import { SelectionList } from './SelectionList';
 
 interface SelectionSummaryProps {

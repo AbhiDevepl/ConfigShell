@@ -1,4 +1,4 @@
-# Contributing to Linux App Platform
+# Contributing to ConfigShell
 
 Thanks for considering a contribution. This project is maintained by two people, so a
 focused, well-described pull request gets reviewed much faster than a large one.
@@ -6,7 +6,7 @@ focused, well-described pull request gets reviewed much faster than a large one.
 Before anything else, please read the [Code of Conduct](CODE_OF_CONDUCT.md). It applies to
 every space this project uses.
 
-**New here?** [`.github/GOOD_FIRST_ISSUES.md`](.github/GOOD_FIRST_ISSUES.md) lists real,
+**New here?** [`.github/GOOD_FIRST_ISSUES.md`](../.github/GOOD_FIRST_ISSUES.md) lists real,
 self-contained tasks in this codebase, with the files each one touches.
 
 ---
@@ -28,13 +28,13 @@ Contributions that need an issue and agreement **first**:
 - The first real API endpoint in `apps/server` (the catalog is currently compiled into the
   browser bundle — adding a server-side catalog API is an architecture change).
 - AI, MCP, or local-agent work (see `docs/ai.md`, `docs/mcp.md`, `docs/agent.md`).
-- Adding a Linux distribution (see [`docs/catalog.md`](docs/catalog.md)).
+- Adding a Linux distribution (see [`docs/catalog.md`](catalog.md)).
 - Restructuring workspaces, build tooling, or the theming setup.
 
 Contributions that will be declined outright: anything that lets the browser execute shell
 commands, anything that hands unvalidated input to a shell, anything that installs software
 without explicit user confirmation, and any catalog entry whose identifiers were guessed.
-These are [security invariants](docs/security.md), not preferences.
+These are [security invariants](security-model.md), not preferences.
 
 ---
 
@@ -50,9 +50,9 @@ corepack prepare pnpm@9.15.5 --activate
 Fork the repository on GitHub, then:
 
 ```sh
-git clone https://github.com/<your-username>/linux-app-platform.git
-cd linux-app-platform
-git remote add upstream https://github.com/AbhiDevepl/linux-app-platform.git
+git clone https://github.com/<your-username>/configshell.git
+cd configshell
+git remote add upstream https://github.com/AbhiDevepl/configshell.git
 pnpm install
 ```
 
@@ -63,7 +63,7 @@ cp apps/server/.env.example apps/server/.env
 ```
 
 Full setup notes, every variable, and troubleshooting live in
-[`docs/development.md`](docs/development.md).
+[`docs/development.md`](development.md).
 
 ## Run it
 
@@ -159,7 +159,7 @@ non-obvious — explain *why*, since the diff already shows *what*. Breaking cha
 
 1. Make sure `pnpm check` passes.
 2. Push your branch to your fork and open a pull request against `main`.
-3. Fill in the [pull request template](.github/PULL_REQUEST_TEMPLATE.md) — summary, linked
+3. Fill in the [pull request template](../.github/PULL_REQUEST_TEMPLATE.md) — summary, linked
    issue, what you tested, and screenshots for UI changes.
 4. Keep it focused. One logical change per pull request; unrelated fixes belong in their own.
 5. Update the docs in the same pull request as the behaviour they describe. A command,
@@ -176,7 +176,7 @@ non-obvious — explain *why*, since the diff already shows *what*. Breaking cha
 - **Accuracy over ambition.** Nothing in the code, docs, or UI may claim functionality that
   does not exist. This project documents its own incompleteness on purpose.
 - **Catalog entries are verified**, with source links in the pull request description.
-- **Security invariants hold** (see [`docs/security.md`](docs/security.md)) — no shell
+- **Security invariants hold** (see [`docs/security-model.md`](security-model.md)) — no shell
   execution from the browser, no unvalidated input reaching a command, no silent system
   changes.
 - **It fits the existing structure.** Fill in the scaffold rather than inventing a parallel
@@ -194,7 +194,7 @@ several days. Pinging the pull request after a week is fine and welcome.
 
 ## Reporting bugs and requesting features
 
-Use the [issue templates](.github/ISSUE_TEMPLATE) — bug report, feature request, or
+Use the [issue templates](../.github/ISSUE_TEMPLATE) — bug report, feature request, or
 documentation issue. A bug report needs your OS and distribution, Node and pnpm versions,
 the commit you are on, exact reproduction steps, and what you expected instead.
 
@@ -207,7 +207,7 @@ Questions that are not bugs belong in [`SUPPORT.md`](SUPPORT.md).
 
 ## Licensing of contributions
 
-This project is licensed under the [Apache License 2.0](LICENSE). By submitting a
+This project is licensed under the [Apache License 2.0](../LICENSE). By submitting a
 contribution you agree that it is licensed under the same terms (Apache-2.0, section 5).
 Only contribute code you have the right to contribute, and never paste code from a source
 whose license you have not checked — see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

@@ -39,12 +39,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@configshell/catalog':
+        specifier: workspace:*
+        version: link:../../packages/catalog
       '@fontsource-variable/geist':
         specifier: ^5.3.0
         version: 5.3.0
-      '@linux-app-platform/catalog':
-        specifier: workspace:*
-        version: link:../../packages/catalog
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1

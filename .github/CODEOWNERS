@@ -10,11 +10,12 @@
 # *                     @AbhiDevepl @tejjasdev
 
 # Security-sensitive and architectural documents: changes here need maintainer review.
-/docs/security.md       @AbhiDevepl
-/docs/architecture.md   @AbhiDevepl
-/SECURITY.md            @AbhiDevepl
-/LICENSE                @AbhiDevepl
-/NOTICE                 @AbhiDevepl
+/docs/security-model.md       @AbhiDevepl
+/docs/architecture.md         @AbhiDevepl
+/docs/ProductRequirements.md  @AbhiDevepl
+/docs/SECURITY.md             @AbhiDevepl
+/docs/NOTICE                  @AbhiDevepl
+/LICENSE                      @AbhiDevepl
 
 # The trusted catalog — data correctness here is a security property.
 /packages/catalog/      @AbhiDevepl

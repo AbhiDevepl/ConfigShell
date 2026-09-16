@@ -2,7 +2,7 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
-  "description": "React web interface for Linux App Platform",
+  "description": "React web interface for ConfigShell",
   "type": "module",
   "license": "Apache-2.0",
   "scripts": {
@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
-    "@linux-app-platform/catalog": "workspace:*",
+    "@configshell/catalog": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.6",
     "express": "^5.2.1",

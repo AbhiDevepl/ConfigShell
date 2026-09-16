@@ -4,7 +4,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { APPLICATIONS, CATEGORIES, type Category } from '@linux-app-platform/catalog';
+import { APPLICATIONS, CATEGORIES, type Category } from '@configshell/catalog';
 import { AppCard } from './AppCard';
 
 interface AppCatalogProps {

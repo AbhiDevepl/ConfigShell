@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-Linux App Platform is an early-stage, open-source Linux software discovery and management
+ConfigShell is an early-stage, open-source Linux software discovery and management
 platform. The intended product (see `README.md`) is a layered pipeline:
 
 ```
@@ -14,8 +14,9 @@ UI → Application Catalog → System Detection → AI / Planning → MCP  → V
 Non-negotiable safety principles that govern any feature work here:
 - The browser/web app never executes arbitrary shell commands.
 - AI never gets unrestricted system access — it plans/recommends, it does not execute.
-- System-changing operations must go through a trusted with validation and
-  explicit user confirmation.
+- System-changing operations must go through a trusted local agent with validation and
+  explicit user confirmation. (The local agent is **Future** scope — nothing implements it
+  today — but the principle constrains every layer built before it.)
 - Installed applications must resolve against the trusted catalog; untrusted manifests are
   never installed.
 
@@ -38,7 +39,7 @@ Before editing, check whether a file actually has content; many don't:
   input, toggle-group, separator, scroll-area, alert, sheet, empty, label, tooltip),
   composed under `components/{layout,detection,distro,applications,selection}/`. See
   "shadcn/ui setup" below before adding more components or new UI code.
-  Application data comes from `@linux-app-platform/catalog` (see below); the web app holds
+  Application data comes from `@configshell/catalog` (see below); the web app holds
   no catalog of its own, and `src/data/distros.ts` now only carries selector copy, with the
   `Distro` type imported from the catalog. There is no command generation, no
   package-manager resolution, and no backend calls yet — see `docs/architecture.md` for
@@ -48,7 +49,7 @@ Before editing, check whether a file actually has content; many don't:
 - **`packages/catalog`**: real, and as of Phase 2 the **single source of truth for
   application metadata** — 31 verified applications, the data model, a dependency-free
   validation function, and its own tests. Published to the workspace as
-  `@linux-app-platform/catalog` and consumed by `apps/web` via `workspace:*`. It is
+  `@configshell/catalog` and consumed by `apps/web` via `workspace:*`. It is
   TypeScript source with **no build step** (`main`/`types`/`exports` point straight at
   `src/index.ts`); Vite and `tsc` both resolve it through the pnpm symlink, so don't add a
   bundler/`dist` pipeline unless something actually needs one. `apps/web/src/data/
@@ -58,7 +59,7 @@ Before editing, check whether a file actually has content; many don't:
   count as `pacman`, and version numbers are never recorded.
 - **`packages/ai`, `packages/mcp`**: a `package.json` and a README each, no source —
   placeholders for the AI planning and MCP layers. They are real (empty) workspace members.
-- **`docs/*.md`**: `architecture.md`, `catalog.md`, `security.md` and `development.md` are
+- **`docs/*.md`**: `architecture.md`, `catalog.md`, `security-model.md` and `development.md` are
   the source of truth for the implementation state, the V1 flow boundary, the security
   model, and the commands — read them before making architecture-adjacent changes.
   `ai.md`, `agent.md` and `mcp.md` are **status documents for unstarted layers**: they
@@ -72,7 +73,7 @@ Before editing, check whether a file actually has content; many don't:
   TypeScript workspace. The old per-workspace `"lint": "tsc --noEmit"` scripts were
   renamed to `typecheck`, and `apps/server`'s broken `lint`/`check` scripts were removed.
 - **Tests**: `packages/catalog` has the repo's only test suite (Node's built-in runner via
-  `tsx`: `pnpm --filter @linux-app-platform/catalog test`). `apps/server` has no test
+  `tsx`: `pnpm --filter @configshell/catalog test`). `apps/server` has no test
   files (`node --test` passes with zero tests); `apps/web` has no test runner at all.
 - **`apps/web` typecheck (`tsc --noEmit`) needs `@types/react`/`@types/react-dom`**, added
   in Phase 1 — they were missing entirely before that (JSX/React props typechecked as
@@ -142,8 +143,8 @@ pnpm --filter web preview               # preview the production build
 pnpm --filter web start                 # node server.js, serves apps/web/dist as a static SPA
 pnpm --filter web typecheck             # tsc --noEmit
 
-pnpm --filter @linux-app-platform/catalog typecheck   # tsc --noEmit
-pnpm --filter @linux-app-platform/catalog test        # node test runner via tsx — validates the real catalog
+pnpm --filter @configshell/catalog typecheck   # tsc --noEmit
+pnpm --filter @configshell/catalog test        # node test runner via tsx — validates the real catalog
 
 pnpm --filter server dev                # nodemon index.js — starts, serves nothing
 pnpm --filter server start              # node index.js
@@ -168,10 +169,13 @@ node --test path/to/file.test.js
 
 This is a public repository. Keep these accurate when you change anything they describe:
 
-- `CONTRIBUTING.md` (setup, branch/commit conventions, PR expectations), `SECURITY.md`
-  (private vulnerability reporting — `docs/security.md` is the *model*, not the policy),
-  `CODE_OF_CONDUCT.md`, `SUPPORT.md`, `MAINTAINERS.md`, `ROADMAP.md`, `CHANGELOG.md`,
-  `THIRD_PARTY_NOTICES.md`, `NOTICE`.
+- **All community-health documents live in `docs/`, not the repository root:**
+  `docs/CONTRIBUTING.md` (setup, branch/commit conventions, PR expectations),
+  `docs/SECURITY.md` (private vulnerability reporting — `docs/security-model.md` is the
+  *model*, not the policy), `docs/CODE_OF_CONDUCT.md`, `docs/SUPPORT.md`,
+  `docs/MAINTAINERS.md`, `docs/ROADMAP.md`, `docs/CHANGELOG.md`,
+  `docs/THIRD_PARTY_NOTICES.md`, `docs/NOTICE`. Only `README.md`, `CLAUDE.md` and `LICENSE`
+  are at the root. Relative links from `docs/*` to the README need `../`.
 - `.github/`: CI workflow, issue templates, PR template, `CODEOWNERS`, `dependabot.yml`,
   `GOOD_FIRST_ISSUES.md`.
 - Commit convention: lightweight Conventional Commits (`feat:`, `fix:`, `docs:`,

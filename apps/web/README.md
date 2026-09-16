@@ -11,7 +11,7 @@ selection summary (sidebar on desktop, sheet + sticky bar on mobile), plus a dar
 theme toggle.
 
 It makes **no network requests** and calls **no backend**. All application data comes from
-[`@linux-app-platform/catalog`](../../packages/catalog) at build time. Selection state is
+[`@configshell/catalog`](../../packages/catalog) at build time. Selection state is
 in-memory only and does not survive a refresh. The "Continue" button is intentionally
 inert — nothing here generates or runs a command.
 
