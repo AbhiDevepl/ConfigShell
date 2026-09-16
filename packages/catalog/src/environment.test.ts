@@ -30,20 +30,33 @@ test('createEnvironment derives the ecosystem rather than accepting one', () => 
   assert.deepEqual(createEnvironment('Ubuntu'), {
     os: 'linux',
     distro: 'Ubuntu',
+    family: 'debian',
     ecosystem: 'apt',
   });
   assert.deepEqual(createEnvironment('Arch Linux', 'aarch64'), {
     os: 'linux',
     distro: 'Arch Linux',
+    family: 'arch',
     ecosystem: 'pacman',
     architecture: 'aarch64',
+  });
+  assert.deepEqual(createEnvironment('openSUSE'), {
+    os: 'linux',
+    distro: 'openSUSE',
+    family: 'suse',
+    ecosystem: 'zypper',
   });
 });
 
 test('parseEnvironment accepts a minimal valid input and defaults the OS', () => {
   const result = parseEnvironment({ distro: 'Fedora' });
   assert.ok(result.ok);
-  assert.deepEqual(result.environment, { os: 'linux', distro: 'Fedora', ecosystem: 'dnf' });
+  assert.deepEqual(result.environment, {
+    os: 'linux',
+    distro: 'Fedora',
+    family: 'fedora',
+    ecosystem: 'dnf',
+  });
 });
 
 test('parseEnvironment ignores a caller-supplied ecosystem', () => {
@@ -78,6 +91,20 @@ test('parseEnvironment reports every problem at once', () => {
     result.errors.map((e) => e.field).sort(),
     ['architecture', 'distro', 'os'],
   );
+});
+
+test('every distribution maps to exactly one family', () => {
+  // Family and ecosystem answer different questions, so both are derived and
+  // both are total over Distro.
+  for (const distro of DISTROS) {
+    const environment = createEnvironment(distro);
+    assert.ok(
+      ['debian', 'fedora', 'arch', 'suse'].includes(environment.family),
+      `${distro} -> ${environment.family}`,
+    );
+  }
+  assert.equal(createEnvironment('Ubuntu').family, createEnvironment('Debian').family);
+  assert.notEqual(createEnvironment('Ubuntu').family, createEnvironment('Fedora').family);
 });
 
 test('type guards accept only catalog values', () => {

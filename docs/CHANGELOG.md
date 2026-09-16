@@ -14,6 +14,33 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 
 ### Added
 
+- **`packages/contract-tests` — cross-adapter contract tests.** The HTTP API and the MCP
+  server are sibling adapters over the same core; they do not call each other, so nothing
+  structural made them agree. 11 tests run the real Express app and the real MCP tool
+  handlers side by side and assert they agree on catalog contents, search, role presets,
+  per-source resolution (including rejection reasons), generated commands across all five
+  distributions, and every rejection path.
+
+- **Zypper / openSUSE is a supported ecosystem.** The domain model, trust policy, plan
+  generation and command generation all handle it, and a cross-ecosystem contract test pins
+  the behaviour of all four package managers. **23 of 31 applications resolved on openSUSE
+  immediately** — Flatpak and Snap are distribution-agnostic — so the previous decision to
+  defer it (recorded as Q4) was based on a cost that turned out not to exist. Seven
+  applications still need a verified `zypper` identifier; they are named in `docs/catalog.md`.
+- **`catalogCoverage(environment)`** — installable / manual / unavailable counts per
+  distribution, computed by running the resolver rather than stored, so it cannot drift.
+  Published at `GET /api/catalog/environments`, which makes a thin distribution visible
+  before a user picks it.
+- **`DistroFamily`** (`debian` / `fedora` / `arch` / `suse`) on `Environment`, derived from
+  the distribution alongside the ecosystem. Nothing resolves on it yet; it exists because
+  adding a distribution should be a data change, and lineage is part of that data.
+- **The dependency direction is now enforced, not just documented**
+  (`packages/test-utils/src/architecture.test.ts`): no workspace may depend on a higher
+  layer, the graph must stay acyclic, `packages/catalog` must depend on nothing, two edges
+  are forbidden outright (`web → installer`, `ai → installer`), and package-manager command
+  syntax must appear only in `packages/installer`. The first run caught `packages/ai` having
+  no declared layer.
+
 - **`pnpm start` now serves the whole product on one port.** `apps/server` serves
   `apps/web/dist` when a build is present, which is what the web app needs: it calls the API
   for anything the resolver decides, so the two must share an origin. Previously the built
@@ -254,6 +281,13 @@ version is below `1.0.0`, the public surface may change in a minor release — s
   installed and always failed. Linting now runs from the repository root.
 
 ### Fixed
+
+- **The access log recorded the wrong path for every routed request.** Express rewrites
+  `req.url` when a request enters a mounted router, and the finish handler read `req.path`
+  afterwards — so `GET /api/applications` was logged as `GET /`, and only unmatched requests
+  (400s and 404s) logged correctly. The path is now captured from `originalUrl` before
+  routing. Found by reading the log during an integration audit rather than by a test, so
+  two regression tests were added alongside the fix.
 
 - **The application detail view disagreed with the setup plan.** It computed which
   installation sources applied to a distribution itself, and that local copy did not know

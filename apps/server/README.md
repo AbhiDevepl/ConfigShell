@@ -28,7 +28,7 @@ is a pure function of the request.
 | `GET` | `/api/applications` | Browse, search (`?query=`), filter (`?category=`) |
 | `GET` | `/api/applications/:id` | One entry; with `?distro=` also its resolution |
 | `GET` | `/api/catalog/categories` | Supported categories |
-| `GET` | `/api/catalog/environments` | Supported distributions and their ecosystems |
+| `GET` | `/api/catalog/environments` | Supported distributions, family, ecosystem, and resolver-computed catalog coverage |
 | `GET` | `/api/catalog/roles` | Deterministic role/use-case presets |
 | `GET` | `/api/catalog/roles/:id` | One preset |
 | `GET` | `/api/catalog/stats` | Counts, computed from the data |
@@ -61,6 +61,10 @@ Success is `{ "data": … }`; failure is `{ "error": { "code", "message" } }` wi
 `UNKNOWN_APPLICATION`, `NOT_FOUND`, `REQUEST_TOO_LARGE`, `INTERNAL`. Switch on `code`;
 `message` is for humans and may be reworded.
 
+One line per request: method, path, status, duration and a correlation id. The path is
+captured before routing — Express rewrites `req.url` on entering a mounted router, which
+previously logged `/api/applications` as `/`. Query strings are dropped rather than logged.
+
 Every response carries an `X-Request-Id`. A caller-supplied one is ignored — trusting it
 would let a caller write arbitrary text into the server's logs.
 
@@ -80,6 +84,16 @@ introduce one. Defence in depth, in order:
    interpolation, and throws rather than quoting anything suspicious.
 
 Request bodies are capped at 16 kB and a selection at 200 ids.
+
+## Relationship to MCP
+
+`packages/mcp` does **not** call this API. Both are adapters over the same core
+(`@configshell/catalog` + `@configshell/installer`), so a network hop between them would add
+a failure mode without adding a guarantee.
+
+That means nothing structural forces the two to agree, so it is asserted instead:
+`packages/contract-tests` runs this app and the MCP tools side by side and fails if they
+describe the same resolution differently. See [`docs/testing.md`](../../docs/testing.md).
 
 ## Logging
 
@@ -113,7 +127,7 @@ server holds no secrets.
 ```sh
 pnpm --filter server dev     # tsx watch
 pnpm --filter server start   # tsx index.js
-pnpm --filter server test    # 45 tests
+pnpm --filter server test    # 53 tests
 pnpm --filter server typecheck
 ```
 

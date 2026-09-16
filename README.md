@@ -119,7 +119,7 @@ See [Security](#security) and [`docs/security-model.md`](docs/security-model.md)
   **No model is involved anywhere.**
 
 - **Repository tooling** — pnpm workspaces, repository-wide ESLint, per-workspace
-  typechecking, 206 tests across five workspaces, and CI that runs all of it on Node 20
+  typechecking, 236 tests across seven workspaces, and CI that runs all of it on Node 20
   and 22.
 
 **Not implemented (planned):** system detection beyond "does the browser look like Linux",
@@ -192,7 +192,7 @@ Website → Linux detection state → Distribution selection → Application cat
 | Piece | Status |
 | ----- | ------ |
 | Linux application discovery (UI + verified catalog) | **implemented** |
-| Manual distribution selection (Ubuntu / Debian / Fedora / Arch Linux) | **implemented** |
+| Manual distribution selection (Ubuntu / Debian / Fedora / Arch / openSUSE) | **implemented** |
 | Browser-only "looks like Linux" detection | **implemented** |
 | Search | **implemented** |
 | Category filtering | **implemented** |
@@ -394,7 +394,7 @@ client that does not need the interface.
 
 ## Testing
 
-**206 tests** across five workspaces, on Node's built-in runner via `tsx`.
+**236 tests** across seven workspaces, on Node's built-in runner via `tsx`.
 
 ```sh
 pnpm test        # all of them

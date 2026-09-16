@@ -18,6 +18,8 @@ pnpm --filter @configshell/installer test    # resolution, plans, command safety
 pnpm --filter @configshell/mcp test          # tools, protocol interop, hostile input
 pnpm --filter server test                    # API integration, against the real app
 pnpm --filter web test                       # API client contract, safety invariants
+pnpm --filter @configshell/contract-tests test  # HTTP vs MCP: do the adapters agree?
+pnpm --filter @configshell/test-utils test      # architecture enforcement
 ```
 
 One runner everywhere: Node's built-in test runner via `tsx`. There is no Jest, no Vitest
@@ -27,11 +29,13 @@ and no assertion library — `node:test` and `node:assert/strict`.
 
 | Workspace | Tests | What they actually check |
 | --------- | ----- | ------------------------ |
-| `packages/catalog` | 45 | All 31 real catalog entries validate; the environment model; role presets name only real applications |
-| `packages/installer` | 46 | Every application resolved on every distribution; plan ordering and determinism; golden command output per package manager |
+| `packages/test-utils` | 6 | **Architecture enforcement**: dependency direction, acyclicity, forbidden edges, and that package-manager syntax stays inside `packages/installer` |
+| `packages/catalog` | 46 | All 31 real catalog entries validate; the environment model; role presets name only real applications |
+| `packages/installer` | 56 | Every application resolved on every distribution; the cross-ecosystem contract matrix (apt/dnf/pacman/zypper); plan ordering and determinism; golden command output per package manager |
 | `packages/mcp` | 52 | The tool surface; **interoperability with the official MCP client** over the real protocol and over a spawned stdio process; hostile arguments |
-| `apps/server` | 51 | The real Express app over an ephemeral port: every endpoint, every rejection path, single-port production serving |
+| `apps/server` | 53 | The real Express app over an ephemeral port: every endpoint, every rejection path, single-port production serving |
 | `apps/web` | 12 | The API client's contract, and structural safety invariants |
+| `packages/contract-tests` | 11 | **Cross-adapter**: the HTTP API and the MCP server must answer the same question the same way |
 
 **They test real data and the real application**, not fixtures and mocks. The catalog suite
 validates the actual catalog; the server suite drives the actual app; the MCP suite connects
@@ -53,6 +57,27 @@ in the resolution → plan → command path.
 | Vendor source needing a third-party repository | `installer/resolve.test.ts` | Never resolved as if it were a native package |
 | Malformed catalog entry | `catalog/validate.test.ts` | Validation failure |
 | Execution capability anywhere | `server/api.test.js`, `mcp/safety.test.ts`, `web/safety.test.ts` | No `child_process`, `eval`, filesystem or socket access exists |
+
+### Cross-adapter contract tests
+
+ConfigShell exposes one core through two adapters, and they do **not** call each other — MCP
+does not go over HTTP. Each flattens a resolution for the wire in its own module, and those
+were aligned by hand, which is the kind of agreement that rots silently.
+
+`packages/contract-tests` runs the real Express app on an ephemeral port and the real MCP
+tool handlers in the same process, then asserts they agree on: catalog contents, search
+results, role presets, per-source resolution (including *why* each source was rejected),
+generated commands across all five distributions, and every rejection path — unknown ids,
+hostile identifiers, unsupported distributions. A divergence in either adapter fails here
+rather than reaching a client.
+
+### Architecture tests
+
+`packages/test-utils/src/architecture.test.ts` enforces the dependency graph the
+architecture doc describes — because a boundary that no test checks is a comment. It reads
+the workspace manifests and asserts: no upward dependencies, no cycles, `packages/catalog`
+depends on nothing, `web → installer` and `ai → installer` never exist, and package-manager
+command syntax appears only in `packages/installer`.
 
 ### Structural tests
 

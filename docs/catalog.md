@@ -55,7 +55,7 @@ interface InstallationSource {
   method: InstallMethod;        // 'apt' | 'dnf' | 'pacman' | 'flatpak' | 'snap' | 'official'
   identifier: string;           // package name, Flatpak app ID, or Snap name
   origin: RepositoryOrigin;     // 'distro' | 'vendor' | 'community'
-  distros?: readonly Distro[];  // required for apt/dnf/pacman, forbidden otherwise
+  distros?: readonly Distro[];  // required for apt/dnf/pacman/zypper, forbidden otherwise
   url?: string;                 // where to get it / repo setup docs
 }
 ```
@@ -213,6 +213,13 @@ binary it could not put on `PATH`.
 
 **31 applications**, **116 verified installation sources**, **26 with a verified binary name**.
 
+**openSUSE coverage is the open gap.** 23 of 31 applications already resolve there through
+Flatpak or Snap, which are distribution-agnostic. The seven that do not — `git`, `curl`,
+`htop`, `github-cli`, `gnome-tweaks`, `timeshift`, `gparted` — need a verified `zypper`
+identifier each. That is a good first contribution: one line of data, checked against
+`software.opensuse.org`, following the same "verified or omitted" rule as every other
+identifier.
+
 | Category      | Apps |     | Method    | Sources |     | Origin      | Sources |
 | ------------- | ---- | --- | --------- | ------- | --- | ----------- | ------- |
 | Browsers      | 4    |     | `apt`     | 28      |     | `distro`    | 58      |
@@ -288,7 +295,7 @@ The mechanical steps:
    manager it actually uses (e.g. an apt-based distribution goes under `apt`). This is what
    stops entries like "dnf on Arch Linux"; a new distribution missing from this map means
    no package-manager source can ever claim it.
-3. **A new package manager?** If the distribution does not use apt/dnf/pacman, also add the
+3. **A new package manager?** If the distribution does not use apt/dnf/pacman/zypper, also add the
    method to `InstallMethod` and `INSTALL_METHODS` in `types.ts`, and to `METHOD_DISTROS`.
 4. **`packages/catalog/src/applications.ts`** — verify and add sources for the new
    distribution. Partial coverage is acceptable and honest; guessing is not.

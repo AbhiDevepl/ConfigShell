@@ -32,5 +32,8 @@
     "@configshell/installer": "workspace:*",
     "dotenv": "^17.2.3",
     "express": "^5.2.1"
+  },
+  "exports": {
+    "./app": "./app.js"
   }
 }

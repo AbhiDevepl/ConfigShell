@@ -434,6 +434,68 @@ describe("errors", () => {
   });
 });
 
+// ------------------------------------------------------------------ logging
+
+describe("request logging", () => {
+  test("logs the full request path, not the router-relative one", async () => {
+    // Express rewrites `req.url` on entering a mounted router, so reading
+    // `req.path` after routing reported `/api/applications` as `/`. The path is
+    // captured from `originalUrl` before routing instead.
+    const lines = [];
+    const original = process.stdout.write.bind(process.stdout);
+    const previousEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "development"; // the logger is silenced under "test"
+    process.stdout.write = (chunk, ...rest) => {
+      lines.push(String(chunk));
+      return original(chunk, ...rest);
+    };
+
+    try {
+      await get("/api/applications?query=git");
+      await get("/api/catalog/roles");
+      // The finish handler fires after the response; give it a turn.
+      await new Promise((resolve) => setImmediate(resolve));
+    } finally {
+      process.stdout.write = original;
+      process.env.NODE_ENV = previousEnv;
+    }
+
+    const logged = lines
+      .filter((line) => line.includes('"message":"request"'))
+      .map((line) => JSON.parse(line));
+
+    const paths = logged.map((entry) => entry.path);
+    assert.ok(paths.includes("/api/applications"), `got ${JSON.stringify(paths)}`);
+    assert.ok(paths.includes("/api/catalog/roles"), `got ${JSON.stringify(paths)}`);
+    assert.ok(!paths.includes("/"), "a routed request was logged as the router-relative path");
+  });
+
+  test("never logs the query string", async () => {
+    // Search terms are the caller's business.
+    const lines = [];
+    const original = process.stdout.write.bind(process.stdout);
+    const previousEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "development";
+    process.stdout.write = (chunk, ...rest) => {
+      lines.push(String(chunk));
+      return original(chunk, ...rest);
+    };
+
+    try {
+      await get("/api/applications?query=a-private-search-term");
+      await new Promise((resolve) => setImmediate(resolve));
+    } finally {
+      process.stdout.write = original;
+      process.env.NODE_ENV = previousEnv;
+    }
+
+    assert.ok(
+      !lines.join("").includes("a-private-search-term"),
+      "the query string reached the log",
+    );
+  });
+});
+
 // ------------------------------------------------------- serving the web app
 
 describe("serving the built web app", () => {

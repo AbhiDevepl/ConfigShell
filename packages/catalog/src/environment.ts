@@ -13,11 +13,13 @@
 import {
   ARCHITECTURES,
   DISTROS,
+  DISTRO_FAMILIES,
   ECOSYSTEM_DISTROS,
   OPERATING_SYSTEMS,
   PACKAGE_ECOSYSTEMS,
   type Architecture,
   type Distro,
+  type DistroFamily,
   type Environment,
   type OperatingSystem,
   type PackageEcosystem,
@@ -38,6 +40,11 @@ export function ecosystemForDistro(distro: Distro): PackageEcosystem {
   return DISTRO_ECOSYSTEM[distro];
 }
 
+/** The lineage a distribution belongs to. Total over `Distro`. */
+export function familyForDistro(distro: Distro): DistroFamily {
+  return DISTRO_FAMILIES[distro];
+}
+
 /** The distributions a package ecosystem applies to. */
 export function distrosForEcosystem(ecosystem: PackageEcosystem): readonly Distro[] {
   return ECOSYSTEM_DISTROS[ecosystem];
@@ -56,14 +63,15 @@ export function isArchitecture(value: unknown): value is Architecture {
 }
 
 /**
- * Build an environment from a distribution. The ecosystem is always derived,
- * never passed in, so an `Environment` cannot hold a distro/ecosystem pair that
+ * Build an environment from a distribution. Family and ecosystem are always
+ * derived, never passed in, so an `Environment` cannot hold a combination that
  * contradicts itself.
  */
 export function createEnvironment(distro: Distro, architecture?: Architecture): Environment {
   return {
     os: 'linux',
     distro,
+    family: familyForDistro(distro),
     ecosystem: ecosystemForDistro(distro),
     ...(architecture ? { architecture } : {}),
   };

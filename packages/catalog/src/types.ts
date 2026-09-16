@@ -27,9 +27,38 @@ export const CATEGORIES: readonly Category[] = [
   'Communication',
 ] as const;
 
-export type Distro = 'Ubuntu' | 'Debian' | 'Fedora' | 'Arch Linux';
+export type Distro = 'Ubuntu' | 'Debian' | 'Fedora' | 'Arch Linux' | 'openSUSE';
 
-export const DISTROS: readonly Distro[] = ['Ubuntu', 'Debian', 'Fedora', 'Arch Linux'] as const;
+export const DISTROS: readonly Distro[] = [
+  'Ubuntu',
+  'Debian',
+  'Fedora',
+  'Arch Linux',
+  'openSUSE',
+] as const;
+
+/**
+ * The lineage a distribution belongs to.
+ *
+ * Distinct from `PackageEcosystem` even though they currently line up one to
+ * one, because they answer different questions. The ecosystem decides which
+ * command installs a package; the family decides which distribution's packaging
+ * conventions apply. Linux Mint and Pop!_OS would both be `debian` family and
+ * `apt` ecosystem; a hypothetical distribution that switched package managers
+ * would keep its family and change its ecosystem.
+ *
+ * Nothing resolves on family today. It is here because adding a distribution is
+ * meant to be a data change, and "which family is this?" is part of that data.
+ */
+export type DistroFamily = 'debian' | 'fedora' | 'arch' | 'suse';
+
+export const DISTRO_FAMILIES: Record<Distro, DistroFamily> = {
+  Ubuntu: 'debian',
+  Debian: 'debian',
+  Fedora: 'fedora',
+  'Arch Linux': 'arch',
+  openSUSE: 'suse',
+} as const;
 
 /**
  * The operating system an environment runs. Linux is the only supported value
@@ -54,9 +83,14 @@ export const OPERATING_SYSTEMS: readonly OperatingSystem[] = ['linux'] as const;
  * `official` is not a package manager at all. Every ecosystem here is also an
  * `InstallMethod`, which is what lets resolution match one against the other.
  */
-export type PackageEcosystem = 'apt' | 'dnf' | 'pacman';
+export type PackageEcosystem = 'apt' | 'dnf' | 'pacman' | 'zypper';
 
-export const PACKAGE_ECOSYSTEMS: readonly PackageEcosystem[] = ['apt', 'dnf', 'pacman'] as const;
+export const PACKAGE_ECOSYSTEMS: readonly PackageEcosystem[] = [
+  'apt',
+  'dnf',
+  'pacman',
+  'zypper',
+] as const;
 
 /**
  * Which distributions belong to each native package ecosystem.
@@ -70,6 +104,7 @@ export const ECOSYSTEM_DISTROS: Record<PackageEcosystem, readonly Distro[]> = {
   apt: ['Ubuntu', 'Debian'],
   dnf: ['Fedora'],
   pacman: ['Arch Linux'],
+  zypper: ['openSUSE'],
 } as const;
 
 /**
@@ -97,6 +132,8 @@ export interface Environment {
   os: OperatingSystem;
   distro: Distro;
   /** Derived from `distro` — never supplied independently. See `environment.ts`. */
+  family: DistroFamily;
+  /** Derived from `distro` — never supplied independently. See `environment.ts`. */
   ecosystem: PackageEcosystem;
   /** Optional, recorded only. Does not affect resolution — see `Architecture`. */
   architecture?: Architecture;
@@ -106,12 +143,20 @@ export interface Environment {
  * How an application can be obtained. `official` means the vendor's own
  * download/installer for cases where no package-manager route is verified.
  */
-export type InstallMethod = 'apt' | 'dnf' | 'pacman' | 'flatpak' | 'snap' | 'official';
+export type InstallMethod =
+  | 'apt'
+  | 'dnf'
+  | 'pacman'
+  | 'zypper'
+  | 'flatpak'
+  | 'snap'
+  | 'official';
 
 export const INSTALL_METHODS: readonly InstallMethod[] = [
   'apt',
   'dnf',
   'pacman',
+  'zypper',
   'flatpak',
   'snap',
   'official',

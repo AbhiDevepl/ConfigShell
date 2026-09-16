@@ -12,6 +12,7 @@
  * truth to live, in exchange for nothing this API needs.
  */
 
+import { catalogCoverage } from "@configshell/installer";
 import {
   APPLICATIONS,
   ARCHITECTURES,
@@ -21,7 +22,9 @@ import {
   ECOSYSTEM_DISTROS,
   OPERATING_SYSTEMS,
   PACKAGE_ECOSYSTEMS,
+  createEnvironment,
   ecosystemForDistro,
+  familyForDistro,
   findApplication,
   findRole,
   validateRoles,
@@ -67,7 +70,16 @@ export function getCategories() {
 export function getSupportedEnvironments() {
   return {
     operatingSystems: [...OPERATING_SYSTEMS],
-    distros: DISTROS.map((distro) => ({ distro, ecosystem: ecosystemForDistro(distro) })),
+    // Coverage is computed by the resolver rather than stored, so it cannot
+    // drift from what a plan would actually produce. A supported distribution
+    // is not the same as a well-covered one, and a caller is entitled to know
+    // the difference before picking one.
+    distros: DISTROS.map((distro) => ({
+      distro,
+      family: familyForDistro(distro),
+      ecosystem: ecosystemForDistro(distro),
+      coverage: catalogCoverage(createEnvironment(distro)),
+    })),
     ecosystems: PACKAGE_ECOSYSTEMS.map((ecosystem) => ({
       ecosystem,
       distros: [...ECOSYSTEM_DISTROS[ecosystem]],

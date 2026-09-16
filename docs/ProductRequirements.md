@@ -172,13 +172,18 @@ Initial package ecosystems:
 | Debian family   | APT             | in scope — verified (Ubuntu, Debian) |
 | Fedora family   | DNF             | in scope — verified (Fedora) |
 | Arch family     | Pacman          | in scope — verified (Arch Linux) |
-| openSUSE family | Zypper          | **deferred** — see below |
+| openSUSE family | Zypper          | **in scope** — ecosystem implemented; catalog coverage partial |
 
-> **Amended (Q4).** Active scope is the repository's actual verified coverage: apt / dnf /
-> pacman across Ubuntu, Debian, Fedora and Arch Linux, plus the distribution-agnostic
-> `flatpak` and `snap` methods. **openSUSE / Zypper is a later ecosystem**, not a Phase 1
-> one — adding it makes every existing catalog entry's coverage a fresh research question,
-> and nothing in the core release depends on it. A scope decision, not a rejection.
+> **Amended (Q4), then reversed in the architecture phase.** Zypper/openSUSE is now a
+> first-class ecosystem: the domain model, resolver, trust policy and command generation all
+> support it, and the cross-ecosystem contract tests cover it.
+>
+> The earlier deferral assumed adding it meant re-researching all 31 entries. It did not.
+> Flatpak and Snap are distribution-agnostic, so **23 of 31 applications resolved on openSUSE
+> the moment the ecosystem existed**. The remaining seven need one verified `zypper`
+> identifier each and are listed in [`catalog.md`](catalog.md) as a contribution target.
+> Coverage per distribution is computed by the resolver and published at
+> `GET /api/catalog/environments`, so the gap is visible rather than implied.
 
 ConfigShell should reason primarily around the **package ecosystem**, rather than creating completely separate logic for every distribution.
 

@@ -137,9 +137,11 @@ not represented by empty files.
   `eslint.config.js`, covering every workspace). `typecheck` is `tsc --noEmit` per
   TypeScript workspace. The old per-workspace `"lint": "tsc --noEmit"` scripts were
   renamed to `typecheck`, and `apps/server`'s broken `lint`/`check` scripts were removed.
-- **Tests**: **206**, on Node's built-in runner via `tsx`, in five workspaces —
-  `packages/catalog` (45), `packages/installer` (46), `packages/mcp` (52), `apps/server` (51),
-  `apps/web` (12). `docs/testing.md` is the authority on coverage and gaps.
+- **Tests**: **236**, on Node's built-in runner via `tsx`, in seven workspaces —
+  `packages/test-utils` (6), `packages/catalog` (46), `packages/installer` (56),
+  `packages/mcp` (52), `apps/server` (53), `packages/contract-tests` (11), `apps/web` (12). `docs/testing.md` is the
+  authority on coverage and gaps. `test-utils` holds the **architecture enforcement** tests:
+  dependency direction, acyclicity, and that command syntax stays inside the installer.
   They exercise real data and the real app, not fixtures and mocks. **`apps/web` has no DOM
   test runner**, so component behaviour is untested — the largest remaining gap.
 - **`apps/web` typecheck (`tsc --noEmit`) needs `@types/react`/`@types/react-dom`**, added
@@ -199,7 +201,7 @@ pnpm build                       # == pnpm --filter web build
 pnpm start                       # == pnpm --filter web start
 pnpm lint                        # eslint . across the whole repo (real ESLint)
 pnpm typecheck                   # tsc --noEmit for web, catalog, installer, server (checkJs)
-pnpm test                        # 206 tests: catalog 45, installer 46, mcp 52, server 51, web 12
+pnpm test                        # 236 tests across seven workspaces
 pnpm mcp                         # start the MCP server on stdio
 pnpm check                       # lint -> typecheck -> test -> build (what CI runs)
 ```

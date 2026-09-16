@@ -14,6 +14,7 @@
 
 export { resolve, resolveAll } from './resolve.ts';
 export { buildPlan } from './plan.ts';
+export { catalogCoverage, type CatalogCoverage } from './coverage.ts';
 export { renderPlan, UnsafeIdentifierError, safeBinary, safeIdentifier } from './commands.ts';
 export {
   exclusionNote,

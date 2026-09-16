@@ -36,19 +36,21 @@ function methodOrder(environment: Environment): readonly InstallMethod[] {
 /**
  * Whether this ecosystem needs an explicit metadata refresh before installing.
  *
- * Only apt does. `dnf` refreshes expired metadata on its own, and for pacman
+ * apt and zypper do: both install from a cached index that can be stale enough
+ * to fail. `dnf` refreshes expired metadata on its own, and for pacman
  * ConfigShell renders `-Syu`, which refreshes as part of the same command —
  * issuing a bare `pacman -Sy` first would set up exactly the partial-upgrade
  * state Arch warns against.
  */
 function needsRefreshStep(ecosystem: Environment['ecosystem']): boolean {
-  return ecosystem === 'apt';
+  return ecosystem === 'apt' || ecosystem === 'zypper';
 }
 
 const REFRESH_SUMMARY: Record<Environment['ecosystem'], string> = {
   apt: 'Update APT package metadata',
   dnf: 'Refresh DNF metadata',
   pacman: 'Synchronise pacman databases',
+  zypper: 'Refresh zypper repositories',
 };
 
 function installSummary(method: InstallMethod, count: number): string {
@@ -60,6 +62,8 @@ function installSummary(method: InstallMethod, count: number): string {
       return `Install ${count} ${noun} with DNF`;
     case 'pacman':
       return `Install ${count} ${noun} with pacman`;
+    case 'zypper':
+      return `Install ${count} ${noun} with zypper`;
     case 'flatpak':
       return `Install ${count} ${noun} from Flathub (per-user, no root)`;
     case 'snap':

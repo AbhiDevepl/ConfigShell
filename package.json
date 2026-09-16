@@ -13,8 +13,8 @@
     "build": "pnpm --filter web build",
     "start": "pnpm --filter server start",
     "lint": "eslint .",
-    "typecheck": "pnpm --filter web typecheck && pnpm --filter @configshell/catalog typecheck && pnpm --filter @configshell/installer typecheck && pnpm --filter @configshell/test-utils typecheck && pnpm --filter @configshell/mcp typecheck && pnpm --filter server typecheck",
-    "test": "pnpm --filter @configshell/catalog test && pnpm --filter @configshell/installer test && pnpm --filter @configshell/mcp test && pnpm --filter server test && pnpm --filter web test",
+    "typecheck": "pnpm --filter web typecheck && pnpm --filter @configshell/catalog typecheck && pnpm --filter @configshell/installer typecheck && pnpm --filter @configshell/test-utils typecheck && pnpm --filter @configshell/mcp typecheck && pnpm --filter server typecheck && pnpm --filter @configshell/contract-tests typecheck",
+    "test": "pnpm --filter @configshell/test-utils test && pnpm --filter @configshell/catalog test && pnpm --filter @configshell/installer test && pnpm --filter @configshell/mcp test && pnpm --filter server test && pnpm --filter @configshell/contract-tests test && pnpm --filter web test",
     "check": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build",
     "dev:web": "pnpm --filter web dev",
     "mcp": "pnpm --filter @configshell/mcp start"

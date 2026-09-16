@@ -268,6 +268,89 @@ and nothing else. No source, and deliberately no empty controller or route anywh
 `apps/server` either — a placeholder that looks like code makes a repository seem more
 finished than it is. The design lives in `docs/ai.md` until there is something to put in it.
 
+## Dependency direction
+
+One way, and **enforced by test** (`packages/test-utils/src/architecture.test.ts`) rather
+than merely described here — a boundary a test does not check is a comment.
+
+```
+              @configshell/test-utils        (0) depends on nothing; test-only
+                        │
+              @configshell/catalog           (1) trusted data + domain model
+                        │
+        ┌───────────────┴───────────────┐
+  @configshell/installer (2)      @configshell/ai (2)
+  resolve · plan · commands        recommendations — future
+        │
+  ┌─────┴──────┐
+apps/server  @configshell/mcp      (3) adapters over the core
+       ▲
+       │ HTTP
+   apps/web                        (3) presentation only
+```
+
+Four rules, each with a test:
+
+1. **No workspace depends on a higher layer.**
+2. **The graph is acyclic.**
+3. **`packages/catalog` depends on nothing.** It is the trusted data; it must not acquire a
+   dependency that could influence what the catalog says.
+4. **Two edges are forbidden outright**, because layering alone would permit them:
+   - `apps/web` → `installer`: command generation must not reach the browser bundle. The web
+     app gets resolution through the API.
+   - `packages/ai` → `installer`: an AI layer emits **application ids**, which flow through
+     the ordinary resolver. It must never reach command generation.
+
+A fifth test asserts that **package-manager command syntax appears only in
+`packages/installer`** — `apt-get install`, `dnf install`, `pacman -S` and `zypper install`
+are absent from every other workspace's source.
+
+## Data flow
+
+```
+User
+ ↓
+apps/web ───────────────── POST /api/plan ─────────────────┐
+ │                         GET /api/applications/:id       │
+ │  (catalog compiled in for browsing)                     ▼
+ │                                                    apps/server
+ ↓                                                         │
+Environment  ──────────────────────────────────────────────┤
+ (os · distro · family · ecosystem · architecture)         │
+ ↓                                                         ▼
+Catalog          verified applications + installation sources
+ ↓
+Resolution       which source, and why — or manual, or unavailable
+ ↓
+Setup plan       ordered steps, as DATA. No command text at this layer.
+ ↓
+Command generation   the only code that knows `apt` means `apt-get install`
+ ↓
+Verification     `command -v <binary>`, from a fixed template
+ ↓
+User runs it, in their own terminal
+```
+
+An MCP client enters the same pipeline at the same place, through
+`packages/mcp` — different transport, identical core, so the answer cannot differ.
+
+## Package ecosystems
+
+Adding a package manager is a contained change. Only **five** places in the codebase
+enumerate ecosystems, all inside `packages/installer`:
+
+| Place | What it decides |
+| ----- | --------------- |
+| `policy.ts` `isNativeEcosystemMethod` | is this a distribution's own package manager |
+| `policy.ts` `isPrivilegedMethod` | does it need root |
+| `plan.ts` `needsRefreshStep` | does it need an explicit metadata refresh |
+| `plan.ts` `installSummary` | the human label for the step |
+| `commands.ts` `installCommand` | the command form |
+
+Everything else — the web app, the API, MCP, the catalog schema — works from
+`PackageEcosystem` and `ECOSYSTEM_DISTROS` without knowing any syntax. `zypper` was added
+by filling in those five, and the exhaustive `switch` statements made the compiler list them.
+
 ## Repository tooling
 
 - **Package manager:** pnpm workspaces (`apps/*`, `packages/*`), pinned via

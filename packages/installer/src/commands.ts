@@ -92,6 +92,8 @@ function installCommand(method: InstallMethod, identifiers: readonly string[]): 
       return `sudo dnf install ${packages}`;
     case 'pacman':
       return `sudo pacman -Syu --needed ${packages}`;
+    case 'zypper':
+      return `sudo zypper install ${packages}`;
     case 'flatpak':
       return `flatpak install --user flathub ${packages}`;
     case 'snap':
@@ -107,6 +109,7 @@ const REFRESH_COMMAND = {
   apt: 'sudo apt-get update',
   dnf: 'sudo dnf makecache',
   pacman: 'sudo pacman -Sy',
+  zypper: 'sudo zypper refresh',
 } as const;
 
 /**

@@ -31,7 +31,9 @@ export function requiresRepositorySetup(source: InstallationSource): boolean {
 
 /** Is this method a distribution's own package manager (as opposed to an add-on)? */
 export function isNativeEcosystemMethod(method: InstallMethod): boolean {
-  return method === 'apt' || method === 'dnf' || method === 'pacman';
+  return (
+    method === 'apt' || method === 'dnf' || method === 'pacman' || method === 'zypper'
+  );
 }
 
 /**
@@ -47,6 +49,7 @@ export function isPrivilegedMethod(method: InstallMethod): boolean {
     case 'apt':
     case 'dnf':
     case 'pacman':
+    case 'zypper':
     case 'snap':
       return true;
     case 'flatpak':

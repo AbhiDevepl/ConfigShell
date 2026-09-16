@@ -19,14 +19,21 @@ export function requestContextMiddleware(req, res, next) {
   req.log = logger.child({ requestId });
   res.setHeader("X-Request-Id", requestId);
 
+  // Captured now, before routing. Express rewrites `req.url` when a request
+  // enters a mounted router, so reading `req.path` in the `finish` handler
+  // reports the path *relative to whatever matched* — `/api/applications`
+  // was logged as `/`. `originalUrl` is not rewritten.
+  //
+  // The query string is dropped rather than logged: it carries the caller's
+  // search terms, which are their business.
+  const path = req.originalUrl.split("?")[0];
+
   const startedAt = process.hrtime.bigint();
   res.on("finish", () => {
     const durationMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
-    // The path only — never the query string or body, which carry the caller's
-    // selection.
     req.log.info("request", {
       method: req.method,
-      path: req.path,
+      path,
       status: res.statusCode,
       durationMs: Math.round(durationMs * 100) / 100,
     });
