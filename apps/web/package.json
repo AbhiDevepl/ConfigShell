@@ -17,7 +17,7 @@
     "@fontsource-variable/geist": "^5.3.0",
     "@linux-app-platform/catalog": "workspace:*",
     "class-variance-authority": "^0.7.1",
-    "cn": "^0.2.6",
+    "cn": "^0.3.0",
     "express": "^5.2.1",
     "lucide-react": "^0.546.0",
     "radix-ui": "^1.6.7",
