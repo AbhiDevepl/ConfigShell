@@ -30,6 +30,23 @@ Each layer is intentionally decoupled so security boundaries can be enforced at 
 nothing downstream runs arbitrary input, and nothing upstream can touch the operating
 system directly. See `docs/security.md` for the security model this enables.
 
+```mermaid
+flowchart TD
+    UI["UI — React web app"] --> CAT["Application catalog"]
+    CAT --> DET["System detection"]
+    DET --> AI["AI / planning"]
+    AI --> MCP["MCP — controlled tool interface"]
+    MCP --> AGENT["Local agent — on the user's machine"]
+    AGENT --> OP["Validated system operation"]
+
+    classDef done fill:#1f6f43,stroke:#0f3d24,color:#fff
+    classDef todo fill:#2b2b2b,stroke:#555,color:#ddd,stroke-dasharray: 4 3
+    class UI,CAT done
+    class DET,AI,MCP,AGENT,OP todo
+```
+
+Solid boxes exist today; dashed boxes do not.
+
 ## V1 architecture (in progress)
 
 V1 narrows the long-term pipeline to a smaller, concrete flow that stops before any system
@@ -49,13 +66,23 @@ their own terminal. Installer resolution and command generation are not part of 
 
 Two layers of the long-term pipeline now exist, and the boundary between them is real:
 
+```mermaid
+flowchart LR
+    subgraph browser["Browser"]
+        WEB["apps/web<br/>React + Vite + shadcn/ui"]
+    end
+    subgraph build["Build time"]
+        CATALOG["packages/catalog<br/>APPLICATIONS, types, validateCatalog"]
+    end
+    SERVER["apps/server<br/>Express scaffold — no endpoints"]
+
+    CATALOG -- "workspace:* import, bundled at build" --> WEB
+    WEB -. "no requests — not wired up" .-> SERVER
 ```
-UI  (apps/web)
-   ↓  imports @linux-app-platform/catalog
-Shared Application Catalog  (packages/catalog)
-   ↓
-Structured application metadata
-```
+
+The catalog is *compiled into* the web bundle; it is not fetched at runtime. There is no
+client/server communication in the product today — the dashed edge above does not exist in
+code.
 
 The web app owns no application data. It reads `APPLICATIONS` from the catalog package and
 renders it; search, category filtering and selection all operate on catalog entries, keyed
@@ -103,17 +130,39 @@ section before adding more components or touching the `@/*` import alias.
   lives in `App.tsx`/local component state — there is no global store, no backend calls,
   and no persistence. Nothing survives a page refresh.
 
-### `apps/server` — scaffold only, does not run
+### `apps/server` — scaffold only, serves nothing
 
-Directory structure (`controllers/`, `services/`, `routes/`, `middleware/`, `validators/`,
-`utils/`, `config/`) exists but every file in it is empty. The one file with code,
-`index.js`, currently fails to start (`ERR_MODULE_NOT_FOUND` for `dotenv`, which isn't
-declared as a dependency). No API exists for the web app to call, and the web app does not
-attempt to call one yet.
+The directory structure (`controllers/`, `services/`, `routes/`, `middleware/`,
+`validators/`, `utils/`, `config/`) exists, but the only files with code are `index.js` —
+which starts an Express app with no routes registered — and `config/env.js` /
+`config/index.js`, which read and validate `PORT` and `NODE_ENV` and fail startup loudly on
+an invalid value. Everything else is 0 bytes.
+
+The server starts and listens; it has no endpoints. No API exists for the web app to call,
+and the web app does not attempt to call one. Adding the first endpoint is an
+architectural decision (the catalog is currently compiled into the browser bundle), not a
+small change — open an issue first.
 
 ### `packages/ai`, `packages/mcp`
 
-Empty placeholders (a `.gitkeep` each) for the AI planning and MCP layers. No work started.
+Placeholders for the AI planning and MCP layers: a `package.json` and a README each, no
+source. No work started. See `docs/ai.md` and `docs/mcp.md` for the constraints any
+implementation must satisfy.
+
+## Repository tooling
+
+- **Package manager:** pnpm workspaces (`apps/*`, `packages/*`), pinned via
+  `packageManager`. Root `package.json` scripts orchestrate the workspaces with pnpm
+  filters. There is deliberately **no Turborepo pipeline** — the dependency graph (one app
+  consuming one package) does not justify one yet.
+- **Lint:** one flat ESLint config at the root (`eslint.config.js`) covering every
+  workspace; `pnpm lint`.
+- **Types:** `tsc --noEmit` per TypeScript workspace; `pnpm typecheck`.
+- **Tests:** Node's built-in runner. `packages/catalog` is the only workspace with tests.
+- **CI:** `.github/workflows/ci.yml` runs install, lint, typecheck, test and build on
+  pushes to `main` and on pull requests, against Node 20 and 22.
+
+See `docs/development.md` for the commands and `CONTRIBUTING.md` for the workflow.
 
 ## What Phase 2 deliberately does not include
 

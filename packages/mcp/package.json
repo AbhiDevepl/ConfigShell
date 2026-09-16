@@ -1,0 +1,8 @@
+{
+  "name": "@linux-app-platform/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "MCP interface layer — placeholder, nothing implemented yet (see docs/mcp.md)",
+  "type": "module",
+  "license": "Apache-2.0"
+}

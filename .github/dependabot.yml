@@ -1,0 +1,39 @@
+version: 2
+
+updates:
+  # npm dependencies across every workspace (pnpm is supported by Dependabot).
+  - package-ecosystem: npm
+    directories:
+      - "/"
+      - "/apps/web"
+      - "/apps/server"
+      - "/packages/catalog"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      # One pull request per ecosystem rather than a dozen — easier to review and to
+      # revert for a two-person team.
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      production-dependencies:
+        dependency-type: production
+        update-types: [minor, patch]
+    labels:
+      - dependencies
+
+  # Keep the CI workflow's actions current — action versions are a supply-chain surface.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci(deps)"
+    labels:
+      - dependencies
+      - ci

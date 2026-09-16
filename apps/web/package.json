@@ -1,44 +1,39 @@
 {
-  "name": "react-example",
+  "name": "web",
+  "version": "0.1.0",
   "private": true,
-  "version": "0.0.0",
+  "description": "React web interface for Linux App Platform",
   "type": "module",
+  "license": "Apache-2.0",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server.js",
-    "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
     "@linux-app-platform/catalog": "workspace:*",
-    "@google/genai": "^2.4.0",
-    "@tailwindcss/vite": "^4.1.14",
-    "@vitejs/plugin-react": "^5.0.4",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.6",
-    "dotenv": "^17.2.3",
-    "express": "^4.21.2",
+    "express": "^5.2.1",
     "lucide-react": "^0.546.0",
-    "motion": "^12.23.24",
     "radix-ui": "^1.6.7",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "shadcn": "^4.21.0",
-    "tw-animate-css": "^1.4.0",
-    "vite": "^6.2.3"
+    "tw-animate-css": "^1.4.0"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
+    "@tailwindcss/vite": "^4.1.14",
+    "@types/express": "^5.0.0",
     "@types/node": "^22.14.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "autoprefixer": "^10.4.21",
-    "esbuild": "^0.25.0",
+    "@vitejs/plugin-react": "^5.0.4",
     "tailwindcss": "^4.1.14",
-    "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.3"
   }

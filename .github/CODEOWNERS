@@ -1,0 +1,26 @@
+# Code owners — GitHub requests a review from the owner of any file a pull request touches.
+#
+# Only usernames that are confirmed collaborators belong here: an unrecognised name
+# invalidates the ENTIRE file silently, and no reviews get requested at all.
+# The second maintainer's handle is not yet confirmed — see MAINTAINERS.md — so it is
+# commented out. Uncomment it once verified.
+
+# Default owner for everything in the repository.
+*                       @AbhiDevepl
+# *                     @AbhiDevepl @tejjasdev
+
+# Security-sensitive and architectural documents: changes here need maintainer review.
+/docs/security.md       @AbhiDevepl
+/docs/architecture.md   @AbhiDevepl
+/SECURITY.md            @AbhiDevepl
+/LICENSE                @AbhiDevepl
+/NOTICE                 @AbhiDevepl
+
+# The trusted catalog — data correctness here is a security property.
+/packages/catalog/      @AbhiDevepl
+
+# Repository tooling and CI.
+/.github/               @AbhiDevepl
+/eslint.config.js       @AbhiDevepl
+/package.json           @AbhiDevepl
+/pnpm-lock.yaml         @AbhiDevepl

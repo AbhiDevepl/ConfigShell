@@ -10,7 +10,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "tsx --test src/*.test.ts"
   },
   "license": "Apache-2.0",

@@ -24,14 +24,14 @@ Non-negotiable safety principles that govern any feature work here:
 This repo is a scaffold — most files exist as empty placeholders, not stubs with TODOs.
 Before editing, check whether a file actually has content; many don't:
 
-- **`apps/server/`**: only `index.js` has code, and it's a bare `express()` app that just
-  calls `app.listen(3000, ...)` — it does not import or mount `app.js`, `routes/`,
-  `controllers/`, `services/`, `middleware/`, `validators/`, `utils/`, or `config/`. Every
-  file in those directories is 0 bytes. There is no routing, no catalog data, no AI
-  endpoint, and no auth wired up yet, despite the directory names suggesting otherwise.
-  **It also doesn't currently run**: `index.js` does `import dotenv from "dotenv"` but
-  `dotenv` isn't declared in `apps/server/package.json` — `node index.js` throws
-  `ERR_MODULE_NOT_FOUND` immediately.
+- **`apps/server/`**: the only files with code are `index.js` — a bare `express()` app that
+  calls `app.listen(...)` and registers no routes or middleware — and `config/env.js` +
+  `config/index.js`, which load `.env` via `dotenv`, validate `PORT`/`NODE_ENV`, and throw
+  an explanatory error on an invalid value. `app.js` and every file in `routes/`,
+  `controllers/`, `services/`, `middleware/`, `validators/`, `utils/` is still 0 bytes.
+  There is no routing, no catalog endpoint, no AI endpoint, and no auth, despite the
+  directory names. The server *does* start (`pnpm --filter server start`) — it just serves
+  nothing. Variables are documented in `apps/server/.env.example`; `.env` is git-ignored.
 - **`apps/web/`**: a Vite + React + TypeScript + Tailwind v4 + **shadcn/ui** app. As of
   Phase 1 it has a working UI foundation for the actual product, built primarily from
   shadcn components (`components/ui/*` — button, card, badge, checkbox, radio-group,
@@ -43,8 +43,8 @@ Before editing, check whether a file actually has content; many don't:
   `Distro` type imported from the catalog. There is no command generation, no
   package-manager resolution, and no backend calls yet — see `docs/architecture.md` for
   what's planned vs. implemented.
-  `apps/web/package.json`'s `name` field is still `react-example` (a scaffold leftover) —
-  see the pnpm filter note under Commands below.
+  The workspace is named `web` (it was `react-example`, a scaffold leftover, until the
+  open-source cleanup), so both `--filter web` and `--filter ./apps/web` resolve.
 - **`packages/catalog`**: real, and as of Phase 2 the **single source of truth for
   application metadata** — 31 verified applications, the data model, a dependency-free
   validation function, and its own tests. Published to the workspace as
@@ -56,21 +56,24 @@ Before editing, check whether a file actually has content; many don't:
   `docs/catalog.md` before adding entries: identifiers must be verified against an
   authoritative source, unverified ones are omitted rather than guessed, the AUR doesn't
   count as `pacman`, and version numbers are never recorded.
-- **`packages/ai`, `packages/mcp`**: contain only a `.gitkeep` each — placeholders for the
-  AI planning and MCP layers.
-- **`docs/*.md`**: `architecture.md`, `catalog.md`, and `security.md` are now written and
-  are the source of truth for the current Phase 1 implementation state, the V1 flow
-  boundary, and the security model — read them before making architecture-adjacent
-  changes. `ai.md`, `agent.md`, and `mcp.md` are still empty placeholders (post-V1 layers
-  with no work started).
-- **`turbo.json`**: empty. Turborepo is a stated dependency but has no configured
-  pipeline; there are no root `turbo` tasks to run.
-- **`apps/server` lint**: `package.json` defines `"lint": "eslint ."`, but ESLint is not a
-  dependency anywhere in the repo and no ESLint config exists — this script currently
-  fails until both are added.
+- **`packages/ai`, `packages/mcp`**: a `package.json` and a README each, no source —
+  placeholders for the AI planning and MCP layers. They are real (empty) workspace members.
+- **`docs/*.md`**: `architecture.md`, `catalog.md`, `security.md` and `development.md` are
+  the source of truth for the implementation state, the V1 flow boundary, the security
+  model, and the commands — read them before making architecture-adjacent changes.
+  `ai.md`, `agent.md` and `mcp.md` are **status documents for unstarted layers**: they
+  record constraints any future implementation must satisfy and explicitly state that
+  nothing is implemented. Don't turn them into descriptions of working features.
+- **Turborepo is not used.** `turbo.json` was empty and has been deleted; root
+  `package.json` scripts orchestrate the workspaces with pnpm filters. Don't add a Turbo
+  pipeline unless the dependency graph actually needs one.
+- **Lint vs. typecheck**: `pnpm lint` at the root is real ESLint (flat config in
+  `eslint.config.js`, covering every workspace). `typecheck` is `tsc --noEmit` per
+  TypeScript workspace. The old per-workspace `"lint": "tsc --noEmit"` scripts were
+  renamed to `typecheck`, and `apps/server`'s broken `lint`/`check` scripts were removed.
 - **Tests**: `packages/catalog` has the repo's only test suite (Node's built-in runner via
-  `tsx`: `pnpm --filter ./packages/catalog test`). `apps/web` and `apps/server` still have
-  no tests.
+  `tsx`: `pnpm --filter @linux-app-platform/catalog test`). `apps/server` has no test
+  files (`node --test` passes with zero tests); `apps/web` has no test runner at all.
 - **`apps/web` typecheck (`tsc --noEmit`) needs `@types/react`/`@types/react-dom`**, added
   in Phase 1 — they were missing entirely before that (JSX/React props typechecked as
   effectively `any`, so `tsc --noEmit` looked clean but wasn't actually validating React
@@ -120,43 +123,64 @@ Package manager is pnpm (workspace = `apps/*` + `packages/*`); Node >= 20.
 pnpm install                     # install all workspace deps, from repo root
 ```
 
-Root-level scripts only proxy to specific workspaces (not a full monorepo orchestration —
-`turbo.json` is unconfigured):
+Root scripts (pnpm filters — there is no Turbo pipeline):
 ```sh
-pnpm dev                         # == pnpm --filter ./apps/web dev  (web only, no server)
-pnpm build                       # == pnpm --filter ./apps/web build
-pnpm start                       # == pnpm --filter ./apps/web start
-pnpm lint                        # == pnpm --filter ./apps/web lint (tsc --noEmit, not ESLint)
+pnpm dev                         # == pnpm --filter web dev  (web only, no server)
+pnpm build                       # == pnpm --filter web build
+pnpm start                       # == pnpm --filter web start
+pnpm lint                        # eslint . across the whole repo (real ESLint)
+pnpm typecheck                   # tsc --noEmit for apps/web and packages/catalog
 pnpm test                        # catalog tests (tsx --test), then apps/server (node --test, no files)
+pnpm check                       # lint -> typecheck -> test -> build (what CI runs)
 ```
 
-Run each app directly when you need both, or need server-specific tasks. `apps/web`'s
-`package.json` name is `react-example` (scaffold leftover), so pnpm's name-based
-`--filter web` does **not** match — use the path-based filter:
+Per workspace (name-based filters work; path-based ones still do too):
 ```sh
-pnpm --filter ./apps/web dev            # Vite dev server on port 3000
-pnpm --filter ./apps/web build          # production build -> apps/web/dist
-pnpm --filter ./apps/web preview        # preview the production build
-pnpm --filter ./apps/web start          # node server.js, serves apps/web/dist as a static SPA
-pnpm --filter ./apps/web lint           # tsc --noEmit (this is a type-check, not ESLint)
+pnpm --filter web dev                   # Vite dev server on port 3000
+pnpm --filter web build                 # production build -> apps/web/dist
+pnpm --filter web preview               # preview the production build
+pnpm --filter web start                 # node server.js, serves apps/web/dist as a static SPA
+pnpm --filter web typecheck             # tsc --noEmit
 
-pnpm --filter ./packages/catalog lint   # tsc --noEmit
-pnpm --filter ./packages/catalog test   # node test runner via tsx — validates the real catalog
+pnpm --filter @linux-app-platform/catalog typecheck   # tsc --noEmit
+pnpm --filter @linux-app-platform/catalog test        # node test runner via tsx — validates the real catalog
 
-pnpm --filter ./apps/server dev         # nodemon index.js — currently crashes, see above
-pnpm --filter ./apps/server start       # node index.js — currently crashes, see above
-pnpm --filter ./apps/server test        # node --test (no test files exist yet)
-pnpm --filter ./apps/server check       # lint + test (lint currently fails — see above)
+pnpm --filter server dev                # nodemon index.js — starts, serves nothing
+pnpm --filter server start              # node index.js
+pnpm --filter server test               # node --test (no test files exist yet)
 ```
 
-The web dev server and the server dev process both default to port 3000 — don't run both
-at once without changing one's port (moot right now since the server doesn't start).
+The web dev server and the server both default to port 3000 — set `PORT` in
+`apps/server/.env` (see `apps/server/.env.example`) before running both at once.
+
+CI (`.github/workflows/ci.yml`) runs `pnpm install --frozen-lockfile` then lint, typecheck,
+test and build on Node 20 and 22, for pushes to `main` and pull requests. If you change a
+script name, update the workflow, `README.md`, `docs/development.md`, `CONTRIBUTING.md` and
+this file together.
 
 Server uses Node's built-in test runner. Once test files exist (convention: `*.test.js`
 alongside the code they test), run a single file from `apps/server`:
 ```sh
 node --test path/to/file.test.js
 ```
+
+## Open-source repository conventions
+
+This is a public repository. Keep these accurate when you change anything they describe:
+
+- `CONTRIBUTING.md` (setup, branch/commit conventions, PR expectations), `SECURITY.md`
+  (private vulnerability reporting — `docs/security.md` is the *model*, not the policy),
+  `CODE_OF_CONDUCT.md`, `SUPPORT.md`, `MAINTAINERS.md`, `ROADMAP.md`, `CHANGELOG.md`,
+  `THIRD_PARTY_NOTICES.md`, `NOTICE`.
+- `.github/`: CI workflow, issue templates, PR template, `CODEOWNERS`, `dependabot.yml`,
+  `GOOD_FIRST_ISSUES.md`.
+- Commit convention: lightweight Conventional Commits (`feat:`, `fix:`, `docs:`,
+  `refactor:`, `test:`, `chore:`, `build:`, `ci:`), branches `feature|fix|docs|refactor|chore|test/<name>`.
+- Add a `CHANGELOG.md` entry under `## [Unreleased]` for user-visible changes.
+- Add any new dependency to `THIRD_PARTY_NOTICES.md` in the same change.
+- Never document, display, or imply functionality that doesn't exist — this repo documents
+  its own incompleteness on purpose, and reviewers enforce that.
+- Never commit a `.env`, a key, or a token. `.env.example` files carry placeholders only.
 
 ## Deployment
 

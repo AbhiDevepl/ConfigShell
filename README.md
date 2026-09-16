@@ -1,133 +1,102 @@
 # ConfigShell
 
+[![CI](https://github.com/AbhiDevepl/linux-app-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/AbhiDevepl/linux-app-platform/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org)
+[![pnpm](https://img.shields.io/badge/pnpm-9.15.5-orange.svg)](https://pnpm.io)
+
 An open-source, AI-native Linux software discovery and management platform.
 
-The project's long-term goal is to help users discover Linux applications, understand
-how compatible those applications are with their system, and — with explicit consent —
-plan and validate installation workflows. AI is intended to reason about software and
-plan actions; it is never granted unrestricted access to the operating system.
+The long-term goal is to help users discover Linux applications, understand how compatible
+those applications are with their system, and — with explicit consent — plan and validate
+installation workflows. AI is intended to reason about software and plan actions; it is
+never granted unrestricted access to the operating system.
 
-> **Status: V1 in development.** The platform is being built incrementally. This README
-> clearly separates what is currently implemented from what is planned. Nothing described
-> below as "planned" or "future work" should be treated as shipped functionality.
+> **Status: V1 in development. Nothing here installs software yet.**
+> This README separates what is implemented from what is planned, and says so at every
+> point. Anything described as "planned" or "future work" does not exist in the code.
+
+**Quick links:** [What works today](#what-exists-today) ·
+[Install](#installation) · [Development](#development) ·
+[Contributing](CONTRIBUTING.md) · [Roadmap](ROADMAP.md) ·
+[Good first issues](.github/GOOD_FIRST_ISSUES.md) · [Security](SECURITY.md)
 
 ---
 
-## What this project does
+## What this project is
 
-Today the platform is a foundation being assembled from the pieces described below. The
-intended end-to-end experience is:
+A curated catalog of Linux applications plus an interface for choosing the ones you want —
+with, eventually, a safe path from "I want these applications" to "they are installed",
+that never puts a shell behind a web page.
+
+**Why it exists.** Setting up a fresh Linux system means identifying your distribution,
+knowing its package ecosystem, checking whether each application is in the default
+repositories, finding the right installation method, and copying commands from a dozen
+websites. The information is scattered, often outdated, and frequently wrong for your
+distribution specifically. This project's answer is a small, *verified* catalog and a flow
+that is honest about what it does not know.
+
+The intended end-to-end experience:
 
 1. **Discover** Linux applications from a curated catalog.
-2. **Understand** compatibility with your Linux system (distribution, architecture,
-   desktop environment, package managers, installed software).
-3. **Search and filter** software by name, category, and other attributes.
+2. **Understand** compatibility with your system (distribution, architecture, desktop
+   environment, package managers, installed software).
+3. **Search and filter** by name, category, and other attributes.
 4. **Select** multiple applications.
-5. **Generate a safe installation plan** that resolves each app against the catalog.
-6. **Eventually** use AI to recommend and plan software workflows, expose controlled
-   capabilities through MCP, and have a local Linux agent perform validated system
-   operations.
+5. **Generate a safe installation plan** that resolves each application against the catalog.
+6. **Eventually** use AI to recommend and plan workflows, expose controlled capabilities
+   through MCP, and let a local Linux agent perform validated system operations.
 
 ### Non-negotiable safety principles
 
 - The browser **never** directly executes arbitrary shell commands.
 - AI **never** receives unrestricted system access.
-- System-changing operations must go through a **trusted local agent** with validation
-  and explicit user confirmation.
+- System-changing operations must go through a **trusted local agent** with validation and
+  explicit user confirmation.
+- Applications must resolve against the **trusted catalog** — untrusted manifests are never
+  installed.
 
-See [Security](#security) for the full policy.
+See [Security](#security) and [`docs/security.md`](docs/security.md) for the full model.
 
 ---
 
-## Project status
+## What exists today
 
-The current repository layout:
+- **A working web interface** (`apps/web`) — Vite + React 19 + TypeScript + Tailwind CSS v4
+  + [shadcn/ui](https://ui.shadcn.com) (Radix UI base). A browser-only "does this look like
+  Linux" indicator, manual distribution selection (Ubuntu, Debian, Fedora, Arch Linux), a
+  searchable and filterable application browser, selectable application cards, a selection
+  summary (sidebar on desktop, sheet + sticky bottom bar on mobile), and a dark/light theme
+  toggle that defaults to dark. **Nothing on this page installs, executes, or generates a
+  command** — the "Continue" button is intentionally inert.
 
-```
-apps/
-├── server/        Express API server (scaffold)
-│   ├── app.js
-│   ├── config/
-│   ├── controllers/
-│   ├── middleware/
-│   ├── routes/
-│   ├── services/
-│   ├── utils/
-│   └── validators/
-└── web/           React web app (shadcn/ui on Tailwind v4)
-    ├── src/
-    │   ├── components/
-    │   │   ├── ui/           shadcn-generated primitives (button, card, checkbox, ...)
-    │   │   ├── layout/        Header, theme toggle
-    │   │   ├── detection/     Linux detection banner
-    │   │   ├── distro/       Distribution selector
-    │   │   ├── applications/ App catalog, search/filter, cards
-    │   │   └── selection/     Selection summary, sticky bottom bar
-    │   ├── data/          Distro selector copy (Distro type comes from the catalog)
-    │   ├── hooks/         Browser-only Linux detection, light/dark theme
-    │   └── lib/            shadcn's `cn` re-export
-    ├── components.json  shadcn/ui config
-    ├── public/
-    ├── index.html
-    ├── package.json
-    └── vite.config.ts
-
-packages/
-├── ai/            (placeholder)
-├── catalog/       Verified application catalog — single source of truth
-│   └── src/
-│       ├── types.ts         Data model
-│       ├── applications.ts  The verified entries
-│       ├── validate.ts      Integrity checks
-│       └── index.ts         Public API
-├── mcp/           (placeholder)
-├── types/         (planned)
-└── ui/            (planned)
-
-docs/
-├── agent.md
-├── ai.md
-├── architecture.md
-├── catalog.md
-├── mcp.md
-└── security.md
-```
-
-**What exists today:**
-
-- A Vite + React + TypeScript + Tailwind CSS + **shadcn/ui** (Radix UI base) web
-  application (`apps/web`) with a working **Phase 1 UI foundation**: a browser-only "does
-  this look like Linux" indicator, manual distribution selection (Ubuntu, Debian, Fedora,
-  Arch Linux), a searchable/filterable application browser, selectable application cards,
-  a selection summary (sidebar on desktop, sheet + sticky bottom bar on mobile), and a
-  dark/light theme toggle (dark by default). Built from shadcn primitives — button, card,
-  badge, checkbox, radio-group, input, toggle-group, alert, sheet, empty, tooltip, etc.
-  (`apps/web/src/components/ui`). Nothing on this page installs, executes, or generates a
-  command — the "Continue" button is intentionally inert.
-- A **real, verified application catalog** (`packages/catalog`, **Phase 2**) — 31
-  applications across the seven categories, with 116 installation sources whose identifiers
-  were each checked against an authoritative source (the distribution's own package
-  database, Flathub, the Snap Store, or vendor documentation). It is the single source of
-  truth for application metadata; the web app consumes it via `@linux-app-platform/catalog`
-  and owns no application data of its own. Support is explicit per distribution rather than
-  assumed, unverified identifiers are omitted rather than guessed, no version numbers are
+- **A real, verified application catalog** (`packages/catalog`) — 31 applications across
+  seven categories, with 116 installation sources whose identifiers were each checked
+  against an authoritative source (the distribution's own package database, Flathub, the
+  Snap Store, or vendor documentation). It is the single source of truth for application
+  metadata; the web app consumes it via `@linux-app-platform/catalog` and owns no
+  application data of its own. Support is explicit per distribution rather than assumed,
+  unverified identifiers are omitted rather than guessed, version numbers are never
   recorded, and each source is labelled `distro` / `vendor` / `community` so third-party
-  repackagings aren't presented as vendor-official. The catalog is inert descriptive data —
-  it contains **no commands** and nothing acts on it yet. See
+  repackagings are not presented as vendor-official. The catalog is inert descriptive data:
+  it contains **no commands**, and nothing acts on it yet. See
   [`docs/catalog.md`](docs/catalog.md).
-- An Express API server scaffold (`apps/server`) with routing, controller, service, and
-  validator directories, all still empty. The server is not yet wired to serve the platform
-  API, and its one file with code (`index.js`) currently fails to start — it imports
-  `dotenv`, which isn't declared as a dependency.
-- Empty workspace packages (`packages/ai`, `packages/mcp`) prepared as homes for the AI
-  and MCP modules.
-- Draft design documents in `docs/` describing the architecture, agent, catalog, MCP,
-  and security plans (`docs/ai.md`, `docs/agent.md`, `docs/mcp.md` are currently empty).
 
-**What is not yet implemented (planned):** package-manager resolution (turning catalog
-metadata into an actual install plan), terminal command generation, system detection beyond
-"does the browser look like Linux", application details pages, application icons, AI
-features, the MCP server, the local Linux agent, database storage, and authentication.
+- **An Express API scaffold** (`apps/server`) — starts, validates its environment, and
+  registers **no routes**. The `controllers/`, `services/`, `routes/`, `middleware/`,
+  `validators/` and `utils/` directories exist but their files are empty. The web app does
+  not call it.
+
+- **Repository tooling** — pnpm workspaces, repository-wide ESLint, per-workspace
+  typechecking, the catalog test suite, and CI that runs all of it on Node 20 and 22.
+
+**Not implemented (planned):** package-manager resolution (turning catalog metadata into an
+install plan), terminal command generation, system detection beyond "does the browser look
+like Linux", application detail pages, application icons, AI features, the MCP server, the
+local Linux agent, database storage, and authentication. See [`ROADMAP.md`](ROADMAP.md).
+
+*There is no screenshot or demo in this README yet — run it locally with `pnpm dev`; it
+takes about a minute.*
 
 ---
 
@@ -152,28 +121,27 @@ Validated System
 Operation             The only layer that can change the system
 ```
 
-Each layer is intentionally decoupled:
+**Of that pipeline, the first two layers exist.** Everything below "Application Catalog" is
+design, not code:
 
-- **UI** — discovery, browsing, selection, and review experiences. No system access.
-- **Catalog data** — a curated, structured repository of Linux applications, kept separate
-  from the interface that renders it.
-- **System detection** — reads the local environment (never blind to it).
-- **AI planning** — reasons about recommendations and generates plans; it plans rather than
-  executes.
-- **MCP** — exposes controlled, explicitly authorized capabilities to AI systems.
-- **Local system execution** — confined to the local agent, which validates every operation
-  and requires user confirmation.
+```mermaid
+flowchart LR
+    CATALOG["packages/catalog<br/>verified application data"] -- "bundled at build time" --> WEB["apps/web<br/>React interface"]
+    WEB -. "not wired up" .-> SERVER["apps/server<br/>Express scaffold"]
+    SERVER -. "does not exist" .-> REST["AI · MCP · local agent"]
+```
 
-Because these layers are separated, security boundaries can be enforced at each hop:
+Each layer is intentionally decoupled so security boundaries can be enforced at each hop:
 nothing downstream runs arbitrary input, and nothing upstream can touch the operating
-system directly.
+system directly. Full detail — including what is implemented versus planned — is in
+[`docs/architecture.md`](docs/architecture.md).
 
 ---
 
 ## Current V1 scope
 
-V1 is a **Ninite-style installer-command generator**, not an installer: it stops at
-generating a terminal command the user copies and runs themselves. The full V1 flow is:
+V1 is a **Ninite-style installer-command generator, not an installer**: it stops at
+generating a terminal command that the user copies and runs themselves.
 
 ```
 Website → Linux detection state → Distribution selection → Application catalog
@@ -181,330 +149,275 @@ Website → Linux detection state → Distribution selection → Application cat
 → Copy to terminal → user runs it themselves
 ```
 
-Status of each piece:
+| Piece | Status |
+| ----- | ------ |
+| Linux application discovery (UI + verified catalog) | **implemented** |
+| Manual distribution selection (Ubuntu / Debian / Fedora / Arch Linux) | **implemented** |
+| Browser-only "looks like Linux" detection | **implemented** |
+| Search | **implemented** |
+| Category filtering | **implemented** |
+| Application selection + selection summary | **implemented** |
+| Responsive interface | **implemented** |
+| Dark/light theme toggle (dark by default) | **implemented** |
+| Verified application catalog (31 apps, metadata only) | **implemented** |
+| Application details | not started |
+| Installer resolution (APT/DNF/Pacman/Flatpak/Snap) | not started |
+| Terminal command generation / copy to clipboard | not started |
 
-- Linux application discovery — **implemented** (UI + verified catalog)
-- Manual distribution selection (Ubuntu / Debian / Fedora / Arch Linux) — **implemented**
-- Browser-only "looks like Linux" detection — **implemented** (exact distro is never
-  inferred; see [Important distro detection rule](#important-distro-detection-rule))
-- Search — **implemented**
-- Category filtering — **implemented**
-- Application selection + selection summary — **implemented**
-- Responsive interface — **implemented**
-- Dark/light theme toggle — **implemented** (dark by default)
-- Real, verified application catalog — **implemented** (31 applications in
-  `packages/catalog`; metadata only, no installation logic)
-- Application details — **not started**
-- Installer resolution (APT/DNF/Pacman/Flatpak/Snap) — **not started**
-- Terminal command generation / copy-to-clipboard — **not started**
-
-V1 does **not** include real package installation, arbitrary shell execution, MCP, AI, or
-a local agent — those are out of scope for V1 entirely (see
-[Important distro detection rule](#important-distro-detection-rule) and
-[Roadmap](#roadmap)).
+V1 does **not** include real package installation, arbitrary shell execution, MCP, AI, or a
+local agent — those are out of scope for V1 entirely.
 
 ### Important distro detection rule
 
-Normal browser APIs cannot reliably identify which Linux distribution a visitor is
-running. `apps/web/src/hooks/useLinuxDetection.ts` only ever reports whether the browser
-*looks like* Linux (and explicitly excludes Android, which also reports "Linux" in its
-user agent) — never a specific distribution. Exact distribution is always a manual,
-explicit choice via the distribution selector. True system-level distro detection is a
-future local-agent capability, not a browser one.
+Normal browser APIs cannot reliably identify which Linux distribution a visitor is running.
+`apps/web/src/hooks/useLinuxDetection.ts` only ever reports whether the browser *looks like*
+Linux (and explicitly excludes Android, which also reports "Linux" in its user agent) —
+never a specific distribution. Exact distribution is always a manual, explicit choice in the
+selector. True system-level distro detection is a future local-agent capability, not a
+browser one.
 
 ### Application catalog categories
 
-The catalog (`packages/catalog/src/applications.ts`) is organized into the following
-categories:
+Browsers · Code Editors · CLI Tools · Development · Utilities · Media · Communication
 
-- Browsers
-- Code Editors
-- CLI Tools
-- Development
-- Utilities
-- Media
-- Communication
+Every application belongs to exactly one category. See
+[`docs/catalog.md`](docs/catalog.md).
 
 ---
 
-## Design
+## Tech stack
 
-The product direction is:
-
-- Linux-native
-- Minimal
-- Technical
-- Editorial
-- High-contrast
-- Open-source oriented
-- Modern, but not a generic SaaS look
-
-The visual direction is a monochrome interface with a single restrained green accent (used
-for selection state, the primary action, and the logo mark) — no gradients, glassmorphism,
-or decorative color. Light mode uses a warm off-white background with white card surfaces;
-dark mode uses a deep neutral charcoal (not pure black) with slightly lighter card surfaces.
-The layout itself is intentionally utility-first and Ninite-inspired: a compact header, no
-marketing hero section, and the application list — not a landing page — as the homepage.
-Full design guidance lives with the platform documentation rather than this README.
+| Layer | Technology |
+| ----- | ---------- |
+| Web interface | React 19, Vite, TypeScript, Tailwind CSS v4, shadcn/ui (Radix UI), Lucide icons, Geist font |
+| API server | Node.js, Express *(scaffold — no endpoints)* |
+| Shared packages | TypeScript, no build step |
+| Monorepo | pnpm workspaces (no Turborepo pipeline — root pnpm scripts orchestrate) |
+| Lint / types / tests | ESLint (flat config), `tsc --noEmit`, Node's built-in test runner |
+| CI | GitHub Actions, Node 20 and 22 |
+| Planned | AI/LLM providers, MCP, a local Linux agent, PostgreSQL, Zod, Vitest, Playwright |
 
 ---
 
-## AI
+## Repository structure
 
-AI is planned as a **planning layer**, not an execution layer. It should help with:
+```
+apps/
+├── server/            Express API scaffold — starts, registers no routes
+│   ├── config/        env.js / index.js — validated configuration (the only code here)
+│   ├── controllers/   empty
+│   ├── middleware/    empty
+│   ├── routes/        empty
+│   ├── services/      empty
+│   ├── utils/         empty
+│   ├── validators/    empty
+│   └── .env.example   environment template (all values optional)
+└── web/               React web app (shadcn/ui on Tailwind v4)
+    ├── src/
+    │   ├── components/
+    │   │   ├── ui/            shadcn-generated primitives
+    │   │   ├── layout/        header, theme toggle
+    │   │   ├── detection/     Linux detection card
+    │   │   ├── distro/        distribution selector
+    │   │   ├── applications/  catalog list, search/filter, cards
+    │   │   └── selection/     selection summary, list, sticky bar
+    │   ├── data/distros.ts    selector copy (the Distro type comes from the catalog)
+    │   ├── hooks/             useLinuxDetection, useTheme
+    │   └── lib/utils.ts       `cn` re-export
+    ├── server.js              static server for the production build
+    ├── components.json        shadcn/ui config
+    └── vite.config.ts
 
-- Software discovery
-- Application recommendations
-- Compatibility analysis
-- Installation planning
-- Natural-language software requests
-- Structured workflows
+packages/
+├── ai/                placeholder — no source (docs/ai.md)
+├── catalog/           verified application catalog — single source of truth
+│   └── src/           types.ts · applications.ts · validate.ts · validate.test.ts · index.ts
+└── mcp/               placeholder — no source (docs/mcp.md)
 
-AI plans and reasons about actions; it does not execute arbitrary commands. Every planned
-operation flows through the same validation path as a manual one. No AI model is ever given
-direct, unrestricted control of the operating system.
+docs/                  architecture · catalog · security · development · ai · agent · mcp
+.github/               CI workflow, issue/PR templates, CODEOWNERS, Dependabot, good first issues
+```
 
-**Current status:** the AI architecture is documented in theory (see
-[`docs/ai.md`](docs/ai.md)) and a placeholder package exists at `packages/ai`. No AI
-functionality is implemented yet.
-
----
-
-## MCP
-
-MCP (Model Context Protocol) is planned as the **controlled interface** between AI systems
-and Linux App Platform.
-
-Potential future capabilities:
-
-| Tool                     | Purpose                                   |
-| ------------------------ | ----------------------------------------- |
-| `get_system_info`        | Describe the user's Linux system          |
-| `search_apps`            | Search the application catalog            |
-| `get_app_details`        | Fetch details for one application         |
-| `check_compatibility`    | Assess compatibility with the system      |
-| `create_install_plan`    | Draft an installation plan                |
-| `validate_install_plan`  | Validate a plan against the catalog       |
-| `execute_install_plan`   | Request execution of an approved plan     |
-
-These tools are **planned**, implement what is useful, and all would be subject to
-authorization. **Current status:** the MCP architecture is documented in
-[`docs/mcp.md`](docs/mcp.md), and `packages/mcp` exists as a placeholder. No MCP server
-is implemented.
+Each workspace has its own README describing what is real in it.
 
 ---
 
-## Local agent
+## Requirements
 
-The local Linux agent is planned as the **security boundary for operating-system changes**.
-It would run on the user's machine and handle:
-
-- Detecting the Linux distribution
-- Detecting the CPU architecture
-- Detecting the desktop environment
-- Detecting package managers
-- Detecting installed applications
-- Checking package availability
-- Validating installation plans
-- Executing explicitly approved operations
-
-Every operation the agent performs is validated against the trusted catalog and requires
-explicit user confirmation. **Current status:** the agent is documented in
-[`docs/agent.md`](docs/agent.md). No agent exists yet.
-
----
-
-## Security
-
-Security is a primary design constraint, not an afterthought. The platform enforces the
-following rules:
-
-- **No arbitrary shell execution from the browser.** The web interface can never run
-  shell commands.
-- **No remote sudo.** Privileged operations are never exposed over a remote interface.
-- **No unrestricted command execution.** All operations are scoped and validated.
-- **AI cannot directly control the operating system.** AI plans and recommends; it never
-  executes.
-- **Installation requests must be validated.** Plans are checked before execution.
-- **Applications must resolve against the trusted catalog.** Untrusted manifests are not
-  installed.
-- **System-changing operations require explicit user confirmation.** Nothing changes the
-  system silently.
-- **Privileged operations belong in the local agent.** The agent is the only component
-  allowed to perform system changes.
-- **Security-sensitive operations should be logged.** System changes are auditable.
-
-The full security model is described in [`docs/security.md`](docs/security.md).
-
----
-
-## Technology
-
-### Frontend
-- React
-- Vite
-- TypeScript
-- Tailwind CSS
-- shadcn/ui (Radix UI base) — installed and in use as of Phase 1
-- Lucide React
-- Zustand *(intended — not yet installed)*
-
-### Backend
-- Node.js
-- Express
-
-### Monorepo
-- pnpm *(package manager)*
-- Turborepo *(intended — workspace config not fully set up yet)*
-
-### Planned / future
-- AI/LLM providers
-- MCP
-- Linux local agent
-- PostgreSQL
-- Zod
-- Vitest
-- Playwright
-
----
-
-## Development
-
-### Prerequisites
-
-- Node.js
-- [pnpm](https://pnpm.io)
-
-### Install dependencies
+- **Node.js >= 20** (developed on 20 and 22; CI runs both)
+- **pnpm 9.15.5** (pinned in `package.json` via `packageManager`)
+- git
 
 ```sh
+corepack enable
+corepack prepare pnpm@9.15.5 --activate
+```
+
+Nothing in this repository requires root, installs system packages, or modifies your
+machine.
+
+## Installation
+
+```sh
+git clone https://github.com/AbhiDevepl/linux-app-platform.git
+cd linux-app-platform
 pnpm install
 ```
 
-### Run the applications
+## Environment setup
 
-The repository is a pnpm workspace. Until the root-level workspace scripts are wired up,
-run individual packages directly. Note: `apps/web/package.json` names the package
-`react-example` (a scaffold leftover), so pnpm's name-based `--filter web` does **not**
-resolve — use the path-based filter instead:
+**Optional.** The web app reads no environment variables and the server starts without any.
+For the server:
 
 ```sh
-# Web app (Vite dev server, port 3000)
-pnpm --filter ./apps/web dev
-
-# API server (Express + nodemon) — currently fails to start; see "What exists today"
-pnpm --filter ./apps/server dev
+cp apps/server/.env.example apps/server/.env
 ```
 
-### Build and check
+| Variable | Used by | Required | Default |
+| -------- | ------- | -------- | ------- |
+| `PORT` | `apps/server` (and `apps/web`'s `server.js`, from the process environment) | no | `3000` |
+| `NODE_ENV` | `apps/server` | no | `development` |
+| `DISABLE_HMR` | `apps/web` dev server | no | unset |
+
+Invalid values fail server startup with an explanatory error rather than being ignored.
+There are deliberately **no** AI keys, database URLs, or auth secrets — nothing in the
+repository implements a feature that needs one. `.env` files are git-ignored; never put a
+real secret in a `.env.example`. Details in [`docs/development.md`](docs/development.md).
+
+## Development
 
 ```sh
-# Build the web app
-pnpm --filter ./apps/web build
-
-# Type-check the web app
-pnpm --filter ./apps/web lint
-
-# Catalog: type-check and run the validation tests
-pnpm --filter ./packages/catalog lint
-pnpm --filter ./packages/catalog test
-
-# Server checks (lint + tests) — lint currently fails: no ESLint config exists
-pnpm --filter ./apps/server check
+pnpm dev                    # web app → http://localhost:3000
 ```
 
-> **Note on root workspace commands.** The monorepo scaffold (`pnpm-workspace.yaml` and
-> `turbo.json`) is in place but its root scripts and Turborepo pipeline have not been
-> configured yet. Once the root workspace is wired up, the standard workflow will be:
+Per workspace:
 
 ```sh
-pnpm dev
-pnpm build
-pnpm lint
-pnpm test
+pnpm --filter web dev       # Vite dev server, port 3000
+pnpm --filter web build     # production build → apps/web/dist
+pnpm --filter web preview   # preview the production build
+pnpm --filter web start     # serve apps/web/dist (needs a build first)
+pnpm --filter server dev    # Express scaffold via nodemon — starts, serves nothing
 ```
 
+> Both default to port 3000. Set `PORT` in `apps/server/.env` to run them together.
+
+### Checks
+
 ```sh
-pnpm turbo build
-pnpm turbo lint
-pnpm turbo test
+pnpm check       # lint → typecheck → test → build (what CI runs)
+
+pnpm lint        # ESLint across the repository
+pnpm typecheck   # tsc --noEmit for apps/web and packages/catalog
+pnpm test        # catalog test suite (+ apps/server, which has no test files yet)
+pnpm build       # production build of apps/web
 ```
+
+There is no formatter to run — `.editorconfig` covers the basics; match the file you are
+editing.
+
+## Testing
+
+`packages/catalog` has the repository's **only** test suite: 20 tests on Node's built-in
+runner (via `tsx`) that validate the real catalog data, not just fixtures.
+
+```sh
+pnpm --filter @linux-app-platform/catalog test
+```
+
+`apps/server` runs `node --test` and finds no test files (a pass with zero tests).
+`apps/web` has no test runner at all. Closing those gaps is open work — see
+[`.github/GOOD_FIRST_ISSUES.md`](.github/GOOD_FIRST_ISSUES.md).
 
 ---
 
 ## Contributing
 
-- Read the architecture documentation in [`docs/`](docs/) first, especially
-  [`docs/architecture.md`](docs/architecture.md).
-- Keep features modular.
-- Avoid unnecessary dependencies.
-- Keep catalog data separate from the UI.
-- Do not introduce unsafe command execution.
-- Add tests for important functionality.
-- Keep pull requests focused.
-- Follow the existing monorepo structure.
+Contributions are welcome, and the most useful ones right now are catalog additions, tests,
+and documentation fixes.
+
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — setup, branch and commit conventions, pull request
+  process, and what reviewers look for.
+- [`.github/GOOD_FIRST_ISSUES.md`](.github/GOOD_FIRST_ISSUES.md) — 16 real tasks with the
+  files each one touches.
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — expected conduct in every project space.
+- [`MAINTAINERS.md`](MAINTAINERS.md) — who maintains what and who decides what.
+- [`SUPPORT.md`](SUPPORT.md) — where questions go.
+
+House rules, in short: keep features modular, avoid unnecessary dependencies, keep catalog
+data separate from the UI, never introduce unsafe command execution, add tests for
+important functionality, keep pull requests focused, and never document or display
+functionality that does not exist.
+
+---
+
+## Security
+
+Security is a design constraint, not an afterthought:
+
+- **No arbitrary shell execution from the browser.**
+- **No remote sudo.** Privileged operations are never exposed over a remote interface.
+- **No unrestricted command execution.** All operations are scoped and validated.
+- **AI cannot control the operating system.** It plans and recommends; it never executes.
+- **Installation requests must be validated** before execution.
+- **Applications must resolve against the trusted catalog.**
+- **System-changing operations require explicit user confirmation.**
+- **Privileged operations belong in the local agent** — the only component allowed to change
+  a system.
+- **Security-sensitive operations are logged** and auditable.
+
+The full model is in [`docs/security.md`](docs/security.md). To **report a vulnerability**,
+follow [`SECURITY.md`](SECURITY.md) — not a public issue.
 
 ---
 
 ## Documentation
 
-- [`docs/architecture.md`](docs/architecture.md) — architecture and layer separation
-- [`docs/ai.md`](docs/ai.md) — AI planning architecture
-- [`docs/agent.md`](docs/agent.md) — local Linux agent
-- [`docs/catalog.md`](docs/catalog.md) — application catalog design
-- [`docs/mcp.md`](docs/mcp.md) — MCP interface design
-- [`docs/security.md`](docs/security.md) — security model
+| Document | What it covers |
+| -------- | -------------- |
+| [`docs/development.md`](docs/development.md) | Setup, commands, environment, troubleshooting |
+| [`docs/architecture.md`](docs/architecture.md) | Layer separation; implemented vs. planned |
+| [`docs/catalog.md`](docs/catalog.md) | Catalog schema, verification rules, how to add an application or a distribution |
+| [`docs/security.md`](docs/security.md) | The security model |
+| [`docs/ai.md`](docs/ai.md) | AI planning layer — **not started**; constraints for any implementation |
+| [`docs/mcp.md`](docs/mcp.md) | MCP interface — **not started**; intended shape and rules |
+| [`docs/agent.md`](docs/agent.md) | Local Linux agent — **not started**; rules it must follow |
+| [`ROADMAP.md`](ROADMAP.md) | Done, current, planned, and explicitly out of scope |
+| [`CHANGELOG.md`](CHANGELOG.md) | Notable changes and the versioning policy |
+| [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) | Third-party licenses and attribution |
+
+`CLAUDE.md` holds working notes for AI coding assistants used on this repository; it is not
+required reading for contributors, but it is kept accurate.
 
 ---
 
 ## Roadmap
 
-### V1 — Discovery
-- Web foundation
-- Application catalog
-- Search / filtering
-- Application details
-- System detection UI
-- Selection / review flow
+| Milestone | Contents |
+| --------- | -------- |
+| **V1 — Discovery** | Web foundation ✅, application catalog ✅, search/filtering ✅, selection flow ✅, application details, installer resolution, command generation |
+| **V2 — Intelligence** | AI recommendations, compatibility analysis, natural-language discovery, installation planning |
+| **V3 — MCP** | MCP server, resources, tools, tool authorization |
+| **V4 — Local agent** | Linux system detection, package-manager detection, installation validation, confirmed installation |
+| **V5 — Production** | Database, accounts, catalog management, community contributions, infrastructure |
 
-### V2 — Intelligence
-- AI recommendations
-- Compatibility analysis
-- Natural-language discovery
-- Installation planning
-- Structured AI outputs
-
-### V3 — MCP
-- MCP server
-- MCP resources
-- MCP tools
-- Tool authorization
-
-### V4 — Local Agent
-- Linux system detection
-- Package-manager detection
-- Installation validation
-- Explicit user-confirmed installation
-
-### V5 — Production Platform
-- Database
-- Accounts / authentication
-- Catalog management
-- Community contributions
-- Production infrastructure
+Details, including what is deliberately **not** on the roadmap, are in
+[`ROADMAP.md`](ROADMAP.md).
 
 ---
 
 ## License
 
-Distributed under the **Apache License 2.0**. The license is declared in the package
-metadata and source headers (Apache-2.0). A standalone `LICENSE` file will accompany the
-initial release.
+Distributed under the **Apache License 2.0** — see [`LICENSE`](LICENSE) for the full text
+and [`NOTICE`](NOTICE) for the copyright notice. Third-party components and their licenses
+are listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
----
+Application names in the catalog are trademarks of their respective owners; this project is
+not affiliated with or endorsed by any of them and redistributes none of their software.
 
-## Author
+## Maintainers
 
-Created and maintained by **AbhiDevepl && tejjasdev**.
+Created and maintained by **AbhiDevepl** and **tejjasdev** — see
+[`MAINTAINERS.md`](MAINTAINERS.md).
 
-GitHub: [https://github.com/AbhiDevepl](https://github.com/AbhiDevepl)
+GitHub: [AbhiDevepl/linux-app-platform](https://github.com/AbhiDevepl/linux-app-platform)

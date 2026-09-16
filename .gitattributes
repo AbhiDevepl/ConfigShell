@@ -1,0 +1,28 @@
+# =============================================================================
+# linux-app-platform — git attributes
+# Keeps line endings consistent across Linux/macOS/Windows contributors and
+# keeps generated files out of diffs and language statistics.
+# =============================================================================
+
+# Normalize line endings on commit; check out LF everywhere.
+* text=auto eol=lf
+
+# Shell scripts must keep LF even on Windows checkouts.
+*.sh text eol=lf
+
+# Binary assets — never normalize, never diff as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.svg text
+*.woff binary
+*.woff2 binary
+*.pdf binary
+
+# Generated files: excluded from language statistics and collapsed by default in
+# pull-request diffs on GitHub. Still committed (the lockfile intentionally so),
+# and `git diff` locally still shows it as text.
+pnpm-lock.yaml linguist-generated=true

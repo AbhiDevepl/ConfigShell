@@ -9,11 +9,20 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "pnpm --filter ./apps/web dev",
-    "build": "pnpm --filter ./apps/web build",
-    "start": "pnpm --filter ./apps/web start",
-    "lint": "pnpm --filter ./apps/web lint",
-    "test": "pnpm --filter ./packages/catalog test && pnpm --filter ./apps/server test"
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "start": "pnpm --filter web start",
+    "lint": "eslint .",
+    "typecheck": "pnpm --filter web typecheck && pnpm --filter @linux-app-platform/catalog typecheck",
+    "test": "pnpm --filter @linux-app-platform/catalog test && pnpm --filter server test",
+    "check": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.10.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.12.0",
+    "typescript-eslint": "^8.46.0"
+  }
 }

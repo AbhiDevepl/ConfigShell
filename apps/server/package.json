@@ -2,15 +2,13 @@
   "name": "server",
   "version": "0.1.0",
   "private": true,
-  "description": "API server for Linux App Platform",
-  "main": "src/index.js",
+  "description": "API server for Linux App Platform (scaffold — no endpoints yet)",
+  "main": "index.js",
   "type": "module",
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "lint": "eslint .",
-    "test": "node --test",
-    "check": "pnpm run lint && pnpm run test"
+    "test": "node --test"
   },
   "keywords": [
     "linux",
@@ -25,6 +23,7 @@
     "nodemon": "^3.1.10"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "express": "^5.2.1"
   }
 }

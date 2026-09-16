@@ -1,5 +1,9 @@
 # Security model
 
+This document describes how the product is designed to be safe. **To report a
+vulnerability, see [`SECURITY.md`](../SECURITY.md) at the repository root** — do not open a
+public issue for a suspected vulnerability.
+
 ## Non-negotiable principles
 
 These hold at every phase, not just once the local agent or AI exist:
@@ -23,9 +27,9 @@ These hold at every phase, not just once the local agent or AI exist:
 There is currently nothing to exploit in the sense these principles guard against: the web
 app (`apps/web`) is a static-content React SPA with no backend calls, no command
 generation, and no execution of any kind. Distribution and application selection only
-update in-memory UI state. The Express server scaffold (`apps/server`) has no live
-endpoints (and currently fails to start at all — see `docs/architecture.md`), so there is
-no server-side attack surface yet either.
+update in-memory UI state. The Express server scaffold (`apps/server`) starts a process
+that registers no routes and no middleware — it has no live endpoints, so there is no
+server-side attack surface yet either.
 
 ### The catalog as trusted data
 

@@ -193,6 +193,78 @@ Native package-manager coverage (i.e. excluding Flatpak/Snap/official): 25/31 on
 The list is intentionally small. 31 verified entries are worth more than hundreds of
 half-checked ones, and every future addition carries the same verification cost.
 
+## How to add an application
+
+This is the most accessible way to contribute to the project, and the most rule-bound.
+Budget most of the effort for verification, not for typing.
+
+1. **Check it is not already there.** Search `packages/catalog/src/applications.ts` for the
+   name and for plausible ids.
+2. **Pick the id.** A stable lowercase slug (`^[a-z0-9]+(-[a-z0-9]+)*$`), e.g.
+   `google-chrome`. UI selection state is keyed on it, so treat it as permanent.
+3. **Verify every installation source** against an authoritative source, in this order of
+   preference: official documentation → the distribution's own package database
+   (packages.ubuntu.com, packages.fedoraproject.org, archlinux.org/packages) → the Flathub
+   page → the Snap Store page. Record only what you actually confirmed.
+4. **Write the entry** in the block for its category, keeping the file's existing ordering
+   and formatting:
+
+   ```ts
+   {
+     id: 'example-app',
+     name: 'Example App',
+     description: 'One line describing what it is.',
+     category: 'Utilities',
+     homepage: 'https://example.com/',
+     installation: [
+       { method: 'apt', identifier: 'example-app', origin: 'distro', distros: ['Ubuntu', 'Debian'] },
+       { method: 'flatpak', identifier: 'com.example.App', origin: 'vendor' },
+     ],
+   },
+   ```
+
+5. **Run the checks:**
+
+   ```sh
+   pnpm --filter @linux-app-platform/catalog test
+   pnpm --filter @linux-app-platform/catalog typecheck
+   ```
+
+6. **Update the counts** in the "Current contents" table above if they have moved.
+7. **In the pull request, list your sources** — one link per installation source. A pull
+   request without them cannot be reviewed and will be asked for them.
+
+Rules the reviewer will apply (see "Verification requirements" above): never invent an
+identifier or URL; absence means "not verified", never "not available"; the AUR is not
+`pacman`; no version numbers; no commands, flags, or shell fragments in any field; record
+`origin` honestly.
+
+## How to add a Linux distribution
+
+Adding a distribution is a larger change than it looks, because *every existing entry's
+coverage becomes a question*. Open an issue and agree on the approach before starting.
+
+The mechanical steps:
+
+1. **`packages/catalog/src/types.ts`** — add the name to the `Distro` union and to the
+   `DISTROS` array.
+2. **`packages/catalog/src/validate.ts`** — add it to `METHOD_DISTROS` under the package
+   manager it actually uses (e.g. an apt-based distribution goes under `apt`). This is what
+   stops entries like "dnf on Arch Linux"; a new distribution missing from this map means
+   no package-manager source can ever claim it.
+3. **A new package manager?** If the distribution does not use apt/dnf/pacman, also add the
+   method to `InstallMethod` and `INSTALL_METHODS` in `types.ts`, and to `METHOD_DISTROS`.
+4. **`packages/catalog/src/applications.ts`** — verify and add sources for the new
+   distribution. Partial coverage is acceptable and honest; guessing is not.
+5. **`apps/web/src/data/distros.ts`** — add the one-line selector description. The `Distro`
+   type is imported from the catalog, so the selector cannot drift from the data.
+6. **`packages/catalog/src/validate.test.ts`** — extend the tests if you added a method or
+   a new validation rule.
+7. **Docs** — update the "Supported distributions" section above, the counts table, and the
+   distribution list in the README.
+
+Run `pnpm check` from the repository root before opening the pull request.
+
 ## Deliberate non-goals for this phase
 
 Not implemented, by design: the installer resolver, terminal command generation,
