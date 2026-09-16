@@ -33,22 +33,14 @@ function expectRejected(name: string, args: unknown, code?: string): ToolError |
   } catch (cause) {
     thrown = cause;
   }
-  assert.ok(thrown !== undefined, `${name} did not reject ${JSON.stringify(args)}`);
   assert.ok(
     thrown instanceof ToolError || thrown instanceof z.ZodError,
-    `${name} threw something unexpected: ${String(thrown)}`,
+    `${name} did not reject ${JSON.stringify(args)} — threw ${String(thrown)}`,
   );
   if (code) {
     assert.ok(thrown instanceof ToolError, `expected a ToolError with code ${code}`);
     assert.equal(thrown.code, code);
   }
-  return thrown as ToolError | z.ZodError;
-}
-
-/** Same, but for the business rules — returns the `ToolError` so it can be read. */
-function expectToolError(name: string, args: unknown, code: string): ToolError {
-  const thrown = expectRejected(name, args, code);
-  assert.ok(thrown instanceof ToolError);
   return thrown;
 }
 
@@ -355,11 +347,11 @@ test('hostile application ids are rejected by every tool that takes one', () => 
 });
 
 test('an unknown application id refuses the whole call rather than being skipped', () => {
-  const error = expectToolError(
+  const error = expectRejected(
     'generate_setup',
     { applicationIds: ['git', 'not-a-real-app'], environment: { distro: 'Ubuntu' } },
     'UNKNOWN_APPLICATION',
-  );
+  ) as ToolError;
   assert.deepEqual(error.details?.unknown, ['not-a-real-app']);
   assert.match(error.message, /Nothing was planned/);
 });
@@ -450,7 +442,7 @@ test('no tool result leaks a path, an environment variable or a stack trace', ()
 });
 
 test('rejection messages describe the request, not this process', () => {
-  const error = expectToolError('get_application', { applicationId: 'no-such-app' }, 'NOT_FOUND');
+  const error = expectRejected('get_application', { applicationId: 'no-such-app' }, 'NOT_FOUND');
   assert.ok(!error.message.includes('/home/'));
   assert.ok(!error.message.includes('node_modules'));
   assert.ok(!/\s{4}at /.test(error.message), 'looks like a stack trace');

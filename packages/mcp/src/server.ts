@@ -96,7 +96,8 @@ function registerTools(server: McpServer): void {
       },
       (args: unknown) => {
         try {
-          const result = tool.handler(args ?? {});
+          // The SDK has already validated these against the tool's schema.
+          const result = tool.handler((args ?? {}) as Record<string, unknown>);
           return {
             content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
             structuredContent: result as Record<string, unknown>,

@@ -56,7 +56,9 @@ import {
   APPLICATION_ID_PATTERN,
   MAX_APPLICATION_ID_LENGTH,
   type Application,
+  type Architecture,
   type Category,
+  type Distro,
   type Environment,
 } from '@configshell/catalog';
 import { buildPlan, renderPlan, resolveAll, type Resolution } from '@configshell/installer';
@@ -64,7 +66,6 @@ import { z } from 'zod';
 import { ToolError } from './errors.ts';
 import {
   applicationsFor,
-  asObject,
   parseApplicationIds,
   parseEnvironmentArgument,
 } from './validate.ts';
@@ -101,8 +102,36 @@ export interface ToolDefinition {
     idempotentHint: true;
     openWorldHint: false;
   };
-  /** Handlers are synchronous: every one is a pure function over the catalog. */
-  handler: (args: unknown) => unknown;
+  /**
+   * Handlers are synchronous: every one is a pure function over the catalog.
+   *
+   * Typed loosely here because one array holds seven differently-shaped tools.
+   * `defineTool` gives each handler its own schema-derived argument type at the
+   * point it is written, which is where the type is worth having.
+   */
+  handler: (args: Record<string, unknown>) => unknown;
+}
+
+/**
+ * Define a tool, typing its handler against its own schema.
+ *
+ * Without this the handler would take `unknown`, and every one would re-narrow
+ * arguments the SDK had already parsed and typed — an object narrow plus a cast
+ * per field, in each of seven tools. Here inference does it once.
+ *
+ * The single cast below is where the per-tool type is erased so heterogeneous
+ * tools can share one `TOOLS` array. One erasure, in one place, instead of
+ * rebuilding the types by hand at every call site.
+ */
+function defineTool<Schema extends z.ZodObject<z.ZodRawShape>>(tool: {
+  name: string;
+  title: string;
+  description: string;
+  inputSchema: Schema;
+  annotations: ToolDefinition['annotations'];
+  handler: (args: z.infer<Schema>) => unknown;
+}): ToolDefinition {
+  return tool as unknown as ToolDefinition;
 }
 
 /** Shared by every tool here — see `ToolDefinition.annotations`. */
@@ -124,13 +153,13 @@ const READ_ONLY = {
 const ENVIRONMENT_SCHEMA = z
   .object({
     distro: z
-      .enum(DISTROS as unknown as [string, ...string[]])
+      .enum([...DISTROS] as [Distro, ...Distro[]])
       .describe(
         'The Linux distribution. Required. The package ecosystem (apt/dnf/pacman) is ' +
           'derived from this and must not be supplied.',
       ),
     architecture: z
-      .enum(ARCHITECTURES as unknown as [string, ...string[]])
+      .enum([...ARCHITECTURES] as [Architecture, ...Architecture[]])
       .optional()
       .describe('Optional, recorded only. No catalog data is architecture-specific yet.'),
   })
@@ -238,7 +267,7 @@ function planFor(ids: readonly string[], environment: Environment) {
 
 // -------------------------------------------------------------------- tools
 
-const listEnvironments: ToolDefinition = {
+const listEnvironments = defineTool({
   name: 'list_environments',
   description:
     'List the environments ConfigShell supports, with the package ecosystem each ' +
@@ -264,9 +293,9 @@ const listEnvironments: ToolDefinition = {
     architectures: [...ARCHITECTURES],
     architectureAffectsResolution: false,
   }),
-};
+});
 
-const searchApplication: ToolDefinition = {
+const searchApplication = defineTool({
   name: 'search_application',
   description:
     'Search the trusted catalog by free text and/or category. Matches id, name, ' +
@@ -280,27 +309,23 @@ const searchApplication: ToolDefinition = {
         .optional()
         .describe('Free text matched against id, name, description and category. Omit to list everything.'),
       category: z
-        .enum(CATEGORIES as unknown as [string, ...string[]])
+        .enum([...CATEGORIES] as [Category, ...Category[]])
         .optional()
         .describe('Exact category filter, applied in addition to query.'),
     })
     .strict(),
   annotations: READ_ONLY,
-  handler: (args) => {
-    const input = asObject(args);
-    const results = searchApplications({
-      query: input.query as string | undefined,
-      category: input.category as Category | undefined,
-    });
+  handler: ({ query, category }) => {
+    const results = searchApplications({ query, category });
     return {
       total: results.length,
       catalogSize: APPLICATIONS.length,
       applications: results.map(shapeApplication),
     };
   },
-};
+});
 
-const getApplication: ToolDefinition = {
+const getApplication = defineTool({
   name: 'get_application',
   description:
     'One catalog entry by id, including every verified installation source and who ' +
@@ -314,20 +339,17 @@ const getApplication: ToolDefinition = {
     })
     .strict(),
   annotations: READ_ONLY,
-  handler: (args) => {
-    const input = asObject(args);
-    const id = input.applicationId as string;
-
-    const application = findApplication(id);
+  handler: ({ applicationId, environment: requested }) => {
+    const application = findApplication(applicationId);
     if (!application) {
-      throw ToolError.notFound(`No application with id "${id}".`);
+      throw ToolError.notFound(`No application with id "${applicationId}".`);
     }
 
-    if (input.environment === undefined) {
+    if (requested === undefined) {
       return { application: shapeApplication(application) };
     }
 
-    const environment = parseEnvironmentArgument(input.environment);
+    const environment = parseEnvironmentArgument(requested);
     const [resolution] = resolveAll([application], environment);
     return {
       application: shapeApplication(application),
@@ -335,9 +357,9 @@ const getApplication: ToolDefinition = {
       resolution: shapeResolution(resolution!),
     };
   },
-};
+});
 
-const listRoles: ToolDefinition = {
+const listRoles = defineTool({
   name: 'list_roles',
   description:
     'List the deterministic role/use-case presets. A preset is a curated list of catalog ' +
@@ -351,13 +373,10 @@ const listRoles: ToolDefinition = {
     })
     .strict(),
   annotations: READ_ONLY,
-  handler: (args) => {
-    const input = asObject(args);
-
-    if (input.roleId !== undefined) {
-      const id = input.roleId as string;
-      const role = findRole(id);
-      if (!role) throw ToolError.notFound(`No role with id "${id}".`);
+  handler: ({ roleId }) => {
+    if (roleId !== undefined) {
+      const role = findRole(roleId);
+      if (!role) throw ToolError.notFound(`No role with id "${roleId}".`);
       return {
         role: {
           id: role.id,
@@ -379,9 +398,9 @@ const listRoles: ToolDefinition = {
       })),
     };
   },
-};
+});
 
-const checkCompatibility: ToolDefinition = {
+const checkCompatibility = defineTool({
   name: 'check_compatibility',
   description:
     'Resolve a selection against an environment without building a plan: for each ' +
@@ -394,10 +413,9 @@ const checkCompatibility: ToolDefinition = {
     .object({ applicationIds: APPLICATION_IDS_SCHEMA, environment: ENVIRONMENT_SCHEMA })
     .strict(),
   annotations: READ_ONLY,
-  handler: (args) => {
-    const input = asObject(args);
-    const ids = parseApplicationIds(input.applicationIds);
-    const environment = parseEnvironmentArgument(input.environment);
+  handler: ({ applicationIds, environment: requested }) => {
+    const ids = parseApplicationIds(applicationIds);
+    const environment = parseEnvironmentArgument(requested);
 
     const resolutions = resolveAll(applicationsFor(ids), environment);
     return {
@@ -410,9 +428,9 @@ const checkCompatibility: ToolDefinition = {
       },
     };
   },
-};
+});
 
-const generateSetup: ToolDefinition = {
+const generateSetup = defineTool({
   name: 'generate_setup',
   description:
     'Build an ordered setup plan for a selection and an environment, with the exact ' +
@@ -427,10 +445,9 @@ const generateSetup: ToolDefinition = {
     .object({ applicationIds: APPLICATION_IDS_SCHEMA, environment: ENVIRONMENT_SCHEMA })
     .strict(),
   annotations: READ_ONLY,
-  handler: (args) => {
-    const input = asObject(args);
-    const ids = parseApplicationIds(input.applicationIds);
-    const environment = parseEnvironmentArgument(input.environment);
+  handler: ({ applicationIds, environment: requested }) => {
+    const ids = parseApplicationIds(applicationIds);
+    const environment = parseEnvironmentArgument(requested);
 
     const { resolutions, plan, rendered } = planFor(ids, environment);
 
@@ -475,9 +492,9 @@ const generateSetup: ToolDefinition = {
       },
     };
   },
-};
+});
 
-const validateSetup: ToolDefinition = {
+const validateSetup = defineTool({
   name: 'validate_setup',
   description:
     'Check a set of commands against what ConfigShell would generate for the same ' +
@@ -503,11 +520,9 @@ const validateSetup: ToolDefinition = {
     })
     .strict(),
   annotations: READ_ONLY,
-  handler: (args) => {
-    const input = asObject(args);
-    const ids = parseApplicationIds(input.applicationIds);
-    const environment = parseEnvironmentArgument(input.environment);
-    const submitted = input.commands as string[];
+  handler: ({ applicationIds, environment: requested, commands: submitted }) => {
+    const ids = parseApplicationIds(applicationIds);
+    const environment = parseEnvironmentArgument(requested);
 
     const { rendered } = planFor(ids, environment);
     const expected = rendered.commands.map((command) => command.command);
@@ -545,7 +560,7 @@ const validateSetup: ToolDefinition = {
           'Regenerate the plan with generate_setup.',
     };
   },
-};
+});
 
 /**
  * The registered tools, in the order they are advertised.

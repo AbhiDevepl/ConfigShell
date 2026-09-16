@@ -7,28 +7,14 @@
  */
 
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { sourceFiles, stripComments } from '@configshell/test-utils';
 import { TOOLS } from './tools.ts';
 
 const SRC = new URL('.', import.meta.url).pathname;
 
-function sourceFiles(dir: string): string[] {
-  const entries = readdirSync(dir, { recursive: true, encoding: 'utf8' })
-    // `recursive` descends into node_modules and dotfile directories.
-    .filter((entry) => !entry.split(sep).some((s) => s === 'node_modules' || s.startsWith('.')))
-    .filter((entry) => entry.endsWith('.ts') && !entry.endsWith('.test.ts'));
-
-  // A scan that found nothing would pass every test below vacuously.
-  assert.ok(entries.length > 0, `expected source files under ${dir}`);
-  return entries.map((entry) => join(dir, entry));
-}
-
-/** Comments discuss these rules in prose; only code should be searched. */
-function stripComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-}
+const isSource = (name: string) => name.endsWith('.ts') && !name.endsWith('.test.ts');
 
 test('the MCP layer has no way to execute anything', () => {
   const forbidden = [
@@ -41,7 +27,7 @@ test('the MCP layer has no way to execute anything', () => {
   ];
 
   const offenders: string[] = [];
-  for (const file of sourceFiles(SRC)) {
+  for (const file of sourceFiles(SRC, isSource)) {
     const source = stripComments(readFileSync(file, 'utf8'));
     for (const fragment of forbidden) {
       if (source.includes(fragment)) offenders.push(`${file}: ${fragment}`);
@@ -56,7 +42,7 @@ test('the MCP layer reads no files and opens no sockets', () => {
   const forbidden = ['node:fs', 'node:net', 'node:http', 'node:https', 'fetch(', 'node:dns'];
 
   const offenders: string[] = [];
-  for (const file of sourceFiles(SRC)) {
+  for (const file of sourceFiles(SRC, isSource)) {
     if (file.endsWith('bin.ts')) continue; // reads stdin, which is the transport
     const source = stripComments(readFileSync(file, 'utf8'));
     for (const fragment of forbidden) {
@@ -82,7 +68,7 @@ test('command text is produced only by the installer package', () => {
   ];
 
   const offenders: string[] = [];
-  for (const file of sourceFiles(SRC)) {
+  for (const file of sourceFiles(SRC, isSource)) {
     const source = stripComments(readFileSync(file, 'utf8'));
     for (const fragment of forbidden) {
       if (source.includes(fragment)) offenders.push(`${file}: ${fragment}`);

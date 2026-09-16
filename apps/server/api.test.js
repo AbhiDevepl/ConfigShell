@@ -441,30 +441,19 @@ describe("safety invariants", () => {
     // Structural, not behavioural: no module in the server imports a process
     // API. This is the property the security model rests on, so it is asserted
     // rather than assumed.
-    const { readdirSync, readFileSync } = await import("node:fs");
-    const { join, sep } = await import("node:path");
+    const { readFileSync } = await import("node:fs");
+    const { sourceFiles, stripComments } = await import("@configshell/test-utils");
 
-    // Comments are stripped first: this file and `plan.service.js` both discuss
-    // the rule in prose, and a test that cannot tell code from a comment about
-    // the code is not much of a guarantee.
-    const stripComments = (source) =>
-      source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
-
-    const root = new URL(".", import.meta.url).pathname;
-    const sources = readdirSync(root, { recursive: true, encoding: "utf8" })
-      // `recursive` descends into node_modules and dotfile directories, which a
-      // hand-rolled walk skipped as it went.
-      .filter((entry) => !entry.split(sep).some((s) => s === "node_modules" || s.startsWith(".")))
-      .filter((entry) => entry.endsWith(".js") && !entry.endsWith(".test.js"));
-
-    // A scan that found nothing would pass this test vacuously.
-    assert.ok(sources.length > 20, `expected to scan the workspace, saw ${sources.length} files`);
+    const sources = sourceFiles(
+      new URL(".", import.meta.url).pathname,
+      (name) => name.endsWith(".js") && !name.endsWith(".test.js"),
+    );
 
     const offenders = [];
-    for (const entry of sources) {
-      const source = stripComments(readFileSync(join(root, entry), "utf8"));
+    for (const file of sources) {
+      const source = stripComments(readFileSync(file, "utf8"));
       for (const forbidden of ["child_process", "execSync", "spawnSync", "execFile"]) {
-        if (source.includes(forbidden)) offenders.push(`${entry}: ${forbidden}`);
+        if (source.includes(forbidden)) offenders.push(`${file}: ${forbidden}`);
       }
     }
 

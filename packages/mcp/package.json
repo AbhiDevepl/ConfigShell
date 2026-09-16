@@ -25,6 +25,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@configshell/test-utils": "workspace:*",
     "@modelcontextprotocol/client": "^2.0.0",
     "@types/node": "^22.14.0",
     "tsx": "^4.21.0",

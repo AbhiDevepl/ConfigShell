@@ -8,27 +8,14 @@
  */
 
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { test } from 'node:test';
+import { sourceFiles, stripComments } from '@configshell/test-utils';
 
 const SRC = new URL('..', import.meta.url).pathname;
 
-function sourceFiles(dir: string): string[] {
-  const entries = readdirSync(dir, { recursive: true, encoding: 'utf8' })
-    // `recursive` descends into node_modules and dotfile directories.
-    .filter((entry) => !entry.split(sep).some((s) => s === 'node_modules' || s.startsWith('.')))
-    .filter((entry) => /\.tsx?$/.test(entry) && !entry.endsWith('.test.ts'));
-
-  // A scan that found nothing would pass every test below vacuously.
-  assert.ok(entries.length > 0, `expected source files under ${dir}`);
-  return entries.map((entry) => join(dir, entry));
-}
-
-/** Comments discuss these rules in prose; only code should be searched. */
-function stripComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-}
+const isSource = (name: string) => /\.tsx?$/.test(name) && !name.endsWith('.test.ts');
 
 test('the web app contains no package-manager command vocabulary', () => {
   // Command generation lives in packages/installer and runs server-side. The
@@ -46,7 +33,7 @@ test('the web app contains no package-manager command vocabulary', () => {
   ];
 
   const offenders: string[] = [];
-  for (const file of sourceFiles(SRC)) {
+  for (const file of sourceFiles(SRC, isSource)) {
     const source = stripComments(readFileSync(file, 'utf8'));
     for (const fragment of forbidden) {
       if (source.includes(fragment)) offenders.push(`${file}: ${fragment}`);
@@ -75,7 +62,7 @@ test('the web app never imports the installer package', () => {
   // One implementation of command generation, not two. Importing it here would
   // put the security-critical function in the browser bundle and give the API
   // and the UI two places to drift apart.
-  for (const file of sourceFiles(SRC)) {
+  for (const file of sourceFiles(SRC, isSource)) {
     const source = stripComments(readFileSync(file, 'utf8'));
     assert.ok(
       !source.includes('@configshell/installer'),
@@ -88,7 +75,7 @@ test('the web app has no way to execute anything', () => {
   const forbidden = ['child_process', 'eval(', 'new Function(', 'dangerouslySetInnerHTML'];
   const offenders: string[] = [];
 
-  for (const file of sourceFiles(SRC)) {
+  for (const file of sourceFiles(SRC, isSource)) {
     const source = stripComments(readFileSync(file, 'utf8'));
     for (const fragment of forbidden) {
       if (source.includes(fragment)) offenders.push(`${file}: ${fragment}`);

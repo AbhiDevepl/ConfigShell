@@ -26,14 +26,6 @@ import {
 } from '@configshell/catalog';
 import { ToolError } from './errors.ts';
 
-/** Narrow tool arguments to an object for property access. */
-export function asObject(value: unknown, what = 'arguments'): Record<string, unknown> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    throw ToolError.invalidArguments(`${what} must be a JSON object.`);
-  }
-  return value as Record<string, unknown>;
-}
-
 /**
  * An environment from tool arguments.
  *

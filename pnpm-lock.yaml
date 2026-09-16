@@ -39,6 +39,9 @@ importers:
         specifier: ^5.2.1
         version: 5.2.1
     devDependencies:
+      '@configshell/test-utils':
+        specifier: workspace:*
+        version: link:../../packages/test-utils
       '@types/express':
         specifier: ^5.0.0
         version: 5.0.6
@@ -88,6 +91,9 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0
     devDependencies:
+      '@configshell/test-utils':
+        specifier: workspace:*
+        version: link:../../packages/test-utils
       '@tailwindcss/vite':
         specifier: ^4.1.14
         version: 4.3.3(vite@6.4.3(@types/node@22.20.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.13))
@@ -164,6 +170,9 @@ importers:
         specifier: ^4.6.5
         version: 4.6.5
     devDependencies:
+      '@configshell/test-utils':
+        specifier: workspace:*
+        version: link:../test-utils
       '@modelcontextprotocol/client':
         specifier: ^2.0.0
         version: 2.0.0
@@ -173,6 +182,15 @@ importers:
       tsx:
         specifier: ^4.21.0
         version: 4.23.13
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
+
+  packages/test-utils:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.14.0
+        version: 22.20.2
       typescript:
         specifier: ~5.8.2
         version: 5.8.3
