@@ -61,7 +61,7 @@ jobs:
       - name: Upload web build
         # Keeps the built app available for inspection from the run summary.
         if: matrix.node == 22
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-dist
           path: apps/web/dist
