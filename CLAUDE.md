@@ -8,13 +8,13 @@ Linux App Platform is an early-stage, open-source Linux software discovery and m
 platform. The intended product (see `README.md`) is a layered pipeline:
 
 ```
-UI → Application Catalog → System Detection → AI / Planning → MCP → Local Agent → Validated System Operation
+UI → Application Catalog → System Detection → AI / Planning → MCP  → Validated System Operation
 ```
 
 Non-negotiable safety principles that govern any feature work here:
 - The browser/web app never executes arbitrary shell commands.
 - AI never gets unrestricted system access — it plans/recommends, it does not execute.
-- System-changing operations must go through a trusted local agent with validation and
+- System-changing operations must go through a trusted with validation and
   explicit user confirmation.
 - Installed applications must resolve against the trusted catalog; untrusted manifests are
   never installed.

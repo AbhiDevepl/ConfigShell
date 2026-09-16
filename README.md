@@ -115,8 +115,6 @@ AI / Planning         Recommendation, compatibility, and plan generation
    ↓
 MCP                   A controlled, tool-based interface for AI systems
    ↓
-Local Agent           Runs on the user's machine; understands the OS
-   ↓
 Validated System
 Operation             The only layer that can change the system
 ```
@@ -128,7 +126,7 @@ design, not code:
 flowchart LR
     CATALOG["packages/catalog<br/>verified application data"] -- "bundled at build time" --> WEB["apps/web<br/>React interface"]
     WEB -. "not wired up" .-> SERVER["apps/server<br/>Express scaffold"]
-    SERVER -. "does not exist" .-> REST["AI · MCP · local agent"]
+    SERVER -. "does not exist" .-> REST["AI · MCP · "]
 ```
 
 Each layer is intentionally decoupled so security boundaries can be enforced at each hop:

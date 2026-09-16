@@ -20,8 +20,6 @@ AI / Planning         Recommendation, compatibility, and plan generation
    ↓
 MCP                   A controlled, tool-based interface for AI systems
    ↓
-Local Agent           Runs on the user's machine; understands the OS
-   ↓
 Validated System
 Operation             The only layer that can change the system
 ```
