@@ -27,6 +27,7 @@ These end up in `apps/web/dist` and are therefore distributed to users of a depl
 | `@fontsource-variable/geist` | **OFL-1.1** | see "Fonts" below |
 | `express` | MIT | the API server in `apps/server`; also serves the built web app |
 | `@modelcontextprotocol/server` | MIT | the official MCP TypeScript SDK (v2), used by `packages/mcp` |
+| `@modelcontextprotocol/node` | MIT | the official MCP TypeScript SDK (v2), used by `packages/mcp` |
 | `@modelcontextprotocol/core` | MIT | shared protocol types and schemas, pulled in by the server package |
 | `zod` | MIT | tool input schemas in `packages/mcp`; the SDK derives JSON Schema from them |
 

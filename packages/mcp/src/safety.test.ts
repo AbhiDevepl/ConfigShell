@@ -41,15 +41,50 @@ test('the MCP layer reads no files and opens no sockets', () => {
   // there is no path for a caller to steer it at the filesystem or the network.
   const forbidden = ['node:fs', 'node:net', 'node:http', 'node:https', 'fetch(', 'node:dns'];
 
+  // The transports are the exception, and only the transports. A transport's
+  // whole job is to move bytes — stdio reads stdin, Streamable HTTP is reached
+  // over a socket the host owns — so the rule cannot apply to them. It applies
+  // to everything a *caller* can steer: the tools, the validation and the
+  // server wiring.
+  //
+  // The list is pinned below rather than pattern-matched, so adding a file that
+  // touches the filesystem or the network is a deliberate edit to this test
+  // with a reason attached, not something that slips in behind a wildcard.
+  const TRANSPORTS = ['bin.ts', 'http.ts'];
+
   const offenders: string[] = [];
+  const exempted: string[] = [];
   for (const file of sourceFiles(SRC, isSource)) {
-    if (file.endsWith('bin.ts')) continue; // reads stdin, which is the transport
+    if (TRANSPORTS.some((t) => file.endsWith(t))) {
+      exempted.push(file.split('/').pop()!);
+      continue;
+    }
     const source = stripComments(readFileSync(file, 'utf8'));
     for (const fragment of forbidden) {
       if (source.includes(fragment)) offenders.push(`${file}: ${fragment}`);
     }
   }
   assert.deepEqual(offenders, []);
+  assert.deepEqual(
+    exempted.sort(),
+    [...TRANSPORTS].sort(),
+    'the exemption must cover exactly the transports — no more, no fewer',
+  );
+});
+
+test('the HTTP transport touches the network only through types', () => {
+  // `http.ts` is exempted above because it is a transport, so this asserts what
+  // that exemption is actually worth: its only `node:http` reference is an
+  // `import type`, which erases at compile time. The module opens no socket and
+  // starts no listener — the host it is mounted on owns the server.
+  const source = stripComments(readFileSync(`${SRC}/http.ts`, 'utf8'));
+
+  assert.match(source, /import type \{[^}]*\} from 'node:http'/, 'node:http is imported as types only');
+  assert.ok(!/from 'node:http'/.test(source.replace(/import type \{[^}]*\} from 'node:http';/, '')),
+    'no value import of node:http');
+  for (const fragment of ['createServer', '.listen(', 'node:net', 'node:fs', 'child_process']) {
+    assert.ok(!source.includes(fragment), `the transport must not use ${fragment}`);
+  }
 });
 
 test('command text is produced only by the installer package', () => {

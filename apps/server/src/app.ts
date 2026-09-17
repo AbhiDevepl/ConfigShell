@@ -30,11 +30,14 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import type { Express, NextFunction, Request, Response } from "express";
 
+import { createMcpHttpHandler } from "@configshell/mcp";
+import { env } from "./config/env.js";
 import { apiRouter } from "./routes/index.js";
 import { healthHandler } from "./controllers/health.controller.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import { notFoundMiddleware } from "./middleware/not-found.middleware.js";
 import { requestContextMiddleware } from "./middleware/request-context.middleware.js";
+import { logger } from "./utils/logger.js";
 
 /**
  * Maximum request body.
@@ -53,6 +56,12 @@ const MAX_BODY_SIZE = "16kb";
  */
 export interface Options {
   webDist?: string | null;
+  /**
+   * Where to mount the MCP endpoint. Defaults to `env.mcpPath` (`/mcp`).
+   * `null` disables it, which is what the API tests use so that the MCP
+   * transport is not constructed for every unrelated HTTP assertion.
+   */
+  mcpPath?: string | null;
 }
 
 export function createApp(options: Options = {}) {
@@ -67,6 +76,13 @@ export function createApp(options: Options = {}) {
   app.set("query parser", "simple");
 
   app.use(requestContextMiddleware);
+
+  // The MCP endpoint is mounted BEFORE the JSON body parser on purpose: the
+  // SDK's transport reads the raw request stream itself, and an already-
+  // consumed body would hang it. Mounting it first also means no API route or
+  // static file can ever shadow it.
+  mountMcpEndpoint(app, options.mcpPath === undefined ? env.mcpPath : options.mcpPath);
+
   app.use(express.json({ limit: MAX_BODY_SIZE }));
 
   app.get("/health", healthHandler);
@@ -98,6 +114,34 @@ export function createApp(options: Options = {}) {
  */
 function defaultWebDist() {
   return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "web", "dist");
+}
+
+/**
+ * Mount the MCP server over Streamable HTTP.
+ *
+ * This is the remote half of the MCP layer: the same `createConfigShellServer()`
+ * that `packages/mcp/src/bin.ts` serves over stdio to a local client, reached
+ * here over HTTPS by a remote AI host. One server definition, one tool surface,
+ * two transports — the alternative would be two implementations drifting apart.
+ *
+ * The handler is stateless, so nothing is stored between requests and any
+ * instance can serve any request. That is what makes this safe behind a
+ * load balancer and on serverless infrastructure.
+ *
+ * The path is configuration (`MCP_PATH`), never a literal in business logic.
+ */
+function mountMcpEndpoint(app: Express, mcpPath: string | null): void {
+  if (!mcpPath) return;
+
+  const { handler } = createMcpHttpHandler({
+    // stderr only. This process may also be serving stdio elsewhere, and
+    // stdout there carries protocol messages.
+    onError: (error) => logger.error("mcp transport error", { message: error.message }),
+  });
+
+  app.all(mcpPath, (req: Request, res: Response) => {
+    void handler(req, res);
+  });
 }
 
 function serveBuiltWebApp(app: Express, distDir: string | null) {

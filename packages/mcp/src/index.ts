@@ -8,5 +8,6 @@
  */
 
 export { createConfigShellServer, INSTRUCTIONS, SERVER_INFO } from './server.ts';
+export { createMcpHttpHandler, type McpHttpOptions, type McpNodeHandler } from './http.ts';
 export { TOOLS, WITHHELD_CAPABILITIES, findTool, type ToolDefinition } from './tools.ts';
 export { ToolError, type ToolErrorCode } from './errors.ts';

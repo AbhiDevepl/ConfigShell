@@ -29,6 +29,7 @@
   "dependencies": {
     "@configshell/catalog": "workspace:*",
     "@configshell/installer": "workspace:*",
+    "@configshell/mcp": "workspace:^",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "tsx": "^4.21.0"

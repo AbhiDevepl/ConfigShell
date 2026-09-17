@@ -1,0 +1,81 @@
+# ConfigShell production container.
+#
+# Vercel detects `Dockerfile.vercel` at the repository root, builds it on every
+# deploy, stores the image in Vercel Container Registry and serves it as a
+# Function — automatically routing all traffic to the container. That is why
+# there are no rewrites for it in `vercel.json`: the platform adds them.
+#
+# One container serves all three surfaces, because they are already one Express
+# application:
+#
+#   /            the built web app (static, from apps/web/dist)
+#   /api/*       the read-only planning API
+#   /mcp         the MCP server over Streamable HTTP  (path = MCP_PATH)
+#
+# Splitting MCP into a second container was considered and rejected: it shares
+# the catalog, the resolver and the process with the API, has no independent
+# scaling story, and would double the deploy surface to gain nothing. If MCP
+# ever needs to scale separately, `createMcpHttpHandler()` is already framework-
+# free and can be mounted by a second entry point without touching the tools.
+
+# ---------------------------------------------------------------- build stage
+FROM node:22-alpine AS build
+
+# corepack pins pnpm to the version in package.json's packageManager field, so
+# the image builds with the same resolver the lockfile was written by.
+RUN corepack enable
+WORKDIR /app
+
+# Manifests and the lockfile first: this layer is cached until a dependency
+# actually changes, so ordinary source edits do not reinstall the world.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY apps/server/package.json ./apps/server/
+COPY apps/web/package.json ./apps/web/
+COPY packages/catalog/package.json ./packages/catalog/
+COPY packages/installer/package.json ./packages/installer/
+COPY packages/mcp/package.json ./packages/mcp/
+COPY packages/test-utils/package.json ./packages/test-utils/
+COPY packages/contract-tests/package.json ./packages/contract-tests/
+COPY packages/ai/package.json ./packages/ai/
+
+RUN pnpm install --frozen-lockfile
+
+COPY . .
+RUN pnpm build
+
+# -------------------------------------------------------------- runtime stage
+FROM node:22-alpine AS runtime
+
+RUN corepack enable
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Runtime dependencies only. The server is TypeScript executed by `tsx` with no
+# build step — the repository's deliberate choice, since the workspace packages
+# publish TypeScript source directly — so tsx is a production dependency here
+# rather than a dev convenience.
+COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/tsconfig.base.json ./
+COPY --from=build /app/apps/server ./apps/server
+COPY --from=build /app/packages/catalog ./packages/catalog
+COPY --from=build /app/packages/installer ./packages/installer
+COPY --from=build /app/packages/mcp ./packages/mcp
+COPY --from=build /app/apps/web/package.json ./apps/web/package.json
+# Only the built output of the web app — no sources, no node_modules.
+COPY --from=build /app/apps/web/dist ./apps/web/dist
+
+RUN pnpm install --frozen-lockfile --prod --filter server... \
+  && pnpm store prune
+
+# `node` is created by the base image. Running unprivileged is not optional:
+# this process generates installation commands as text and must never be in a
+# position to run one.
+USER node
+
+# Vercel routes to $PORT, defaulting to 80. Binding 0.0.0.0 is required for the
+# platform to reach the container; it is not an extra listener.
+ENV PORT=80
+EXPOSE 80
+
+# No shell form: `node` becomes PID 1 directly, so Vercel's SIGTERM on scale-in
+# reaches the process instead of a shell that would ignore it.
+CMD ["pnpm", "--filter", "server", "start"]

@@ -67,6 +67,90 @@ write the spec; a trusted application catalog is not.
 > spec by hand is a maintenance burden with no upside, and every month it drifts further
 > from what real clients expect.
 
+## Transports: local and remote
+
+The same `createConfigShellServer()` — identical tools, resources and prompts —
+is served over two transports. There is no second tool surface and no second
+copy of any business logic.
+
+| | Transport | Entry point | Used by |
+| --- | --- | --- | --- |
+| **Local** | stdio | `packages/mcp/src/bin.ts` | a host that launches the server as a subprocess (Claude Desktop, Cursor, VS Code) |
+| **Remote** | Streamable HTTP | `packages/mcp/src/http.ts`, mounted by `apps/server` | a host that connects over HTTPS (Claude custom connectors, ChatGPT developer mode) |
+
+```sh
+pnpm mcp                        # local, stdio
+pnpm --filter server start      # web + API + MCP on one port
+```
+
+Local HTTP endpoint while developing: `http://localhost:3000/mcp`.
+
+### Stateless by design
+
+`createMcpHandler` is configured `legacy: 'stateless'`: each request is served
+by a fresh instance, with `sessionIdGenerator: undefined`. Nothing is kept
+between requests.
+
+That is correct rather than a compromise. Every tool is a pure function of its
+arguments over a compiled-in catalog — no conversation state, no cursor, no
+subscription, nothing to resume. A session store would guard data that does not
+exist, and it is what would otherwise force a database and pin the deployment
+to one instance. Statelessness is why this runs on serverless infrastructure and
+scales horizontally with no coordination.
+
+### Configuration
+
+The public MCP URL is **derived, never hardcoded**. No domain appears anywhere
+in application source.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `PUBLIC_BASE_URL` | `http://localhost:<PORT>` | Canonical public origin. Must be `https` for any non-localhost host. |
+| `MCP_PATH` | `/mcp` | Where the endpoint is mounted. Must not collide with `/api` or `/health`. |
+
+```
+PUBLIC_BASE_URL=https://configshell.dev
+MCP_PATH=/mcp
+                    -> https://configshell.dev/mcp
+```
+
+Changing the domain is an environment change and nothing else.
+
+`PUBLIC_BASE_URL` is deliberately **not** defaulted from `VERCEL_URL`: that
+value changes every deployment, so a user who pasted it into an AI host would
+find their connector broken by the next push.
+
+### Connecting an external AI host
+
+**Claude** — Settings → Connectors → *Add custom connector*, paste the URL.
+Custom connectors are available on Free, Pro, Max, Team and Enterprise (Free is
+limited to one). OAuth is optional; an unauthenticated server is supported. The
+endpoint must be reachable from Anthropic's IP ranges.
+
+**ChatGPT** — developer mode, under Workspace Settings → Permissions & Roles →
+Connected Data. Requires a public HTTPS endpoint speaking Streamable HTTP;
+authentication may be OAuth, none, or mixed.
+
+Neither integration has been tested end to end from this repository. What has
+been verified is the protocol: the official MCP client and the official MCP
+Inspector both connect over Streamable HTTP, discover all seven tools and call
+them successfully.
+
+### Authentication status
+
+**None.** The endpoint is public and read-only, which is the smallest safe
+design for what it exposes: a verified catalog, deterministic resolution and
+command *text*. There is nothing user-scoped to protect, no write path and no
+per-user data, so an identity system would guard nothing.
+
+Per-user secrets in URLs were considered and rejected — a URL is copied,
+screenshotted and pasted into chat windows, which is the worst place to keep a
+credential.
+
+Adding authentication later does not disturb the tool layer: the SDK ships
+`requireBearerAuth` and OAuth protected-resource metadata helpers, and the
+transport is already a separate module from the tools.
+
 ## The tool surface
 
 | Tool | Purpose |
