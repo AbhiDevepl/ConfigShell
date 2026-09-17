@@ -10,6 +10,7 @@
  */
 
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { after, before, describe, test } from "node:test";
 import { createApp } from "./app.js";
 
@@ -587,10 +588,20 @@ describe("safety invariants", () => {
     const { readFileSync } = await import("node:fs");
     const { sourceFiles, stripComments } = await import("@configshell/test-utils");
 
-    const sources = sourceFiles(
-      new URL(".", import.meta.url).pathname,
-      (name) => name.endsWith(".js") && !name.endsWith(".test.js"),
-    );
+    const sources = [
+      ...sourceFiles(
+        new URL(".", import.meta.url).pathname,
+        (name) => name.endsWith(".js") && !name.endsWith(".test.js"),
+      ),
+      // `api/` is a possible serverless deployment directory — scan it too if
+      // it exists, so the safety invariant covers any deployment shape.
+      ...(existsSync(new URL("../../api", import.meta.url).pathname)
+        ? sourceFiles(
+            new URL("../../api", import.meta.url).pathname,
+            (name) => name.endsWith(".ts") || name.endsWith(".js"),
+          )
+        : []),
+    ];
 
     const offenders = [];
     for (const file of sources) {
