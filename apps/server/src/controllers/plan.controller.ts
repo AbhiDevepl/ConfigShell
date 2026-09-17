@@ -3,20 +3,22 @@
  *
  * These are the only endpoints that accept a request body, and the only ones
  * whose output becomes something a user will paste into a terminal. Both facts
- * are handled in `validators/plan.validator.js` and in the installer package's
+ * are handled in `validators/plan.validator.ts` and in the installer package's
  * command generation; this controller adds no logic of its own beyond logging
  * what was planned.
  *
- * Nothing here executes anything. See `services/plan.service.js` for why that
+ * Nothing here executes anything. See `services/plan.service.ts` for why that
  * boundary is permanent rather than pending.
  */
+
+import type { Request, Response } from "express";
 
 import { presentResolution } from "@configshell/installer";
 import { createSetupPlan, resolveSelection } from "../services/plan.service.js";
 import { parsePlanRequest } from "../validators/plan.validator.js";
 import { sendData } from "../utils/response.js";
 
-export function createPlanHandler(req, res) {
+export function createPlanHandler(req: Request, res: Response) {
   const { applicationIds, environment } = parsePlanRequest(req.body);
   const plan = createSetupPlan(applicationIds, environment);
 
@@ -42,7 +44,7 @@ export function createPlanHandler(req, res) {
  * were rejected or why, on the endpoint whose entire purpose is explaining
  * resolution. One flattener, one shape.
  */
-export function resolveSelectionHandler(req, res) {
+export function resolveSelectionHandler(req: Request, res: Response) {
   const { applicationIds, environment } = parsePlanRequest(req.body);
   const resolutions = resolveSelection(applicationIds, environment);
 

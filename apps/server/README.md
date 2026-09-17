@@ -57,7 +57,7 @@ command -v htop
 ## Responses
 
 Success is `{ "data": … }`; failure is `{ "error": { "code", "message" } }` with an optional
-`details`. Codes are a closed set (`utils/response.js`): `INVALID_REQUEST`,
+`details`. Codes are a closed set (`utils/response.ts`): `INVALID_REQUEST`,
 `UNKNOWN_APPLICATION`, `NOT_FOUND`, `REQUEST_TOO_LARGE`, `INTERNAL`. Switch on `code`;
 `message` is for humans and may be reworded.
 
@@ -74,7 +74,7 @@ A caller supplies **catalog ids and a distribution name, and nothing else.** The
 field for a package name, a command, a flag, a URL or a repository, so no request body can
 introduce one. Defence in depth, in order:
 
-1. `validators/plan.validator.js` checks id *shape* against a slug pattern and *existence*
+1. `validators/plan.validator.ts` checks id *shape* against a slug pattern and *existence*
    against the catalog. An unknown id refuses the whole request rather than being skipped —
    a plan that silently omits what was asked for is worse than an error.
 2. The ecosystem is always **derived** from the distribution, never accepted from the
@@ -97,7 +97,7 @@ describe the same resolution differently. See [`docs/testing.md`](../../docs/tes
 
 ## Logging
 
-One JSON object per line (`utils/logger.js`). Request bodies, query strings and selections
+One JSON object per line (`utils/logger.ts`). Request bodies, query strings and selections
 are **not** logged — the only environment data recorded is the distribution a caller asked
 to plan for, which is what makes a resolution explicable afterwards. There are no secrets to
 redact: the server declares no API keys, database URL or auth secret, and a test asserts it.
@@ -105,15 +105,15 @@ redact: the server declares no API keys, database URL or auth secret, and a test
 ## Structure
 
 ```
-app.js                 Express app factory (no port binding)
-index.js               the only file that listens
-config/                validated PORT / NODE_ENV — fails startup on a bad value
-routes/                the full API surface, in one readable table
-controllers/           validate → call a service → send
-services/              catalog access and plan generation; no application data
-validators/            the untrusted-input boundary
-middleware/            request context, 404, error handling
-utils/                 structured logger, response envelope
+src/app.ts                 Express app factory (no port binding)
+src/index.ts               the only file that listens
+src/config/                validated PORT / NODE_ENV — fails startup on a bad value
+src/routes/                the full API surface, in one readable table
+src/controllers/           validate → call a service → send
+src/services/              catalog access and plan generation; no application data
+src/validators/            the untrusted-input boundary
+src/middleware/            request context, 404, error handling
+src/utils/                 structured logger, response envelope
 ```
 
 There is **no AI route and no authentication middleware**, not even as empty files — an
@@ -126,15 +126,18 @@ server holds no secrets.
 
 ```sh
 pnpm --filter server dev     # tsx watch
-pnpm --filter server start   # tsx index.js
+pnpm --filter server start   # tsx src/index.ts
 pnpm --filter server test    # 53 tests
 pnpm --filter server typecheck
 ```
 
-The server is JavaScript that imports the workspace's TypeScript packages
+The server is TypeScript that imports the workspace's TypeScript packages
 (`@configshell/catalog`, `@configshell/installer`) directly. `tsx` transpiles them on the
-fly, which is why there is no build step and no `dist/`. `tsconfig.json` runs `checkJs` over
-this code so a mistake in how it calls those packages is caught by `pnpm typecheck`.
+fly, which is why there is no build step and no `dist/`. `tsconfig.json` extends the shared
+`tsconfig.base.json` and is fully strict (`noImplicitAny` on): contract tests import
+`server/app` into their own strict program — there are no declaration files for a build-free
+workspace — so a loose annotation here would surface in *their* typecheck, not just this
+package's.
 
 The web dev server runs on 5173, so the two no longer collide. `pnpm dev` from the
 repository root starts both.

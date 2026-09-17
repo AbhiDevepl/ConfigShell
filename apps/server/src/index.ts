@@ -1,7 +1,7 @@
 /**
  * API server entry point.
  *
- * The only file that binds a port. The application itself lives in `app.js`,
+ * The only file that binds a port. The application itself lives in `app.ts`,
  * which is what tests import.
  *
  * Run it with `pnpm --filter server start`. The process is executed through

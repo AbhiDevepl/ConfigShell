@@ -69,6 +69,14 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 
 ### Changed
 
+- **The API server is TypeScript and lives under `apps/server/src/`.** The Express app,
+  routes, controllers, services, validators and middleware moved from `apps/server/*.js`
+  into `apps/server/src/**/*.ts`, and the JS-with-JSDoc typechecking (an `noImplicitAny`
+  opt-out) is gone: the server is fully typed and runs under the same strict shared
+  `tsconfig.base.json` as every other workspace, so it typechecks under whatever program
+  imports it — not just its own. No runtime behaviour changed; the endpoints, paths and
+  `vercel.json` routing (now via `apps/server/src/vercel.ts`) are unchanged.
+
 - **One canonical setup plan, built in one place.** `presentSetupPlan` in
   `@configshell/installer` now assembles the plan that `POST /api/plan` and the MCP
   `generate_setup` tool both return. Each adapter previously shaped its own, and the two had
@@ -231,7 +239,7 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 - ESLint across the whole repository via a single flat config (`eslint.config.js`), wired
   to `pnpm lint`.
 - `apps/server/.env.example` and validated environment configuration
-  (`apps/server/config/env.js`): `PORT` and `NODE_ENV` are checked at startup and an
+  (`apps/server/src/config/env.ts`): `PORT` and `NODE_ENV` are checked at startup and an
   invalid value fails with an explanatory error.
 - READMEs for every workspace, `docs/development.md`, and contributor guides for adding an
   application and adding a distribution in `docs/catalog.md`.
@@ -297,9 +305,8 @@ version is below `1.0.0`, the public surface may change in a minor release — s
   "Add 5 apps".
 
 - `apps/server` runs under `tsx` so it can import the workspace's TypeScript packages
-  directly; the monorepo still has no build step. Its `tsconfig.json` runs `checkJs` over
-  the JavaScript source, so misuse of the catalog or installer APIs is caught by
-  `pnpm typecheck`.
+  directly; the monorepo still has no build step. Its `tsconfig.json` typechecks the server
+  source, so misuse of the catalog or installer APIs is caught by `pnpm typecheck`.
 - `origin` is now load-bearing rather than descriptive: it drives source preference and, for
   `apt`/`dnf`/`pacman`, whether a source is usable at all.
 - Root `typecheck` and `test` scripts cover the two new workspaces; CI runs them unchanged.

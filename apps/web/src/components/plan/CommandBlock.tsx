@@ -2,7 +2,7 @@ import { Check, Copy, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useClipboard } from '@/hooks/useClipboard';
-import { OUTCOMES } from '@/lib/outcomes';
+import { OUTCOMES } from '@/components/plan/outcomes';
 import { cn } from '@/lib/utils';
 
 interface CommandBlockProps {

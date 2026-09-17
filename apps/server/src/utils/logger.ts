@@ -19,6 +19,8 @@
 
 const LEVELS = { info: 20, warn: 30, error: 40 };
 
+type Level = keyof typeof LEVELS;
+
 const activeLevel = () => (process.env.NODE_ENV === "test" ? LEVELS.error : LEVELS.info);
 
 /**
@@ -26,7 +28,7 @@ const activeLevel = () => (process.env.NODE_ENV === "test" ? LEVELS.error : LEVE
  * kept out of production output: they are useful locally and are noise (and a
  * mild information leak) in a deployed log.
  */
-function serialiseError(error) {
+function serialiseError(error: unknown) {
   if (!(error instanceof Error)) return { message: String(error) };
   return {
     name: error.name,
@@ -40,7 +42,11 @@ function serialiseError(error) {
  * @param {string} message
  * @param {Record<string, unknown> & { error?: unknown }} [context]
  */
-function write(level, message, context = {}) {
+function write(
+  level: Level,
+  message: string,
+  context: Record<string, unknown> & { error?: unknown } = {},
+) {
   if (LEVELS[level] < activeLevel()) return;
 
   const { error, ...rest } = context;
@@ -60,7 +66,14 @@ function write(level, message, context = {}) {
   }
 }
 
-function make(base = {}) {
+export interface Logger {
+  info(message: string, context?: Record<string, unknown>): void;
+  warn(message: string, context?: Record<string, unknown>): void;
+  error(message: string, context?: Record<string, unknown> & { error?: unknown }): void;
+  child(fields: Record<string, unknown>): Logger;
+}
+
+function make(base: Record<string, unknown> = {}): Logger {
   return {
     info: (message, context) => write("info", message, { ...base, ...context }),
     warn: (message, context) => write("warn", message, { ...base, ...context }),

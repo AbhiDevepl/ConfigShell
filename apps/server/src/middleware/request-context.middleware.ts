@@ -10,10 +10,31 @@
  * nothing but correlation.
  */
 
-import { randomUUID } from "node:crypto";
-import { logger } from "../utils/logger.js";
+import type { NextFunction, Request, Response } from "express";
 
-export function requestContextMiddleware(req, res, next) {
+import { randomUUID } from "node:crypto";
+import { logger, type Logger } from "../utils/logger.js";
+
+/**
+ * Fields this middleware stamps onto every request, declared globals so that
+ * controllers (a different module, importing only this one transitively via
+ * `app.ts`) see `req.id` and `req.log` as real fields.
+ *
+ * Declared here rather than in a `.d.ts`: contract tests import `server/app`
+ * into their own program, and a stand-alone declaration file is only picked up
+ * by a project whose `include` covers it — so the augmentation would silently
+ * vanish in their typecheck. A module that is imported is always in the program.
+ */
+declare global {
+  namespace Express {
+    interface Request {
+      id: string;
+      log?: Logger;
+    }
+  }
+}
+
+export function requestContextMiddleware(req: Request, res: Response, next: NextFunction) {
   const requestId = randomUUID();
   req.id = requestId;
   req.log = logger.child({ requestId });
@@ -31,7 +52,7 @@ export function requestContextMiddleware(req, res, next) {
   const startedAt = process.hrtime.bigint();
   res.on("finish", () => {
     const durationMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
-    req.log.info("request", {
+    req.log?.info("request", {
       method: req.method,
       path,
       status: res.statusCode,

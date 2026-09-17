@@ -10,10 +10,12 @@
  * paths, no environment variables, no host information.
  */
 
+import type { Request, Response } from "express";
+
 import { checkCatalogIntegrity } from "../services/catalog.service.js";
 import { sendData } from "../utils/response.js";
 
-export function healthHandler(_req, res) {
+export function healthHandler(_req: Request, res: Response) {
   const catalog = checkCatalogIntegrity();
   const status = catalog.valid ? "ok" : "degraded";
 

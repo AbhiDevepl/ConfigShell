@@ -7,19 +7,30 @@
  * logged in full and returned as an opaque 500.
  *
  * Express recognises an error handler by its four-parameter signature, so
- * `next` must stay in the list even though it is unused.
+ * `_next` must stay in the list even though it is unused.
  */
+
+import type { NextFunction, Request, Response } from "express";
 
 import { ApiError, ErrorCodes, sendError } from "../utils/response.js";
 import { logger } from "../utils/logger.js";
 
-// eslint-disable-next-line no-unused-vars -- Express detects error handlers by arity.
-export function errorMiddleware(error, req, res, next) {
+export function errorMiddleware(
+  error: Error | null | undefined,
+  req: Request,
+  res: Response,
+  _next: NextFunction,
+) {
   const log = req.log ?? logger;
 
   // A body that failed to parse, or one over the size limit, arrives here from
   // express.json() rather than from our own validation.
-  if (error?.type === "entity.too.large") {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "type" in error &&
+    error.type === "entity.too.large"
+  ) {
     return sendError(res, {
       status: 413,
       code: ErrorCodes.REQUEST_TOO_LARGE,

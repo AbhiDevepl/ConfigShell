@@ -1,7 +1,7 @@
 /**
  * Configuration validation.
  *
- * `config/env.js` reads `process.env` at import time, so each case re-imports
+ * `config/env.ts` reads `process.env` at import time, so each case re-imports
  * the module with a cache-busting query rather than trying to mutate an already
  * evaluated export.
  */
@@ -18,7 +18,7 @@ async function loadEnv(overrides) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
   }
-  const module = await import(`./env.js?case=${counter++}`);
+  const module = await import(`./env.ts?case=${counter++}`);
   return module.env;
 }
 
@@ -69,7 +69,7 @@ test("no secret-shaped variable is read", () => {
   // The server declares no API keys, database URL or auth secret, because
   // nothing here implements a feature that needs one. If that changes, this
   // test should be updated in the same change that adds the feature.
-  const source = readFileSync(new URL("./env.js", import.meta.url), "utf8");
+  const source = readFileSync(new URL("./env.ts", import.meta.url), "utf8");
   for (const name of [
     "API_KEY",
     "SECRET",
@@ -80,6 +80,6 @@ test("no secret-shaped variable is read", () => {
     "ANTHROPIC",
     "GEMINI",
   ]) {
-    assert.ok(!source.includes(name), `config/env.js references ${name}`);
+    assert.ok(!source.includes(name), `config/env.ts references ${name}`);
   }
 });

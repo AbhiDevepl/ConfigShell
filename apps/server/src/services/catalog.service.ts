@@ -30,27 +30,27 @@ import {
   validateRoles,
   searchApplications,
   validateCatalog,
+  type Application,
+  type Category,
+  type Role,
 } from "@configshell/catalog";
 
-/** @typedef {import("@configshell/catalog").Application} Application */
-
-/** @param {{ query?: string, category?: import("@configshell/catalog").Category }} [options] */
-export function listApplications(options = {}) {
+/** @param {{ query?: string, category?: Category }} [options] */
+export function listApplications(options: { query?: string; category?: Category } = {}) {
   return searchApplications({ query: options.query, category: options.category });
 }
 
-/** @returns {Application | undefined} */
-export function getApplication(id) {
+export function getApplication(id: string): Application | undefined {
   return findApplication(id);
 }
 
 /** Which of these ids are not in the catalog. Order-preserving, deduplicated. */
-export function findUnknownIds(ids) {
+export function findUnknownIds(ids: string[]) {
   return [...new Set(ids)].filter((id) => findApplication(id) === undefined);
 }
 
 /** Catalog entries for ids, in the order given. Throws on an unknown id. */
-export function getApplications(ids) {
+export function getApplications(ids: string[]): Application[] {
   return ids.map((id) => {
     const application = findApplication(id);
     if (!application) throw new Error(`unknown application id: ${id}`);
@@ -106,16 +106,15 @@ export function getRoles() {
   }));
 }
 
-/** @returns {import("@configshell/catalog").Role | undefined} */
-export function getRole(id) {
+export function getRole(id: string): Role | undefined {
   return findRole(id);
 }
 
 /** Counts, computed from the data rather than maintained by hand. */
 export function getCatalogStats() {
   const sources = APPLICATIONS.flatMap((app) => app.installation);
-  const tally = (key) =>
-    sources.reduce((acc, source) => {
+  const tally = (key: "method" | "origin") =>
+    sources.reduce<Record<string, number>>((acc, source) => {
       acc[source[key]] = (acc[source[key]] ?? 0) + 1;
       return acc;
     }, {});

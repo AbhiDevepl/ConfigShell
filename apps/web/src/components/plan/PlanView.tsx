@@ -18,7 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { useClipboard } from '@/hooks/useClipboard';
 import type { PlanStatus } from '@/hooks/useSetupPlan';
 import type { ApiRequestError, SetupPlan } from '@/lib/api';
-import { OUTCOMES, PLAN_STATUS } from '@/lib/outcomes';
+import { OUTCOMES, PLAN_STATUS } from '@/components/plan/outcomes';
 import { CommandBlock } from './CommandBlock';
 
 interface PlanViewProps {

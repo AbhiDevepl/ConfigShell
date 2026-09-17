@@ -48,15 +48,15 @@ in the resolution → plan → command path.
 
 | Case | Where | Expected |
 | ---- | ----- | -------- |
-| Identifier with `;`, `&&`, `\|`, `$()`, backticks, newlines | `installer/commands.test.ts`, `mcp/tools.test.ts`, `server/api.test.js` | Rejected before interpolation |
+| Identifier with `;`, `&&`, `\|`, `$()`, backticks, newlines | `installer/commands.test.ts`, `mcp/tools.test.ts`, `server/api.test.ts` | Rejected before interpolation |
 | A hostile *catalog entry* reaching command generation | `installer/commands.test.ts` | Throws rather than emitting a command |
-| Any generated command, every app × every distribution | `installer/commands.test.ts`, `mcp/tools.test.ts`, `server/api.test.js` | Matches `/^[A-Za-z0-9 _.+-]+$/` — no shell metacharacter |
-| Arbitrary command supplied by a caller | `mcp/tools.test.ts`, `server/api.test.js` | No argument accepts one; extra fields are refused |
+| Any generated command, every app × every distribution | `installer/commands.test.ts`, `mcp/tools.test.ts`, `server/api.test.ts` | Matches `/^[A-Za-z0-9 _.+-]+$/` — no shell metacharacter |
+| Arbitrary command supplied by a caller | `mcp/tools.test.ts`, `server/api.test.ts` | No argument accepts one; extra fields are refused |
 | Unknown application id | all three adapters | Refuses the whole request, never silently skipped |
 | Unsupported distribution | all three adapters | Structured rejection naming what is supported |
 | Vendor source needing a third-party repository | `installer/resolve.test.ts` | Never resolved as if it were a native package |
 | Malformed catalog entry | `catalog/validate.test.ts` | Validation failure |
-| Execution capability anywhere | `server/api.test.js`, `mcp/safety.test.ts`, `web/safety.test.ts` | No `child_process`, `eval`, filesystem or socket access exists |
+| Execution capability anywhere | `server/api.test.ts`, `mcp/safety.test.ts`, `web/safety.test.ts` | No `child_process`, `eval`, filesystem or socket access exists |
 
 ### Cross-adapter contract tests
 
@@ -124,8 +124,8 @@ Stated plainly, because a gap you know about is cheaper than one you discover:
 
 ## Adding tests
 
-Put a test next to the code it covers, named `*.test.ts` (or `*.test.js` in `apps/server`).
-The runners pick them up with no registration.
+Put a test next to the code it covers, named `*.test.ts`. The runners pick them up with no
+registration.
 
 If you are touching resolution, planning or command generation, a test is not optional —
 that path is the one that produces text a user will paste into a root shell. See

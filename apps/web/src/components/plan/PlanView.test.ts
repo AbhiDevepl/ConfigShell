@@ -30,7 +30,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { test } from 'node:test';
 import type { SetupPlan } from '@/lib/api';
-import { OUTCOMES, PLAN_STATUS } from '@/lib/outcomes';
+import { OUTCOMES, PLAN_STATUS } from '@/components/plan/outcomes';
 import { PlanView } from './PlanView.tsx';
 
 // ------------------------------------------------------------------ fixtures

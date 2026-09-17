@@ -6,7 +6,7 @@ import { Router } from "express";
 import {
   getApplicationHandler,
   listApplicationsHandler,
-} from "../controllers/app.controller.js";
+} from "../controllers/apps.controller.js";
 
 export const appsRouter = Router();
 

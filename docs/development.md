@@ -49,7 +49,7 @@ cp apps/server/.env.example apps/server/.env
 | `DISABLE_HMR` | `apps/web` dev server | no | unset | Set to `true` to disable HMR and file watching (used by AI Studio tooling). |
 
 Invalid values fail server startup with an explanatory error rather than being silently
-ignored — see `apps/server/config/env.js`. There are intentionally **no** AI provider keys,
+ignored — see `apps/server/src/config/env.ts`. There are intentionally **no** AI provider keys,
 database URLs, or auth secrets: nothing in the repository implements features that need
 them. Do not add variables ahead of the code that reads them.
 
@@ -79,7 +79,7 @@ From the repository root:
 | Command | What it does |
 | ------- | ------------ |
 | `pnpm lint` | ESLint across the repo (flat config in `eslint.config.js`) |
-| `pnpm typecheck` | `tsc --noEmit` for `apps/web`, `packages/catalog`, `packages/installer` and `apps/server` |
+| `pnpm typecheck` | `tsc --noEmit` for every TypeScript workspace (web, catalog, installer, mcp, test-utils, server, contract-tests) |
 | `pnpm test` | 271 tests across seven workspaces — see [`testing.md`](testing.md) |
 | `pnpm build` | production build of the web app → `apps/web/dist` |
 | `pnpm check` | all four, in that order — run this before opening a pull request |
@@ -100,7 +100,7 @@ pnpm --filter server typecheck
 
 ### Testing
 
-`pnpm test` runs all 206 across five workspaces. Coverage per workspace, the security test
+`pnpm test` runs all 271 across seven workspaces. Coverage per workspace, the security test
 cases, and what is deliberately **not** tested are documented in
 [`testing.md`](testing.md) — the authority on this.
 
@@ -178,10 +178,12 @@ pnpm start                  # the API server, which also serves apps/web/dist
 
 ```
 apps/web          React web interface (the only runnable app)
-apps/server       Express API scaffold — starts, no endpoints
+apps/server       planning API — Express app in apps/server/src (no build step)
 packages/catalog  verified application catalog (single source of truth)
+packages/installer deterministic resolution + setup plans + command generation
+packages/mcp      stdio MCP server over the catalog and installer (read-only)
 packages/ai       placeholder, empty
-packages/mcp      placeholder, empty
+packages/test-utils architecture-enforcement tests shared across workspaces
 docs/             architecture, catalog, security-model, development, ai, mcp, agent,
                   the PRD and technical audit, plus the community-health documents
                   (CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, SUPPORT, MAINTAINERS,

@@ -254,15 +254,15 @@ Every application belongs to exactly one category. See
 ```
 apps/
 ├── server/            Read-only planning API — plans and validates, never executes
-│   ├── app.js         Express app factory; index.js is the only file that listens
-│   ├── config/        validated configuration — fails startup on a bad value
-│   ├── controllers/   thin: validate → call a service → send
-│   ├── middleware/    request context, 404, error handling
-│   ├── routes/        the whole API surface in one table
-│   ├── services/      catalog access + plan generation (no application data)
-│   ├── utils/         structured logger, response envelope
-│   ├── validators/    the untrusted-input boundary
-│   └── .env.example   environment template (all values optional)
+│   ├── src/            TypeScript; app.ts (factory) + index.ts (the only listener)
+│   │   ├── config/     validated configuration — fails startup on a bad value
+│   │   ├── controllers/  thin: validate → call a service → send
+│   │   ├── middleware/ request context, 404, error handling
+│   │   ├── routes/     the whole API surface in one table
+│   │   ├── services/   catalog access + plan generation (no application data)
+│   │   ├── utils/      structured logger, response envelope
+│   │   └── validators/ the untrusted-input boundary
+│   └── .env.example    environment template (all values optional)
 └── web/               React web app (shadcn/ui on Tailwind v4)
     ├── src/
     │   ├── components/
@@ -366,8 +366,8 @@ pnpm --filter server dev    # planning API (tsx watch) — http://localhost:3000
 pnpm check       # lint → typecheck → test → build (what CI runs)
 
 pnpm lint        # ESLint across the repository
-pnpm typecheck   # tsc --noEmit for apps/web and packages/catalog
-pnpm test        # catalog test suite (+ apps/server, which has no test files yet)
+pnpm typecheck   # tsc --noEmit for every TypeScript workspace
+pnpm test        # 271 tests across seven workspaces
 pnpm build       # production build of apps/web → apps/web/dist
 ```
 

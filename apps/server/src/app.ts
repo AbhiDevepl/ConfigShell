@@ -28,6 +28,7 @@ import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
+import type { Express, NextFunction, Request, Response } from "express";
 
 import { apiRouter } from "./routes/index.js";
 import { healthHandler } from "./controllers/health.controller.js";
@@ -45,12 +46,16 @@ import { requestContextMiddleware } from "./middleware/request-context.middlewar
 const MAX_BODY_SIZE = "16kb";
 
 /**
- * @param {{ webDist?: string | null }} [options] `webDist` overrides where the
- *   built web app is looked for, which is what lets the tests cover both the
- *   "a build exists" and "it does not" paths without depending on whether one
- *   happens to be present. `null` disables static serving outright.
+ * @param {Options} [options] `webDist` overrides where the built web app is
+ *   looked for, which is what lets the tests cover both the "a build exists"
+ *   and "it does not" paths without depending on whether one happens to be
+ *   present. `null` disables static serving outright.
  */
-export function createApp(options = {}) {
+export interface Options {
+  webDist?: string | null;
+}
+
+export function createApp(options: Options = {}) {
   const app = express();
 
   // Do not advertise the framework. Cheap, and there is no reason to.
@@ -92,15 +97,15 @@ export function createApp(options = {}) {
  * an unknown endpoint still returns the JSON error envelope rather than HTML.
  */
 function defaultWebDist() {
-  return resolve(dirname(fileURLToPath(import.meta.url)), "..", "web", "dist");
+  return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "web", "dist");
 }
 
-function serveBuiltWebApp(app, distDir) {
+function serveBuiltWebApp(app: Express, distDir: string | null) {
   if (!distDir || !existsSync(distDir)) return;
 
   app.use(express.static(distDir));
 
-  app.use((req, res, next) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.method !== "GET" && req.method !== "HEAD") return next();
     if (req.path === "/health" || req.path.startsWith("/api")) return next();
     res.sendFile(join(distDir, "index.html"));

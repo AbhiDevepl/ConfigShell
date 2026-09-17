@@ -36,10 +36,10 @@ The catalog has 31 applications; obvious absences include GIMP, Inkscape, Blende
 | --- | --- |
 | **Difficulty** | Starter |
 | **Area** | `apps/server` |
-| **Files** | new `apps/server/config/env.test.js` |
+| **Files** | `apps/server/src/config/env.test.ts` |
 | **Skills** | Node's built-in test runner |
 
-`apps/server/config/env.js` validates `PORT` and `NODE_ENV` and is pure, easily testable logic — and `pnpm --filter server test` currently finds zero test files. Cover: defaults when unset, a valid port, a non-numeric port, out-of-range ports (`0`, `70000`), and an invalid `NODE_ENV`.
+`apps/server/src/config/env.ts` validates `PORT` and `NODE_ENV` and is pure, easily testable logic — and `pnpm --filter server test` currently finds zero test files. Cover: defaults when unset, a valid port, a non-numeric port, out-of-range ports (`0`, `70000`), and an invalid `NODE_ENV`.
 
 **Done when:** `pnpm --filter server test` reports passing tests instead of zero, and the error cases assert on the message, not just that it throws. (You will likely need to export the validation helpers, or set `process.env` before a dynamic `import()` — either is fine; explain which you chose.)
 

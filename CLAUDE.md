@@ -27,20 +27,23 @@ setup plan → command generation → verification, reachable from the web app, 
 an MCP server. What is *not* built is listed explicitly at the end of this section — it is
 not represented by empty files.
 
-- **`apps/server/`**: **implemented** — a read-only planning API. `app.js` is an Express app
-  factory; `index.js` is the only file that binds a port and imports `./config/env.js`
-  directly (there is no `config/index.js` barrel). Routes: `/health`,
+- **`apps/server/`**: **implemented** — a read-only planning API. `src/app.ts` is an Express app
+  factory; `src/index.ts` is the only file that binds a port and imports `./config/env.ts`
+  directly (there is no `config/index.ts` barrel). Routes: `/health`,
   `/api/applications[/:id]`, `/api/catalog/{categories,environments,roles[/:id],stats}`,
   `POST /api/plan`
-  and `POST /api/plan/resolve` (all listed in `routes/index.js`). Controllers are thin —
-  validate, call a service, send. **53 tests** (`apps/server/api.test.js`,
-  `config/env.test.js`).
+  and `POST /api/plan/resolve` (all listed in `src/routes/index.ts`). Controllers are thin —
+  validate, call a service, send. **53 tests** (`apps/server/src/api.test.ts`,
+  `config/env.test.ts`).
   - **It never executes anything.** No `child_process` import exists in the workspace and a
     test asserts it never will. Don't add one: execution belongs to the local agent
     (`docs/agent.md`), and a server doing it would be remote sudo.
-  - It is **JavaScript run under `tsx`**, so it can import the TypeScript workspace packages
-    with no build step. `tsconfig.json` runs `checkJs` (with `noImplicitAny: false` — the
-    point is the package boundary, not annotating Express handlers) and excludes `*.test.js`.
+  - It is **TypeScript run under `tsx`**, with no build step. `tsconfig.json` is strict and
+    extends `tsconfig.base.json`; `tsx` imports the workspace's TS packages directly. It
+    typechecks under whatever strict program imports it — contract-tests pulls `server/app`
+    into its own program, so the server source must pass `strict` without overrides, not
+    just its own `typecheck`. Test files are excluded from typecheck (their assertions _are_
+    the type checks) but still run in CI.
   - There is **no AI route and no auth middleware**, and none should be added as an empty
     file. Placeholder controllers make the repo look more finished than it is; the design
     lives in `docs/ai.md` until there is code to put in it.
@@ -139,6 +142,10 @@ not represented by empty files.
   `eslint.config.js`, covering every workspace). `typecheck` is `tsc --noEmit` per
   TypeScript workspace. The old per-workspace `"lint": "tsc --noEmit"` scripts were
   renamed to `typecheck`, and `apps/server`'s broken `lint`/`check` scripts were removed.
+- **Shared tsconfig**: `tsconfig.base.json` at the root holds the common compiler
+  options (`strict`, `moduleResolution: "bundler"`, `noEmit`, …); every workspace
+  `tsconfig.json` extends it and adds only its own `include` (and on the server, a
+  `types: ["node"]`). Keep shared options there rather than per-workspace.
 - **Tests**: **271**, on Node's built-in runner via `tsx`, in seven workspaces —
   `packages/test-utils` (6), `packages/catalog` (48), `packages/installer` (79),
   `packages/mcp` (52), `apps/server` (53), `packages/contract-tests` (13), `apps/web` (20). `docs/testing.md` is the
@@ -202,7 +209,7 @@ pnpm dev:web                     # web only — the plan step needs the API
 pnpm build                       # == pnpm --filter web build
 pnpm start                       # == pnpm --filter server start (API + apps/web/dist)
 pnpm lint                        # eslint . across the whole repo (real ESLint)
-pnpm typecheck                   # tsc --noEmit for every TS workspace (server via checkJs)
+pnpm typecheck                   # tsc --noEmit for every TS workspace (strict, shared base)
 pnpm test                        # 271 tests across seven workspaces
 pnpm mcp                         # start the MCP server on stdio
 pnpm check                       # lint -> typecheck -> test -> build (what CI runs)
@@ -227,10 +234,10 @@ pnpm --filter @configshell/mcp typecheck        # tsc --noEmit
 pnpm --filter @configshell/mcp test             # tool surface, protocol, hostile input
 pnpm --filter @configshell/mcp start            # stdio MCP server
 
-pnpm --filter server dev                # tsx watch index.js
-pnpm --filter server start              # tsx index.js
+pnpm --filter server dev                # tsx watch src/index.ts
+pnpm --filter server start              # tsx src/index.ts
 pnpm --filter server test               # tsx --test — API integration tests
-pnpm --filter server typecheck          # tsc --noEmit with checkJs
+pnpm --filter server typecheck          # tsc --noEmit
 ```
 
 The web dev server is on 5173 and the API on 3000, so they no longer collide. Vite proxies
@@ -241,10 +248,11 @@ test and build on Node 20 and 22, for pushes to `main` and pull requests. If you
 script name, update the workflow, `README.md`, `docs/development.md`, `CONTRIBUTING.md` and
 this file together.
 
-Server uses Node's built-in test runner. Once test files exist (convention: `*.test.js`
-alongside the code they test), run a single file from `apps/server`:
+Server uses Node's built-in test runner. Test files sit next to the code they cover
+(convention: `*.test.ts` alongside the source in `apps/server/src/`); run one from
+`apps/server`:
 ```sh
-node --test path/to/file.test.js
+node --test path/to/src/file.test.ts
 ```
 
 ## Open-source repository conventions

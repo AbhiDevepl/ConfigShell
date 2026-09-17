@@ -9,6 +9,8 @@
  * for humans and may be reworded.
  */
 
+import type { Response } from "express";
+
 export const ErrorCodes = {
   /** Malformed request: wrong shape, wrong type, unknown enum value. */
   INVALID_REQUEST: "INVALID_REQUEST",
@@ -24,13 +26,11 @@ export const ErrorCodes = {
 
 /** An error that is safe to show a caller. Anything else becomes INTERNAL. */
 export class ApiError extends Error {
-  /**
-   * @param {number} status HTTP status
-   * @param {string} code one of `ErrorCodes`
-   * @param {string} message human-readable, safe to return
-   * @param {unknown} [details] structured, also safe to return
-   */
-  constructor(status, code, message, details) {
+  status: number;
+  code: string;
+  details: unknown;
+
+  constructor(status: number, code: string, message: string, details?: unknown) {
     super(message);
     this.name = "ApiError";
     this.status = status;
@@ -38,33 +38,36 @@ export class ApiError extends Error {
     this.details = details;
   }
 
-  static invalidRequest(message, details) {
+  static invalidRequest(message: string, details?: unknown) {
     return new ApiError(400, ErrorCodes.INVALID_REQUEST, message, details);
   }
 
-  static unknownApplication(message, details) {
+  static unknownApplication(message: string, details?: unknown) {
     return new ApiError(422, ErrorCodes.UNKNOWN_APPLICATION, message, details);
   }
 
-  static notFound(message, details) {
+  static notFound(message: string, details?: unknown) {
     return new ApiError(404, ErrorCodes.NOT_FOUND, message, details);
   }
 
-  static tooLarge(message, details) {
+  static tooLarge(message: string, details?: unknown) {
     return new ApiError(413, ErrorCodes.REQUEST_TOO_LARGE, message, details);
   }
 }
 
-export function sendData(res, data, status = 200) {
+export function sendData(res: Response, data: unknown, status = 200) {
   res.status(status).json({ data });
 }
 
-/**
- * @param {import("express").Response} res
- * @param {{ status: number, code: string, message: string, details?: unknown }} error
- */
-export function sendError(res, { status, code, message, details }) {
-  res.status(status).json({
-    error: { code, message, ...(details === undefined ? {} : { details }) },
+export function sendError(
+  res: Response,
+  error: { status: number; code: string; message: string; details?: unknown },
+) {
+  res.status(error.status).json({
+    error: {
+      code: error.code,
+      message: error.message,
+      ...(error.details === undefined ? {} : { details: error.details }),
+    },
   });
 }

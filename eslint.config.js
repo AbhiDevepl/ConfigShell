@@ -35,6 +35,10 @@ export default tseslint.config(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
+      // `declare global { namespace Express { ... } }` is the standard module
+      // augmentation for framework types — servers use it to type `req.id`.
+      // Only declared namespaces are allowed, never runtime ones.
+      '@typescript-eslint/no-namespace': ['error', { allowDeclarations: true }],
     },
   },
 

@@ -16,7 +16,10 @@ import { ApiError } from "../utils/response.js";
  * Returns `undefined` when no distro was supplied, which the caller treats as
  * "describe this application generally" rather than as an error.
  */
-export function parseOptionalEnvironmentQuery(queryParams) {
+export function parseOptionalEnvironmentQuery(queryParams: {
+  distro?: unknown;
+  architecture?: unknown;
+}) {
   const { distro, architecture } = queryParams;
   if (distro === undefined) return undefined;
 

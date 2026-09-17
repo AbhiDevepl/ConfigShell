@@ -1,0 +1,29 @@
+{
+  "// why": [
+    "Shared compiler defaults for the TypeScript workspaces. Every package and",
+    "the server extend this; the only deviation allowed per workspace is one",
+    "that is genuinely its own (apps/web brings DOM, JSX and the @/* alias,",
+    "contract-tests historically added allowJs for a JS server).",
+    "",
+    "apps/web does not extend this file on purpose: its target/lib/jsx/paths are",
+    "a browser module graph, not a node one.",
+    "",
+    "noImplicitAny is deliberately NOT set here. The server overrides it to",
+    "false with its own rationale comment; the packages keep the strict default."
+  ],
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  }
+}

@@ -4,13 +4,13 @@
   "buildCommand": "pnpm build",
   "outputDirectory": "apps/web/dist",
   "functions": {
-    "apps/server/vercel.js": {
+    "apps/server/src/vercel.ts": {
       "includeFiles": "apps/server/**,packages/catalog/**,packages/installer/**"
     }
   },
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/apps/server/vercel.js" },
-    { "source": "/health", "destination": "/apps/server/vercel.js" },
+    { "source": "/api/:path*", "destination": "/apps/server/src/vercel.ts" },
+    { "source": "/health", "destination": "/apps/server/src/vercel.ts" },
     { "source": "/((?!assets/).*)", "destination": "/index.html" }
   ]
 }

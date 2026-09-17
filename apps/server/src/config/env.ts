@@ -19,7 +19,7 @@ dotenv.config({ quiet: true });
 const DEFAULT_PORT = 3000;
 const VALID_NODE_ENVS = ["development", "test", "production"];
 
-function readPort(raw) {
+function readPort(raw: string | undefined) {
   if (raw === undefined || raw === "") return DEFAULT_PORT;
 
   const port = Number(raw);
@@ -32,7 +32,7 @@ function readPort(raw) {
   return port;
 }
 
-function readNodeEnv(raw) {
+function readNodeEnv(raw: string | undefined) {
   if (raw === undefined || raw === "") return "development";
 
   if (!VALID_NODE_ENVS.includes(raw)) {

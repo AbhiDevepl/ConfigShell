@@ -591,13 +591,14 @@ describe("safety invariants", () => {
     const sources = [
       ...sourceFiles(
         new URL(".", import.meta.url).pathname,
-        (name) => name.endsWith(".js") && !name.endsWith(".test.js"),
+        (name) =>
+          (name.endsWith(".ts") || name.endsWith(".js")) && !name.includes(".test."),
       ),
       // `api/` is a possible serverless deployment directory — scan it too if
       // it exists, so the safety invariant covers any deployment shape.
-      ...(existsSync(new URL("../../api", import.meta.url).pathname)
+      ...(existsSync(new URL("../../../api", import.meta.url).pathname)
         ? sourceFiles(
-            new URL("../../api", import.meta.url).pathname,
+            new URL("../../../api", import.meta.url).pathname,
             (name) => name.endsWith(".ts") || name.endsWith(".js"),
           )
         : []),

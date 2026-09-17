@@ -2,13 +2,15 @@
  * Application endpoints: browse the catalog, and look one application up.
  */
 
+import type { Request, Response } from "express";
+
 import { presentResolution, resolve } from "@configshell/installer";
 import { getApplication, listApplications } from "../services/catalog.service.js";
 import { parseApplicationId, parseSearchQuery } from "../validators/catalog.validator.js";
-import { parseOptionalEnvironmentQuery } from "../validators/app.validator.js";
+import { parseOptionalEnvironmentQuery } from "../validators/apps.validator.js";
 import { ApiError, sendData } from "../utils/response.js";
 
-export function listApplicationsHandler(req, res) {
+export function listApplicationsHandler(req: Request, res: Response) {
   const { query, category } = parseSearchQuery(req.query);
   const applications = listApplications({ query, category });
   sendData(res, { applications, total: applications.length });
@@ -23,7 +25,7 @@ export function listApplicationsHandler(req, res) {
  * read them all. Without it, just the catalog entry, because resolution is
  * meaningless without an environment.
  */
-export function getApplicationHandler(req, res) {
+export function getApplicationHandler(req: Request, res: Response) {
   const id = parseApplicationId(req.params.id);
   const environment = parseOptionalEnvironmentQuery(req.query);
 

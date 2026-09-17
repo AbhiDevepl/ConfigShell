@@ -25,6 +25,7 @@
  */
 
 import { presentSetupPlan, resolveAll } from "@configshell/installer";
+import type { Environment } from "@configshell/catalog";
 import { getApplications } from "./catalog.service.js";
 
 /**
@@ -33,7 +34,7 @@ import { getApplications } from "./catalog.service.js";
  * Useful on its own: it answers "what would happen to each of these?" and is
  * what an application-detail view or a compatibility check needs.
  */
-export function resolveSelection(applicationIds, environment) {
+export function resolveSelection(applicationIds: string[], environment: Environment) {
   return resolveAll(getApplications(applicationIds), environment);
 }
 
@@ -44,6 +45,6 @@ export function resolveSelection(applicationIds, environment) {
  * an HTTP refusal looks different from an MCP one. Everything after that is the
  * installer's.
  */
-export function createSetupPlan(applicationIds, environment) {
+export function createSetupPlan(applicationIds: string[], environment: Environment) {
   return presentSetupPlan(getApplications(applicationIds), environment);
 }

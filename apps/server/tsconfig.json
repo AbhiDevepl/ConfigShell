@@ -1,49 +1,28 @@
 {
   "// why": [
-    "The server is JavaScript, but it imports TypeScript workspace packages.",
-    "checkJs runs those types against this code, so a mistake in how the server",
-    "calls the catalog or the installer is caught by `pnpm typecheck` rather",
-    "than at runtime. There is no build step: `tsx` runs the source directly.",
+    "The server runs under tsx, like every other workspace, and imports the",
+    "TypeScript packages directly. Typechecking covers the package boundary --",
+    "that the server calls @configshell/catalog and @configshell/installer",
+    "correctly -- so a mistake in a call is caught by `pnpm typecheck` rather",
+    "than at runtime. There is still no build step: `tsx` runs the source",
+    "directly.",
     "",
-    "noImplicitAny is off on purpose. The point of typechecking here is the",
-    "package boundary -- that the server calls @configshell/catalog and",
-    "@configshell/installer correctly. Requiring a JSDoc annotation on every",
-    "Express handler parameter would add a great deal of noise and catch",
-    "nothing: `req` and `res` are the framework's, not ours. Real type errors",
-    "(a misspelled property, a wrong argument, an unnarrowed union) are still",
-    "caught."
+    "The server is TypeScript, not JavaScript-with-JSDoc, and fully typed:",
+    "`noImplicitAny` is strict. A contract-test workload imports server/app",
+    "directly into its own strict program (there are no declaration files for a",
+    "build-free workspace), so a loose annotation here would be surfaced by a",
+    "consumer's typecheck. The only explicit override left is `types: [\"node\"]`."
   ],
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "lib": ["ES2022"],
-    "types": ["node"],
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "allowJs": true,
-    "checkJs": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "strict": true,
-    "noImplicitAny": false,
-    "skipLibCheck": true,
-    "noEmit": true
+    "types": ["node"]
   },
-  "include": [
-    "*.js",
-    "config/**/*.js",
-    "controllers/**/*.js",
-    "middleware/**/*.js",
-    "routes/**/*.js",
-    "services/**/*.js",
-    "utils/**/*.js",
-    "validators/**/*.js"
-  ],
+  "include": ["src/**/*.ts"],
   "// exclude": [
     "Tests are excluded: they drive the API over HTTP, so every response body",
     "is legitimately `unknown` until asserted on. Annotating that away would",
     "mean asserting the very shapes the tests exist to check. The tests still",
     "run in CI via `pnpm test`."
   ],
-  "exclude": ["**/*.test.js"]
+  "exclude": ["**/*.test.ts"]
 }

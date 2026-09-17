@@ -245,9 +245,13 @@ No database, no authentication, no sessions: nothing here needs one. The catalog
 Git-managed data compiled into the process (PRD §33) and every endpoint is a pure function
 of the request.
 
-The server is JavaScript importing the workspace's TypeScript packages directly, run under
-`tsx`, so the monorepo still has no build step. `tsconfig.json` runs `checkJs` over it, so
-misuse of the catalog or installer APIs is caught by `pnpm typecheck`.
+The server is TypeScript importing the workspace's other TypeScript packages directly, run
+under `tsx`, so the monorepo still has no build step. Its `tsconfig.json` extends the shared
+`tsconfig.base.json` and is fully strict — there are no per-workspace overrides, because
+contract tests import `server/app` into their own strict program, so the server source must
+typecheck under whatever program imports it, not just its own. Express `Request`/`Response`
+are augmented once (`request-context.middleware.ts`) so middleware and controllers share
+`req.id` and `req.log`.
 
 The web app does **not** call it. `apps/web` compiles the catalog into its bundle, which is
 simpler and safer than a round trip; the API exists for consumers that cannot do that — a

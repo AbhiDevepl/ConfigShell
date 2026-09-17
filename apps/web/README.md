@@ -45,9 +45,9 @@ src/
 │   ├── applications/       catalog list, search/filter, app cards, detail sheet
 │   ├── roles/              deterministic role presets
 │   ├── selection/          selection summary, list, sticky bottom bar
-│   └── plan/               setup plan, command blocks
+│   └── plan/               setup plan, command blocks, outcomes.ts (plan presentation)
 ├── hooks/                  useLinuxDetection, useTheme, useSetupPlan, useClipboard
-├── lib/                    api.ts (typed API client), outcomes.ts (plan presentation)
+├── lib/                    api.ts (typed API client)
 │   └── utils.ts            re-export of `cn`
 └── index.css               Tailwind entry + shadcn theme tokens
 vite.config.ts              Vite config (React + Tailwind; proxies /api to the server)

@@ -11,6 +11,7 @@ import {
   APPLICATION_ID_PATTERN,
   CATEGORIES,
   MAX_APPLICATION_ID_LENGTH,
+  type Category,
 } from "@configshell/catalog";
 import { ApiError } from "../utils/response.js";
 
@@ -28,15 +29,12 @@ const MAX_QUERY_LENGTH = 100;
  * Narrowing guard rather than a bare `includes` check, so the value that leaves
  * this module is typed as a catalog `Category` instead of a `string` that
  * happens to have been checked.
- *
- * @param {unknown} value
- * @returns {value is import("@configshell/catalog").Category}
  */
-function isCategory(value) {
-  return typeof value === "string" && /** @type {readonly string[]} */ (CATEGORIES).includes(value);
+function isCategory(value: unknown): value is Category {
+  return typeof value === "string" && (CATEGORIES as readonly string[]).includes(value);
 }
 
-export function parseSearchQuery(queryParams) {
+export function parseSearchQuery(queryParams: { query?: unknown; category?: unknown }) {
   const { query, category } = queryParams;
 
   if (query !== undefined && typeof query !== "string") {
@@ -60,7 +58,7 @@ export function parseSearchQuery(queryParams) {
  * different answers: a malformed id is a client bug (400), while a well-formed
  * id that is not in the catalog is a legitimate 404.
  */
-export function parseApplicationId(raw) {
+export function parseApplicationId(raw: unknown) {
   if (typeof raw !== "string" || raw.length === 0) {
     throw ApiError.invalidRequest("An application id is required.");
   }
@@ -73,7 +71,7 @@ export function parseApplicationId(raw) {
 }
 
 /** Role ids use the same slug shape as application ids. */
-export function parseRoleId(raw) {
+export function parseRoleId(raw: unknown) {
   if (typeof raw !== "string" || raw.length === 0) {
     throw ApiError.invalidRequest("A role id is required.");
   }

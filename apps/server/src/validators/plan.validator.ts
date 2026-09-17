@@ -33,7 +33,7 @@ import { APPLICATION_ID_PATTERN, MAX_APPLICATION_ID_LENGTH } from "./catalog.val
  */
 const MAX_SELECTION = 200;
 
-function parseApplicationIds(raw) {
+function parseApplicationIds(raw: unknown) {
   if (!Array.isArray(raw)) {
     throw ApiError.invalidRequest("applicationIds must be an array of catalog ids.");
   }
@@ -83,18 +83,19 @@ function parseApplicationIds(raw) {
  * send a forward-compatible body — but ignored means *ignored*: nothing outside
  * the two fields below has any effect on the plan.
  */
-export function parsePlanRequest(body) {
+export function parsePlanRequest(body: unknown) {
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
     throw ApiError.invalidRequest("Request body must be a JSON object.");
   }
 
-  const parsedEnvironment = parseEnvironment(body.environment ?? {});
+  const { environment, applicationIds } = body as Record<string, unknown>;
+  const parsedEnvironment = parseEnvironment(environment ?? {});
   if (!parsedEnvironment.ok) {
     throw ApiError.invalidRequest("Invalid environment.", { errors: parsedEnvironment.errors });
   }
 
   return {
-    applicationIds: parseApplicationIds(body.applicationIds),
+    applicationIds: parseApplicationIds(applicationIds),
     environment: parsedEnvironment.environment,
   };
 }
