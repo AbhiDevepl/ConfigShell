@@ -1,5 +1,5 @@
-import { LinuxDetectionCard } from '@/components/detection/LinuxDetectionCard';
-import { DistroSelector } from '@/components/distro/DistroSelector';
+import { LinuxDetectionCard } from './LinuxDetectionCard';
+import { DistroSelector } from './DistroSelector';
 import { OsSelector } from './OsSelector';
 import type { Distro } from '@configshell/catalog';
 

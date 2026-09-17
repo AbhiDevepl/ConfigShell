@@ -63,7 +63,7 @@ on a clean system.
 ### Vendor repositories are provisional
 
 Skipping sources that require third-party repository setup is a recorded, temporary
-decision (`docs/TechnicalAudit.md` §9, Q1). `requiresRepositorySetup()` is the single
+decision (`docs/technical-audit.md` §9, Q1). `requiresRepositorySetup()` is the single
 place that decides what counts, so generating repository-setup steps later is a change to
 that function and the plan model — not to the resolver's shape.
 

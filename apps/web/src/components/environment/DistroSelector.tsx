@@ -2,7 +2,7 @@ import { Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
-import { DISTROS, type Distro } from '@/data/distros';
+import { DISTROS, type Distro } from './distros';
 import { ecosystemForDistro } from '@configshell/catalog';
 
 interface DistroSelectorProps {

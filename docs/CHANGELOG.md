@@ -55,7 +55,7 @@ version is below `1.0.0`, the public surface may change in a minor release — s
   TypeScript workspace; `/api/catalog/roles` was missing from the route list in `CLAUDE.md`;
   test counts were stale in `README.md`, `CLAUDE.md`, `docs/development.md`,
   `docs/testing.md` and `packages/installer/README.md`; and `docs/testing.md` still said
-  "four supported distributions" after openSUSE was added. `docs/TechnicalAudit.md` §9 Q4
+  "four supported distributions" after openSUSE was added. `docs/technical-audit.md` §9 Q4
   now records that its "Zypper out of scope" decision was superseded by the implementation.
 
 ### Added
@@ -193,7 +193,7 @@ version is below `1.0.0`, the public surface may change in a minor release — s
   no execution. PRD §22's source-trust hierarchy is encoded explicitly and tested rule by
   rule; a resolution records which source won, why, and what was rejected. Sources needing a
   third-party repository are skipped in favour of the vendor's own instructions, so a
-  generated command never fails on a clean system (provisional — see `docs/TechnicalAudit.md`
+  generated command never fails on a clean system (provisional — see `docs/technical-audit.md`
   §9). Manual steps and applications with no verified route are reported, never dropped.
 - **`apps/server` — a read-only planning API.** `/health` (with catalog integrity),
   `/api/applications[/:id]`, `/api/catalog/{categories,environments,stats}`, `POST /api/plan`
@@ -216,9 +216,9 @@ version is below `1.0.0`, the public surface may change in a minor release — s
   golden command output per package manager and an assertion that no generated command can
   contain a shell metacharacter on any supported distribution.
 
-- `docs/ProductRequirements.md` — the product requirements document (vision, scope, MVP
+- `docs/product-requirements.md` — the product requirements document (vision, scope, MVP
   definition, long-term architecture).
-- `docs/TechnicalAudit.md` — a full audit of the repository against the PRD and README:
+- `docs/technical-audit.md` — a full audit of the repository against the PRD and README:
   gap analysis, documentation audit, architectural risks, the AI-to-future-scope record,
   the prioritised P0/P1/P2/Future backlog, and the resolved product decisions.
 

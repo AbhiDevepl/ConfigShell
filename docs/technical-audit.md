@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-16
 **Audited commit:** `28aba68` (plus one uncommitted `README.md` edit — see D-03)
-**Scope:** full repository audit against `docs/ProductRequirements.md` and `README.md`.
+**Scope:** full repository audit against `docs/product-requirements.md` and `README.md`.
 **Status of this document:** analysis and plan only. No source or documentation files were
 changed to produce it.
 **Re-verified:** every baseline command, every catalog count, the link scan, the naming
@@ -131,10 +131,10 @@ docs relocated into `docs/`, and a partial rename), not sloppiness.
 | **D-02** | **`docs/SECURITY.md` and `docs/security.md` both exist.** Two different files differing only in case. | 5566 B and 5452 B, same directory. | **High** — a clone or checkout **fails or silently loses one file** on macOS and Windows, which are case-insensitive by default. Contributors on those platforms cannot work on the repo cleanly. |
 | **D-03** | **Three truncated sentences** left by the in-progress "remove local agent" edits. | `README.md:165` "…MCP, AI, or a — those are out of scope" (uncommitted edit); `README.md:129` mermaid node `REST["AI · MCP · "]`; `CLAUDE.md:17` "must go through a trusted with validation and". | **High** — visible on the repository front page. |
 | **D-04** | **Half-removed local-agent layer.** `docs/agent.md` (70 lines) still exists in full, `README.md` and `docs/security.md` still list "privileged operations belong in the local agent" as a non-negotiable principle, but `docs/architecture.md`'s layer description and the README sentences above were stripped. | Commit `28aba68` + working-tree diff. | **Medium** — the repo currently both keeps and denies the layer. Under the stated direction the local agent is **Future**, so the coherent fix is to restore the text and label it Future, not to keep deleting it. |
-| **D-05** | **Product name is split in two.** Only `README.md` and `docs/ProductRequirements.md` say *ConfigShell*. **34 other files** say *Linux App Platform* / `linux-app-platform`, including the root `package.json` name, every workspace package name, the npm scope `@linux-app-platform/*` used in all imports, `apps/web/index.html` `<title>`, `metadata.json`, the CI badge URL, the clone URL in README and `docs/development.md`, `.github/ISSUE_TEMPLATE/config.yml`, and user-visible UI copy in `SiteHeader.tsx`. | `git grep`. | **High** — blocks the doc-coherence pass; see **Q2**. |
+| **D-05** | **Product name is split in two.** Only `README.md` and `docs/product-requirements.md` say *ConfigShell*. **34 other files** say *Linux App Platform* / `linux-app-platform`, including the root `package.json` name, every workspace package name, the npm scope `@linux-app-platform/*` used in all imports, `apps/web/index.html` `<title>`, `metadata.json`, the CI badge URL, the clone URL in README and `docs/development.md`, `.github/ISSUE_TEMPLATE/config.yml`, and user-visible UI copy in `SiteHeader.tsx`. | `git grep`. | **High** — blocks the doc-coherence pass; see **Q2**. |
 | **D-06** | **PRD §29 / header say "Existing Turborepo implementation".** Turborepo was never installed; `turbo.json` was empty and was deleted (commit `c9f3112`). | `CHANGELOG.md` "Removed"; no `turbo` dependency anywhere. | **Medium** — the PRD's own architecture premise is stale. |
 | **D-07** | **PRD §47 claims "AI backend structure ✓".** `apps/server/{controllers,services,routes}/ai.*` are **0 bytes**. The same table's "Turborepo ✓" is false (D-06). | `wc -c apps/server/**`. | **Medium** — the PRD overstates current state, which is the one thing the rest of the repo is careful never to do. |
-| **D-08** | **The PRD is invisible to the repository's own navigation.** `README.md`'s Documentation table, `docs/ROADMAP.md`, `CLAUDE.md` and `CONTRIBUTING.md` never mention `docs/ProductRequirements.md`, although it is the newest and highest-level document. | grep. | **Medium** |
+| **D-08** | **The PRD is invisible to the repository's own navigation.** `README.md`'s Documentation table, `docs/ROADMAP.md`, `CLAUDE.md` and `CONTRIBUTING.md` never mention `docs/product-requirements.md`, although it is the newest and highest-level document. | grep. | **Medium** |
 | **D-09** | **PRD vs README/ROADMAP on AI.** PRD §7 lists "AI-assisted recommendations" as **MVP-required** and §41 schedules v0.3 AI *before* v0.4 verification. README and ROADMAP place AI firmly post-V1. | §7, §41 vs README "Current V1 scope", ROADMAP "Future / experimental". | **High** — resolved by the stated direction in favour of README/ROADMAP; the PRD must be amended, not quietly ignored. |
 | **D-10** | **PRD §6 lists Zypper/openSUSE as a Phase 1 ecosystem;** the catalog, validator, selector, README and ROADMAP all support four distros on apt/dnf/pacman only. | `packages/catalog/src/types.ts`. | **Medium** — see **Q4**. |
 | **D-11** | **`CLAUDE.md` "Open-source repository conventions" lists `CONTRIBUTING.md`, `SECURITY.md`, `ROADMAP.md`… as root files.** They are in `docs/`. | `CLAUDE.md`. | **Low** |
@@ -321,7 +321,7 @@ phase are mostly parallelisable.
 | A2 | **Fix all 50 broken relative links** (D-01) | `README.md`, `docs/*`, `packages/*/README.md`, `apps/server/README.md`, `.github/GOOD_FIRST_ISSUES.md` |
 | A3 | **Resolve `docs/SECURITY.md` vs `docs/security.md`** (D-02) — rename the model document (e.g. `docs/security-model.md`) and update every reference | `docs/` |
 | A4 | **Repair the three truncated sentences** and restore the local agent as explicit Future scope (D-03, D-04) | `README.md`, `CLAUDE.md`, `docs/architecture.md` |
-| A5 | **Amend the PRD**: remove AI from MVP-required (§7), resequence the version ladder (§41), correct "Turborepo" (§29) and the "AI backend structure ✓" status table (§47), reconcile §6 Zypper with actual scope (Q4) | `docs/ProductRequirements.md` |
+| A5 | **Amend the PRD**: remove AI from MVP-required (§7), resequence the version ladder (§41), correct "Turborepo" (§29) and the "AI backend structure ✓" status table (§47), reconcile §6 Zypper with actual scope (Q4) | `docs/product-requirements.md` |
 | A6 | **Remove `MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API`** from `apps/web/metadata.json` (§6) | `apps/web/metadata.json` |
 | A6b | **Reword the "AI-native" tagline** (D-17) and **reframe `docs/mcp.md` as client-agnostic** (D-18) | `README.md`, `package.json`, `docs/mcp.md` |
 | A7 | **Link the PRD and this audit** from `README.md`'s documentation table, `docs/ROADMAP.md` and `CLAUDE.md` (D-08); refresh `CODEOWNERS` paths (D-12), `CLAUDE.md` root-file list (D-11), `docs/development.md` layout (D-14), CHANGELOG (D-15); mark GOOD_FIRST_ISSUES #8 done (D-13) | docs, `.github/` |
@@ -476,7 +476,7 @@ back to P0.
 > distribution. What is still missing is **catalog data**, not code — no entry carries a
 > verified `zypper` identifier, so on openSUSE 23 of 31 applications resolve through
 > Flatpak/Snap, one is a manual step, and seven have no route at all. See
-> `docs/catalog.md` and `docs/ProductRequirements.md` §6 for the current position. The rest
+> `docs/catalog.md` and `docs/product-requirements.md` §6 for the current position. The rest
 > of this section is kept as the record of what was decided at the audited commit.
 
 Active scope is the repository's **actual verified coverage**: apt / dnf / pacman across

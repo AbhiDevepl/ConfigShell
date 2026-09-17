@@ -113,8 +113,8 @@ Every application belongs to exactly one. No new categories were added.
 ## Supported distributions
 
 **Ubuntu**, **Debian**, **Fedora**, **Arch Linux**. The `Distro` union lives in this
-package and `apps/web/src/data/distros.ts` imports it, so the selector in the UI cannot
-drift from what catalog entries can declare support for.
+package and `apps/web/src/components/environment/distros.ts` imports it, so the selector
+in the UI cannot drift from what catalog entries can declare support for.
 
 ## Version policy
 
@@ -299,8 +299,9 @@ The mechanical steps:
    method to `InstallMethod` and `INSTALL_METHODS` in `types.ts`, and to `METHOD_DISTROS`.
 4. **`packages/catalog/src/applications.ts`** — verify and add sources for the new
    distribution. Partial coverage is acceptable and honest; guessing is not.
-5. **`apps/web/src/data/distros.ts`** — add the one-line selector description. The `Distro`
-   type is imported from the catalog, so the selector cannot drift from the data.
+5. **`apps/web/src/components/environment/distros.ts`** — add the one-line selector
+   description. The `Distro` type is imported from the catalog, so the selector cannot
+   drift from the data.
 6. **`packages/catalog/src/validate.test.ts`** — extend the tests if you added a method or
    a new validation rule.
 7. **Docs** — update the "Supported distributions" section above, the counts table, and the
@@ -323,7 +324,7 @@ setup plan and a command. Two consequences for anyone editing catalog data:
   there is no generated command. `google-chrome`'s `apt` and `dnf` sources currently have
   none, which is worth fixing.
 
-Skipping vendor-repository sources is **provisional** — see `docs/TechnicalAudit.md` §9 (Q1).
+Skipping vendor-repository sources is **provisional** — see `docs/technical-audit.md` §9 (Q1).
 
 ## Deliberate non-goals for this phase
 

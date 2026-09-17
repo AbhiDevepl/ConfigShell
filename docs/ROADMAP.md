@@ -9,8 +9,8 @@ For what actually ships right now, see the README's
 is, see [`docs/architecture.md`](architecture.md).
 
 The product requirements behind this roadmap are in
-[`ProductRequirements.md`](ProductRequirements.md), and
-[`TechnicalAudit.md`](TechnicalAudit.md) maps every requirement onto what actually exists,
+[`product-requirements.md`](product-requirements.md), and
+[`technical-audit.md`](technical-audit.md) maps every requirement onto what actually exists,
 with the prioritised backlog (P0/P1/P2/Future) and the resolved product decisions. **The
 audit is the authority on sequencing**; this page is the readable summary.
 
@@ -125,7 +125,7 @@ Website → Linux detection state → Distribution selection → Application cat
 - **Repository-setup steps.** Sources needing a third-party repository are skipped today and
   the user is sent to the vendor's instructions. Generating those steps — with signing keys
   and sources files — is a real feature and a real security question; the current behaviour
-  is recorded as provisional in `docs/TechnicalAudit.md` §9 (Q1).
+  is recorded as provisional in `docs/technical-audit.md` §9 (Q1).
 - Persisted selections (shareable lists) — requires deciding whether that needs a backend.
 - Broader API surface, if a consumer needs one. The web app compiles the catalog in and does
   not call the API; the API exists for clients that cannot, such as a CLI or an MCP server.

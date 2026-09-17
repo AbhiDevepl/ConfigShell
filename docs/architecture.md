@@ -170,8 +170,8 @@ The web app owns no application data. It reads `APPLICATIONS` from the catalog p
 renders it; search, category filtering and selection all operate on catalog entries, keyed
 on `Application.id`. The Phase 1 fixture `apps/web/src/data/mockCatalog.ts` has been
 deleted, so there is exactly one source of truth. The `Distro` union is likewise defined in
-the catalog and imported by `apps/web/src/data/distros.ts`, which now only supplies the
-selector's presentation copy.
+the catalog and imported by `apps/web/src/components/environment/distros.ts`, which now only
+supplies the selector's presentation copy.
 
 The catalog carries the structured metadata the layers downstream of it consume (`method`,
 `identifier`, `origin`, `distros`) and stops there — it holds no command text and no
@@ -214,8 +214,9 @@ section before adding more components or touching the `@/*` import alias.
 - `src/hooks/useTheme.ts` — a dark-first light/dark toggle (`.dark` class on `<html>`,
   persisted to `localStorage`); the actual color tokens come from shadcn's own
   `src/index.css` output, not hand-rolled.
-- `src/data/distros.ts` — presentation copy for the four selectable distributions. The
-  `Distro` union itself is imported from `@configshell/catalog`, not redefined.
+- `src/components/environment/distros.ts` — presentation copy for the four selectable
+  distributions. The `Distro` union itself is imported from `@configshell/catalog`, not
+  redefined.
 - Application data comes entirely from `@configshell/catalog`. There is no local
   catalog file.
 - State (selected distro, selected application ids, search query, active category filter)
@@ -261,7 +262,7 @@ source did you pick, and why" is a tested, documented answer rather than catalog
 
 Sources that need a third-party repository added first are **excluded** and become a manual
 step pointing at the vendor's instructions — a provisional decision recorded in
-`docs/TechnicalAudit.md` §9 (Q1), localised to one predicate so it can be revisited without
+`docs/technical-audit.md` §9 (Q1), localised to one predicate so it can be revisited without
 reshaping the resolver. Applications with no route at all are reported, never dropped.
 
 Verification commands come from one fixed template (`command -v <binary>`). The catalog has

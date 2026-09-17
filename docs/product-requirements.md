@@ -7,7 +7,7 @@
 **Primary Users:** Developers, students, new Linux users
 **Status:** Planning / MVP definition
 **Repository:** Existing pnpm-workspace monorepo (no Turborepo — see §29)
-**Amended:** 2026-09-16, per `docs/TechnicalAudit.md` §9
+**Amended:** 2026-09-16, per `docs/technical-audit.md` §9
 
 ---
 
@@ -1392,7 +1392,7 @@ You currently have the beginnings of:
 
 > **Corrected 2026-09-16 against the actual repository**, then **superseded the same day**
 > by the backend implementation. The table below records the state *at the time of the
-> audit*; `docs/TechnicalAudit.md` and `README.md` describe what exists now (the
+> audit*; `docs/technical-audit.md` and `README.md` describe what exists now (the
 > deterministic core and the planning API have since been built). Kept for the record
 > because the audit's conclusions were drawn from it.
 
@@ -1420,7 +1420,7 @@ It should be:
 
 ## **ConfigShell Technical Audit → Gap Analysis → Architecture v1**
 
-> **Done.** See [`TechnicalAudit.md`](TechnicalAudit.md) — the full gap analysis,
+> **Done.** See [`technical-audit.md`](technical-audit.md) — the full gap analysis,
 > documentation audit, architectural risks, AI-to-future-scope record, phased backlog, and
 > the resolved product decisions (§9) that amend this PRD.
 

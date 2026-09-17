@@ -268,14 +268,11 @@ apps/
     │   ├── components/
     │   │   ├── ui/            shadcn-generated primitives
     │   │   ├── layout/        header, theme toggle
-    │   │   ├── detection/     Linux detection card
-    │   │   ├── distro/        distribution selector
-    │   │   ├── environment/   OS selector + environment step
+    │   │   ├── environment/   detection card, OS/distro selectors, selector copy
     │   │   ├── roles/         deterministic role presets
     │   │   ├── applications/  catalog list, search/filter, cards, detail sheet
     │   │   ├── selection/     selection summary, list, sticky bar
     │   │   └── plan/          setup plan, command blocks, copy
-    │   ├── data/distros.ts    selector copy (the Distro type comes from the catalog)
     │   ├── hooks/             useLinuxDetection, useTheme, useSetupPlan, useClipboard
     │   └── lib/api.ts         typed client for the planning API
     ├── components.json        shadcn/ui config
@@ -455,8 +452,8 @@ follow [`SECURITY.md`](docs/SECURITY.md) — not a public issue.
 
 | Document | What it covers |
 | -------- | -------------- |
-| [`docs/ProductRequirements.md`](docs/ProductRequirements.md) | The PRD — product vision, scope, and MVP definition |
-| [`docs/TechnicalAudit.md`](docs/TechnicalAudit.md) | Audit of the repository against the PRD: gap analysis, risks, resolved decisions, and the prioritised backlog |
+| [`docs/product-requirements.md`](docs/product-requirements.md) | The PRD — product vision, scope, and MVP definition |
+| [`docs/technical-audit.md`](docs/technical-audit.md) | Audit of the repository against the PRD: gap analysis, risks, resolved decisions, and the prioritised backlog |
 | [`docs/development.md`](docs/development.md) | Setup, commands, environment, troubleshooting |
 | [`docs/testing.md`](docs/testing.md) | What is tested, the security cases, and what is not |
 | [`docs/architecture.md`](docs/architecture.md) | Layer separation; implemented vs. planned |

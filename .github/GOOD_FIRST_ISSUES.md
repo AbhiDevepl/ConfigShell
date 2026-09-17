@@ -246,7 +246,7 @@ The seven categories have no home for office, graphics, or gaming applications. 
 | --- | --- |
 | **Difficulty** | Involved |
 | **Area** | `packages/catalog`, `apps/web` |
-| **Files** | `packages/catalog/src/types.ts`, `validate.ts`, `applications.ts`, `validate.test.ts`, `apps/web/src/data/distros.ts`, `docs/catalog.md`, `README.md` |
+| **Files** | `packages/catalog/src/types.ts`, `validate.ts`, `applications.ts`, `validate.test.ts`, `apps/web/src/components/environment/distros.ts`, `docs/catalog.md`, `README.md` |
 | **Skills** | TypeScript, deep knowledge of the distribution's packaging |
 
 Linux Mint, openSUSE, and Pop!_OS are plausible candidates. The step-by-step process is in [`docs/catalog.md`](../docs/catalog.md#how-to-add-a-linux-distribution). Note that this makes **every existing entry's coverage a question** — that research is the bulk of the work.

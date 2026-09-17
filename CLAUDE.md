@@ -99,7 +99,7 @@ not represented by empty files.
     interpolation, and throws on failure. Never quote-and-hope.
   - Privilege comes from the install method, never from scanning a string for `sudo`.
   - Vendor sources needing a third-party repo are **skipped** (provisional, Q1 — see
-    `docs/TechnicalAudit.md` §9). `requiresRepositorySetup()` is the single place that
+    `docs/technical-audit.md` §9). `requiresRepositorySetup()` is the single place that
     decides; change it there, not at the call sites.
   - No application is silently dropped: every one resolves, becomes manual, or is reported
     unavailable, each with an explanation.

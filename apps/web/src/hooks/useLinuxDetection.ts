@@ -8,7 +8,7 @@ export type LinuxDetectionState = 'linux' | 'not-linux' | 'unknown';
  * This intentionally stops at "is this Linux" — normal browser APIs do not
  * reliably expose which distribution is running (Ubuntu vs. Debian vs.
  * Fedora vs. Arch), so exact distribution must always be a manual choice
- * (see `src/data/distros.ts` and `DistroSelector`). Real distro detection
+ * (see `src/components/environment/distros.ts` and `DistroSelector`). Real distro detection
  * is a future local-agent capability, not something this hook should ever
  * try to fake.
  */
