@@ -1,4 +1,4 @@
-import { Check, Sparkles, X } from 'lucide-react';
+import { Check, ChevronDown, Sparkles, X } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,7 @@ export function RoleSelector({ appliedRoleId, onApply, onClear }: RoleSelectorPr
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2
           id="role-heading"
-          className="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+          className="text-xs font-semibold tracking-wide text-muted-foreground"
         >
           2. What is this machine for?
         </h2>
@@ -88,7 +88,7 @@ export function RoleSelector({ appliedRoleId, onApply, onClear }: RoleSelectorPr
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 {/*
                   Both buttons carry the role name in their accessible name.
                   Visually the heading above supplies the context; to someone
@@ -123,6 +123,16 @@ export function RoleSelector({ appliedRoleId, onApply, onClear }: RoleSelectorPr
                   onClick={() => setExpandedId(expanded ? null : role.id)}
                 >
                   {expanded ? 'Hide' : 'Show what it adds'}
+                  {/*
+                    Without this the control is visually indistinguishable from
+                    static helper text beside the Add button. A rotating chevron
+                    signals both "interactive" and the current open state; an
+                    underline would read as a link, and this navigates nowhere.
+                  */}
+                  <ChevronDown
+                    aria-hidden="true"
+                    className={cn('size-3.5 transition-transform', expanded && 'rotate-180')}
+                  />
                 </Button>
               </div>
 

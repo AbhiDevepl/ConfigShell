@@ -29,7 +29,7 @@ export function SelectionList({ selectedApps, onRemove }: SelectionListProps) {
             <Button
               type="button"
               variant="ghost"
-              size="icon-sm"
+              size="icon"
               onClick={() => onRemove(app.id)}
               aria-label={`Remove ${app.name} from selection`}
             >

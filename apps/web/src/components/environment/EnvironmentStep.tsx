@@ -21,7 +21,7 @@ export function EnvironmentStep({ distro, onSelect }: EnvironmentStepProps) {
     <section aria-labelledby="environment-heading">
       <h2
         id="environment-heading"
-        className="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+        className="text-xs font-semibold tracking-wide text-muted-foreground"
       >
         1. Your environment
       </h2>

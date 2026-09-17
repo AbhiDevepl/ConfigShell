@@ -48,7 +48,7 @@ export function AppCard({ app, selected, onToggle, onOpenDetails }: AppCardProps
         >
           <Icon className="size-4.5" />
         </span>
-        <span className="flex shrink-0 items-center gap-1">
+        <span className="flex shrink-0 items-center gap-3">
           {/*
             Inside the label on purpose, so it stays within the card's hit area
             and tab order. preventDefault stops the click from also toggling the
@@ -57,7 +57,7 @@ export function AppCard({ app, selected, onToggle, onOpenDetails }: AppCardProps
           <Button
             type="button"
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             aria-label={`Details for ${app.name}`}
             onClick={(event) => {
               event.preventDefault();
@@ -67,11 +67,17 @@ export function AppCard({ app, selected, onToggle, onOpenDetails }: AppCardProps
           >
             <Info aria-hidden="true" />
           </Button>
+          {/*
+            The box stays 16px so the card's visual rhythm is unchanged, but
+            the pseudo-element extends the *hit* area to 32x32. WCAG 2.5.8
+            wants 24x24 minimum and the bare checkbox was 16x16.
+          */}
           <Checkbox
             id={inputId}
             checked={selected}
             onCheckedChange={() => onToggle(app.id)}
             aria-label={`Select ${app.name}`}
+            className="after:absolute after:-inset-2 after:content-['']"
           />
         </span>
       </div>

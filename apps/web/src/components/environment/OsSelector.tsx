@@ -42,7 +42,7 @@ export function OsSelector() {
               >
                 {os.name}
               </span>
-              <span className="block truncate text-xs text-muted-foreground">{os.note}</span>
+              <span className="block text-xs text-balance text-muted-foreground">{os.note}</span>
             </span>
 
             {os.supported ? (

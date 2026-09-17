@@ -37,7 +37,7 @@ export function AppCatalog({ selectedIds, onToggle, onOpenDetails }: AppCatalogP
 
   return (
     <section aria-labelledby="catalog-heading">
-      <h2 id="catalog-heading" className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+      <h2 id="catalog-heading" className="text-xs font-semibold tracking-wide text-muted-foreground">
         3. Browse applications
       </h2>
       <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">

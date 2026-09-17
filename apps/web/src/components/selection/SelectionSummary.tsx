@@ -35,7 +35,7 @@ export function SelectionSummary({ selectedIds, onRemove, onClear }: SelectionSu
           </>
         )}
 
-        <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
+        <p className="mt-5 border-t border-border pt-5 text-xs text-muted-foreground">
           Choose a distribution, then build the setup plan to see the exact commands.
           ConfigShell never installs anything itself.
         </p>
