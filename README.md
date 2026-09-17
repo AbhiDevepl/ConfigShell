@@ -119,7 +119,7 @@ See [Security](#security) and [`docs/security-model.md`](docs/security-model.md)
   **No model is involved anywhere.**
 
 - **Repository tooling** — pnpm workspaces, repository-wide ESLint, per-workspace
-  typechecking, 236 tests across seven workspaces, and CI that runs all of it on Node 20
+  typechecking, 271 tests across seven workspaces, and CI that runs all of it on Node 20
   and 22.
 
 **Not implemented (planned):** system detection beyond "does the browser look like Linux",
@@ -394,7 +394,7 @@ client that does not need the interface.
 
 ## Testing
 
-**236 tests** across seven workspaces, on Node's built-in runner via `tsx`.
+**271 tests** across seven workspaces, on Node's built-in runner via `tsx`.
 
 ```sh
 pnpm test        # all of them

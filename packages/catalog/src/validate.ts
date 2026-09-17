@@ -54,6 +54,28 @@ const ID_PATTERN = APPLICATION_ID_PATTERN;
  */
 const BINARY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._+-]*$/;
 
+/**
+ * What may appear in an installation identifier.
+ *
+ * The same alphabet as `BINARY_PATTERN`, and for the same reason: an identifier
+ * is interpolated into a generated command, so it is the *other* field in the
+ * catalog with a direct path to a shell. It covers every identifier form the
+ * catalog uses — package names (`docker-ce`, `docker.io`), reverse-DNS Flatpak
+ * application IDs (`org.mozilla.firefox`) and Snap names (`sublime-text`) — and
+ * nothing else. No whitespace, no quotes, no shell metacharacter, and no
+ * leading `-`, which would read as a flag rather than a package.
+ *
+ * Checking it here is defence in depth, not the only defence: `renderPlan` in
+ * `@configshell/installer` re-validates against the same alphabet immediately
+ * before interpolation and refuses to build a command otherwise. But an
+ * identifier that only fails *there* fails at plan time, as a thrown error on a
+ * user's request, long after the bad data was committed. Catching it at the data
+ * boundary makes it a validation failure — visible to `validateCatalog`, to the
+ * catalog test suite, and to the `/health` integrity check, which is where a
+ * catalog-integrity problem should surface.
+ */
+const IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._+-]*$/;
+
 function validateSource(
   source: InstallationSource,
   appId: string,
@@ -72,8 +94,13 @@ function validateSource(
   }
   seenSources.add(key);
 
-  if (source.identifier.trim() === '') {
+  if (typeof source.identifier !== 'string' || source.identifier.trim() === '') {
     errors.push(`${where}: empty installation identifier`);
+  } else if (!IDENTIFIER_PATTERN.test(source.identifier)) {
+    errors.push(
+      `${where}: identifier "${source.identifier}" is not a plain package name. ` +
+        `It is interpolated into a generated command and must match ${String(IDENTIFIER_PATTERN)}.`,
+    );
   }
 
   if (!ORIGINS.has(source.origin)) {

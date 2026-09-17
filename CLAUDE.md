@@ -30,9 +30,10 @@ not represented by empty files.
 - **`apps/server/`**: **implemented** — a read-only planning API. `app.js` is an Express app
   factory; `index.js` is the only file that binds a port and imports `./config/env.js`
   directly (there is no `config/index.js` barrel). Routes: `/health`,
-  `/api/applications[/:id]`, `/api/catalog/{categories,environments,stats}`, `POST /api/plan`
+  `/api/applications[/:id]`, `/api/catalog/{categories,environments,roles[/:id],stats}`,
+  `POST /api/plan`
   and `POST /api/plan/resolve` (all listed in `routes/index.js`). Controllers are thin —
-  validate, call a service, send. **41 tests** (`apps/server/api.test.js`,
+  validate, call a service, send. **53 tests** (`apps/server/api.test.js`,
   `config/env.test.js`).
   - **It never executes anything.** No `child_process` import exists in the workspace and a
     test asserts it never will. Don't add one: execution belongs to the local agent
@@ -61,12 +62,13 @@ not represented by empty files.
     know whether a source is usable, ask the API.
   - **Dev server is port 5173**, the API is 3000, and Vite proxies `/api`. `pnpm dev` from
     the root runs both in parallel; `pnpm dev:web` runs the web app alone.
-  - 11 tests on `tsx --test`: `src/lib/api.test.ts` (the API client's contract) and
+  - 20 tests on `tsx --test`: `src/lib/api.test.ts` (the API client's contract),
     `src/lib/safety.test.ts` (structural invariants — the web source must contain no
     package-manager command vocabulary, must never import `@configshell/installer`, and must
-    have no `eval`/`new Function`/`dangerouslySetInnerHTML`). There is **no DOM test
-    runner**, so component behaviour is untested; adding Vitest is a deliberate dependency
-    decision, not an oversight.
+    have no `eval`/`new Function`/`dangerouslySetInnerHTML`), and
+    `src/components/plan/PlanView.test.ts` (plan rendering for every outcome, server-side).
+    There is **no DOM test runner**, so component *behaviour* is untested; adding Vitest is a
+    deliberate dependency decision, not an oversight.
   - The workspace is named `web`, so both `--filter web` and `--filter ./apps/web` resolve.
 - **`packages/catalog`**: real, and as of Phase 2 the **single source of truth for
   application metadata** — 31 verified applications, the data model, a dependency-free
@@ -89,7 +91,7 @@ not represented by empty files.
   count as `pacman`, and version numbers are never recorded.
 - **`packages/installer`**: **implemented** — the deterministic core, and the most
   security-sensitive code in the repo. Three pure stages: `resolve()` → `buildPlan()` →
-  `renderPlan()`. No I/O, no execution. **44 tests.** Rules that must hold:
+  `renderPlan()`. No I/O, no execution. **79 tests.** Rules that must hold:
   - `renderPlan` is the **only** code anywhere that knows a package manager's command form.
     Do not generate command text in `apps/web`, `apps/server`, or the catalog.
   - The plan is **data**. A test asserts it contains no command text; keep it that way.
@@ -137,9 +139,9 @@ not represented by empty files.
   `eslint.config.js`, covering every workspace). `typecheck` is `tsc --noEmit` per
   TypeScript workspace. The old per-workspace `"lint": "tsc --noEmit"` scripts were
   renamed to `typecheck`, and `apps/server`'s broken `lint`/`check` scripts were removed.
-- **Tests**: **236**, on Node's built-in runner via `tsx`, in seven workspaces —
-  `packages/test-utils` (6), `packages/catalog` (46), `packages/installer` (56),
-  `packages/mcp` (52), `apps/server` (53), `packages/contract-tests` (11), `apps/web` (12). `docs/testing.md` is the
+- **Tests**: **271**, on Node's built-in runner via `tsx`, in seven workspaces —
+  `packages/test-utils` (6), `packages/catalog` (48), `packages/installer` (79),
+  `packages/mcp` (52), `apps/server` (53), `packages/contract-tests` (13), `apps/web` (20). `docs/testing.md` is the
   authority on coverage and gaps. `test-utils` holds the **architecture enforcement** tests:
   dependency direction, acyclicity, and that command syntax stays inside the installer.
   They exercise real data and the real app, not fixtures and mocks. **`apps/web` has no DOM
@@ -198,10 +200,10 @@ Root scripts (pnpm filters — there is no Turbo pipeline):
 pnpm dev                         # web (5173) + API (3000) in parallel
 pnpm dev:web                     # web only — the plan step needs the API
 pnpm build                       # == pnpm --filter web build
-pnpm start                       # == pnpm --filter web start
+pnpm start                       # == pnpm --filter server start (API + apps/web/dist)
 pnpm lint                        # eslint . across the whole repo (real ESLint)
-pnpm typecheck                   # tsc --noEmit for web, catalog, installer, server (checkJs)
-pnpm test                        # 236 tests across seven workspaces
+pnpm typecheck                   # tsc --noEmit for every TS workspace (server via checkJs)
+pnpm test                        # 271 tests across seven workspaces
 pnpm mcp                         # start the MCP server on stdio
 pnpm check                       # lint -> typecheck -> test -> build (what CI runs)
 ```

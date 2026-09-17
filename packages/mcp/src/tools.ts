@@ -49,6 +49,7 @@ import {
   PACKAGE_ECOSYSTEMS,
   ROLES,
   applicationsForRole,
+  createEnvironment,
   ecosystemForDistro,
   findApplication,
   findRole,
@@ -61,7 +62,14 @@ import {
   type Distro,
   type Environment,
 } from '@configshell/catalog';
-import { presentResolution, presentSetupPlan, renderPlan, resolveAll, buildPlan } from '@configshell/installer';
+import {
+  buildPlan,
+  catalogCoverage,
+  presentResolution,
+  presentSetupPlan,
+  renderPlan,
+  resolveAll,
+} from '@configshell/installer';
 import { z } from 'zod';
 import { ToolError } from './errors.ts';
 import {
@@ -250,7 +258,19 @@ const listEnvironments = defineTool({
       'ConfigShell does not detect the environment. Ask the user which distribution they ' +
       'are running rather than guessing.',
     operatingSystems: [...OPERATING_SYSTEMS],
-    distros: DISTROS.map((distro) => ({ distro, ecosystem: ecosystemForDistro(distro) })),
+    // `coverage` is the same resolver-derived count `GET /api/catalog/environments`
+    // returns, and it is here for the same reason: a supported distribution is
+    // not the same as a well-covered one. openSUSE is supported end to end, but
+    // no catalog entry carries a zypper identifier yet, so every application
+    // there resolves to Flatpak/Snap or to nothing. A host that cannot see that
+    // will pick a distribution for a user and then explain an empty plan.
+    // Derived from `resolveAll`, never stored, so it cannot drift from what
+    // generate_setup would actually produce.
+    distros: DISTROS.map((distro) => ({
+      distro,
+      ecosystem: ecosystemForDistro(distro),
+      coverage: catalogCoverage(createEnvironment(distro)),
+    })),
     ecosystems: PACKAGE_ECOSYSTEMS.map((ecosystem) => ({
       ecosystem,
       distros: [...ECOSYSTEM_DISTROS[ecosystem]],

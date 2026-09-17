@@ -84,6 +84,14 @@ function safeBinary(value: string): string {
  * install route (see `policy.ts`).
  */
 function installCommand(method: InstallMethod, identifiers: readonly string[]): string {
+  // Fail closed on an empty group rather than emitting `sudo apt-get install `
+  // with no operand. `buildPlan` never produces one, but `renderPlan` is public
+  // API and does not assume its input came from there — and the finished-string
+  // check in `setup-plan.ts` would *accept* the trailing space, so this is the
+  // only place it can be caught.
+  if (identifiers.length === 0) {
+    throw new Error(`Refusing to build an install command for ${method} with no packages.`);
+  }
   const packages = identifiers.map(safeIdentifier).join(' ');
   switch (method) {
     case 'apt':

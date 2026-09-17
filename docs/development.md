@@ -80,7 +80,7 @@ From the repository root:
 | ------- | ------------ |
 | `pnpm lint` | ESLint across the repo (flat config in `eslint.config.js`) |
 | `pnpm typecheck` | `tsc --noEmit` for `apps/web`, `packages/catalog`, `packages/installer` and `apps/server` |
-| `pnpm test` | 236 tests across seven workspaces — see [`testing.md`](testing.md) |
+| `pnpm test` | 271 tests across seven workspaces — see [`testing.md`](testing.md) |
 | `pnpm build` | production build of the web app → `apps/web/dist` |
 | `pnpm check` | all four, in that order — run this before opening a pull request |
 

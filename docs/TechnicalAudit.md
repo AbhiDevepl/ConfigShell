@@ -470,6 +470,15 @@ back to P0.
 
 ### Q4 — openSUSE / Zypper → **out of active scope; the implementation wins**
 
+> **Superseded by the implementation (do not act on this decision).** Zypper/openSUSE was
+> subsequently built: `PackageEcosystem`, `ECOSYSTEM_DISTROS`, the trust policy, plan
+> ordering and command generation all cover it, and `openSUSE` is a selectable
+> distribution. What is still missing is **catalog data**, not code — no entry carries a
+> verified `zypper` identifier, so on openSUSE 23 of 31 applications resolve through
+> Flatpak/Snap, one is a manual step, and seven have no route at all. See
+> `docs/catalog.md` and `docs/ProductRequirements.md` §6 for the current position. The rest
+> of this section is kept as the record of what was decided at the audited commit.
+
 Active scope is the repository's **actual verified coverage**: apt / dnf / pacman across
 Ubuntu, Debian, Fedora and Arch Linux. Zypper/openSUSE becomes a later/future ecosystem.
 Amend the PRD and any other document to match the implementation rather than expanding the

@@ -93,7 +93,7 @@ const { commands, manualSteps, unavailable } = renderPlan(plan);
 ## Commands
 
 ```sh
-pnpm --filter @configshell/installer test        # 44 tests
+pnpm --filter @configshell/installer test        # 79 tests
 pnpm --filter @configshell/installer typecheck
 ```
 

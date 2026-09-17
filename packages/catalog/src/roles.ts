@@ -22,6 +22,7 @@
  */
 
 import { APPLICATIONS } from './applications.ts';
+import { APPLICATION_ID_PATTERN } from './validate.ts';
 import type { Application } from './types.ts';
 
 export interface Role {
@@ -119,10 +120,11 @@ export function validateRoles(
   const errors: string[] = [];
   const catalogIds = new Set(applications.map((application) => application.id));
   const seenIds = new Set<string>();
-  const idPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
   for (const role of roles) {
-    if (!idPattern.test(role.id)) {
+    // The same slug rule as an application id, imported rather than copied:
+    // `validate.ts` owns it precisely so the copies cannot drift apart.
+    if (!APPLICATION_ID_PATTERN.test(role.id)) {
       errors.push(`${role.id || '(empty id)'}: role id must be a lowercase slug`);
     }
     if (seenIds.has(role.id)) {

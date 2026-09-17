@@ -16,7 +16,7 @@ import {
   findApplication,
 } from '@configshell/catalog';
 import type { Application, Distro } from '@configshell/catalog';
-import { UnsafeIdentifierError } from './commands.ts';
+import { UnsafeIdentifierError, renderPlan } from './commands.ts';
 import {
   SAFE_COMMAND_PATTERN,
   presentSetupPlan,
@@ -239,5 +239,100 @@ test('a hostile catalog entry throws instead of producing a plan', () => {
   assert.throws(
     () => presentSetupPlan([hostile], createEnvironment('Ubuntu')),
     UnsafeIdentifierError,
+  );
+});
+
+// ------------------------------------------------- selection is a set of apps
+
+test('the same application selected twice is planned once', () => {
+  // Deduplication used to live only in the HTTP validator and the MCP argument
+  // parser. A caller reaching this package directly got `apt-get install git
+  // git` and two identical verification commands — duplicated operations in the
+  // plan both adapters call canonical. The rule belongs with the plan.
+  const once = presentSetupPlan([app('git')], createEnvironment('Ubuntu'));
+  const twice = presentSetupPlan([app('git'), app('git')], createEnvironment('Ubuntu'));
+
+  assert.deepEqual(twice, once, 'a duplicated selection produced a different plan');
+  assert.equal(twice.summary.selected, 1);
+});
+
+test('deduplication keeps the first occurrence, so caller order survives', () => {
+  const plan = presentSetupPlan(
+    [app('htop'), app('git'), app('htop')],
+    createEnvironment('Ubuntu'),
+  );
+
+  assert.deepEqual(
+    plan.resolutions.map((resolution) => resolution.applicationId),
+    ['htop', 'git'],
+  );
+});
+
+test('validation rejects a plan that names the same application twice', () => {
+  const tampered = structuredClone(plan(['git'], 'Ubuntu'));
+  tampered.resolutions.push(structuredClone(tampered.resolutions[0]!));
+  tampered.summary.selected += 1;
+  tampered.summary.installable += 1;
+
+  assert.throws(() => validateSetupPlan(tampered), /more than once/);
+});
+
+// --------------------------------------------- nothing resolved is dropped
+
+test('validation rejects a plan that resolved an application into no install step', () => {
+  // `buildPlan` only emits install steps for the methods in its `methodOrder`
+  // list, which is a second place that has to know every installable method.
+  // Add a method and a trust tier but forget that list, and the application
+  // resolves, still counts as `installable`, and then silently vanishes from
+  // the plan. The count checks cannot see it; this one can.
+  const tampered = structuredClone(plan(['git'], 'Ubuntu'));
+  tampered.steps = tampered.steps.filter((step) => step.kind !== 'install');
+
+  assert.throws(() => validateSetupPlan(tampered), /appear in no install step/);
+});
+
+test('every resolved application appears in an install step, for the whole catalog', () => {
+  for (const distro of DISTROS) {
+    const full = plan(
+      APPLICATIONS.map((entry) => entry.id),
+      distro,
+    );
+    const planned = new Set(
+      full.steps.flatMap((step) => (step.kind === 'install' ? [...step.applicationIds] : [])),
+    );
+    for (const resolution of full.resolutions) {
+      if (resolution.outcome !== 'resolved') continue;
+      assert.ok(
+        planned.has(resolution.applicationId),
+        `${distro}: ${resolution.applicationId} resolved but is in no install step`,
+      );
+    }
+  }
+});
+
+// ------------------------------------------------------ degenerate rendering
+
+test('an install step with no packages refuses to render', () => {
+  // Not reachable through `buildPlan`, which skips empty groups — but
+  // `renderPlan` is public API, and `sudo apt-get install ` with no operand
+  // would pass the finished-string allowlist, which permits a trailing space.
+  assert.throws(
+    () =>
+      renderPlan({
+        environment: createEnvironment('Ubuntu'),
+        unavailable: [],
+        resolutions: [],
+        steps: [
+          {
+            kind: 'install',
+            method: 'apt',
+            privileged: true,
+            identifiers: [],
+            applicationIds: [],
+            summary: 'Install 0 applications with APT',
+          },
+        ],
+      }),
+    /no packages/,
   );
 });

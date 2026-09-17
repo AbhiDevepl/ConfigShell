@@ -105,6 +105,29 @@ export function presentResolution(resolution: Resolution) {
 export type PlanStatus = 'complete' | 'partial' | 'none';
 
 /**
+ * A selection is a **set of applications**, so the same entry asked for twice is
+ * the same request.
+ *
+ * Deduplication used to live only in the adapters — the HTTP validator and the
+ * MCP argument parser each did it before calling here. That left the rule in two
+ * places and out of the one builder both of them share, so a third consumer (a
+ * CLI, a test, anything calling this package directly) got `apt-get install git
+ * git` and `command -v git` twice: duplicated operations in a plan that claims
+ * to be canonical. The rule belongs with the plan, not with each transport.
+ *
+ * First occurrence wins, so the caller's order is preserved — which is what the
+ * ordering within each install step is built from.
+ */
+function dedupeSelection(applications: readonly Application[]): readonly Application[] {
+  const seen = new Set<string>();
+  return applications.filter((application) => {
+    if (seen.has(application.id)) return false;
+    seen.add(application.id);
+    return true;
+  });
+}
+
+/**
  * Resolve → plan → render → present, for one selection and one environment.
  *
  * Takes applications rather than ids: looking an id up and refusing an unknown
@@ -118,12 +141,13 @@ export function presentSetupPlan(
   applications: readonly Application[],
   environment: Environment,
 ) {
-  const resolutions = resolveAll(applications, environment);
+  const selection = dedupeSelection(applications);
+  const resolutions = resolveAll(selection, environment);
   const plan = buildPlan(resolutions, environment);
   const rendered = renderPlan(plan);
 
   const installable = resolutions.filter((r) => r.outcome === 'resolved').length;
-  const selected = applications.length;
+  const selected = selection.length;
 
   const presented = {
     environment,
@@ -203,7 +227,7 @@ export type PresentedSetupPlan = ReturnType<typeof presentSetupPlan>;
  * nothing.
  */
 export function validateSetupPlan(plan: PresentedSetupPlan): void {
-  const { summary, resolutions, commands } = plan;
+  const { summary, resolutions, commands, steps } = plan;
 
   // Every selected application is accounted for exactly once. A resolution
   // quietly dropped would show up as a plan that does less than was asked.
@@ -212,6 +236,38 @@ export function validateSetupPlan(plan: PresentedSetupPlan): void {
     throw new Error(
       `Invalid setup plan: ${summary.selected} selected but ${resolutions.length} ` +
         `resolutions and ${outcomes} outcomes.`,
+    );
+  }
+
+  // The same application must not appear twice. `dedupeSelection` guarantees it
+  // for this builder; checking it here means a future caller that assembles a
+  // plan another way still cannot ship duplicated operations.
+  const ids = resolutions.map((resolution) => resolution.applicationId);
+  if (new Set(ids).size !== ids.length) {
+    throw new Error('Invalid setup plan: the same application is planned more than once.');
+  }
+
+  // Every application that resolved to a command must actually appear in an
+  // install step.
+  //
+  // `buildPlan` emits install steps only for the methods in its `methodOrder`
+  // list. That list is correct for the current model, but it is a second place
+  // that has to know every installable method: add a method and a trust tier
+  // and forget this one, and the application resolves, counts as `installable`
+  // in the summary, and then silently vanishes from the plan — the exact
+  // failure "no application is silently dropped" is meant to rule out, and the
+  // one thing the count check above cannot see.
+  const planned = new Set(
+    steps.flatMap((step) => (step.kind === 'install' ? [...step.applicationIds] : [])),
+  );
+  const dropped = resolutions
+    .filter((resolution) => resolution.outcome === 'resolved')
+    .map((resolution) => resolution.applicationId)
+    .filter((id) => !planned.has(id));
+  if (dropped.length > 0) {
+    throw new Error(
+      `Invalid setup plan: these applications resolved to a command but appear in no ` +
+        `install step: ${dropped.join(', ')}.`,
     );
   }
 

@@ -11,6 +11,7 @@
  * boundary is permanent rather than pending.
  */
 
+import { presentResolution } from "@configshell/installer";
 import { createSetupPlan, resolveSelection } from "../services/plan.service.js";
 import { parsePlanRequest } from "../validators/plan.validator.js";
 import { sendData } from "../utils/response.js";
@@ -30,26 +31,23 @@ export function createPlanHandler(req, res) {
   sendData(res, plan);
 }
 
-/** Resolution only — no plan, no commands. */
+/**
+ * Resolution only — no plan, no commands.
+ *
+ * Flattened with the installer's own `presentResolution`, the same function
+ * `GET /api/applications/:id?distro=…` and the MCP tools use. It previously
+ * shaped the response inline here, which made this the one endpoint that
+ * described a resolution differently from every other: no `applicationName`,
+ * and no `considered` — so a caller could see *which* source won but not which
+ * were rejected or why, on the endpoint whose entire purpose is explaining
+ * resolution. One flattener, one shape.
+ */
 export function resolveSelectionHandler(req, res) {
   const { applicationIds, environment } = parsePlanRequest(req.body);
   const resolutions = resolveSelection(applicationIds, environment);
 
   sendData(res, {
     environment,
-    resolutions: resolutions.map((resolution) => ({
-      applicationId: resolution.application.id,
-      outcome: resolution.outcome,
-      ...(resolution.outcome === "resolved"
-        ? {
-            source: {
-              method: resolution.source.method,
-              identifier: resolution.source.identifier,
-              origin: resolution.source.origin,
-            },
-            reason: resolution.reason,
-          }
-        : { reason: resolution.reason, explanation: resolution.explanation }),
-    })),
+    resolutions: resolutions.map(presentResolution),
   });
 }

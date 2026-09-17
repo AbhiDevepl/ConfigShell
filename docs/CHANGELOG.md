@@ -12,6 +12,61 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 
 ## [Unreleased]
 
+### Fixed
+
+- **A selection is deduplicated by the plan builder, not by each adapter.** Asking for the
+  same application twice produced `apt-get install git git` and two identical verification
+  commands for any caller that reached `presentSetupPlan` directly. The HTTP validator and
+  the MCP argument parser each deduplicated beforehand, so the rule lived in two transports
+  and not in the one builder they share. It now lives with the plan; first occurrence wins,
+  so caller order is unchanged. Reaching the API or MCP, nothing observable changes.
+
+- **`renderPlan` refuses to build an install command with no packages.** An install step
+  with an empty identifier list rendered as `sudo apt-get install ` — a command with no
+  operand. `buildPlan` never produces one, but `renderPlan` is public API, and the
+  finished-string allowlist accepts a trailing space, so nothing downstream would have
+  caught it. It now throws, like every other fail-closed path in that module.
+
+- **The plan validator catches an application that resolved into no install step.**
+  `buildPlan` emits install steps only for the methods in its `methodOrder` list, which is a
+  second place that has to know every installable method. Add a method and a trust tier and
+  forget that list, and the application resolves, still counts as `installable` in the
+  summary, and then vanishes from the plan — the one way "no application is silently
+  dropped" could fail that the existing count checks could not see. Unreachable with the
+  current install methods; now an error rather than a latent hazard.
+
+- **Installation identifiers are validated at the catalog boundary.** `validateCatalog`
+  checked `verify.binary` against a strict alphabet but never the installation identifier,
+  although both are interpolated into a generated command. Command generation still
+  re-validates immediately before interpolation and refuses to build a command — but only at
+  plan time, as a thrown error on a user's request. A malformed identifier is now a
+  validation failure, visible to the catalog test suite and to the `/health` integrity check.
+  The real catalog was already clean; no entry changed.
+
+- **`POST /api/plan/resolve` describes a resolution the way every other endpoint does.** It
+  shaped its response inline in the controller, so it was the only place that omitted
+  `applicationName` and `considered` — which sources were rejected and why — on the endpoint
+  whose entire purpose is explaining resolution. It now uses the installer's
+  `presentResolution`, like `GET /api/applications/:id?distro=…` and the MCP tools.
+  **Additive for clients:** the two fields appear; nothing was removed or renamed.
+
+- **Documentation counts and commands corrected.** `pnpm start` runs the API server (which
+  also serves `apps/web/dist`), not the web workspace; `pnpm typecheck` covers every
+  TypeScript workspace; `/api/catalog/roles` was missing from the route list in `CLAUDE.md`;
+  test counts were stale in `README.md`, `CLAUDE.md`, `docs/development.md`,
+  `docs/testing.md` and `packages/installer/README.md`; and `docs/testing.md` still said
+  "four supported distributions" after openSUSE was added. `docs/TechnicalAudit.md` §9 Q4
+  now records that its "Zypper out of scope" decision was superseded by the implementation.
+
+### Added
+
+- **The MCP `list_environments` tool reports catalog coverage**, the same resolver-derived
+  counts `GET /api/catalog/environments` already returned. Without it an MCP host could not
+  tell a well-covered distribution from one where the catalog has no native route — it would
+  pick openSUSE for a user and then have to explain a plan built entirely from Flatpak and
+  Snap. The cross-adapter test named "supported environments agree, including coverage" now
+  actually compares coverage; it previously could not, because MCP returned none.
+
 ### Changed
 
 - **One canonical setup plan, built in one place.** `presentSetupPlan` in
