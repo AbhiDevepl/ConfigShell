@@ -122,7 +122,7 @@ export function SelectionSummary({
             <Separator className="my-0.5" />
             {canContinue ? (
               <Button type="button" onClick={onContinue} className="build-plan-button w-full justify-center transition-colors">
-                <span>Build setup plan</span>
+                <span>Generate setup plan</span>
                 <ArrowRight aria-hidden="true" className="ml-1 size-3.5" />
               </Button>
             ) : (
@@ -135,7 +135,7 @@ export function SelectionSummary({
                       className="build-plan-button w-full justify-center cursor-not-allowed opacity-60 transition-opacity"
                       onClick={(event) => event.preventDefault()}
                     >
-                      <span>Build setup plan</span>
+                      <span>Generate setup plan</span>
                       <ArrowRight aria-hidden="true" className="ml-1 size-3.5" />
                     </Button>
                   </span>

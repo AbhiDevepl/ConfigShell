@@ -3,7 +3,26 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { CATEGORY_ICON } from '@/components/applications/categoryIcon';
+import type { Category } from '@configshell/catalog';
 import { ROLES, applicationsForRole, type Role } from '@configshell/catalog';
+
+/**
+ * Every role is a catalog category, presented as a preset — both share ids
+ * and names, so the role card can borrow the same one-icon-per-category map
+ * as the catalog card and the selection list. One map, three surfaces: an
+ * application is recognisable by the same mark everywhere it appears.
+ */
+const ROLE_CATEGORY: Record<Role['id'], Category> = {
+  general: 'General',
+  student: 'Student',
+  developer: 'Developer',
+  'web-developer': 'Web Developer',
+  devops: 'DevOps',
+  'data-ai': 'Data & AI',
+  'content-creator': 'Content Creator',
+  gaming: 'Gaming',
+};
 
 interface RoleSelectorProps {
   /** The preset most recently applied, if any. Applying is not a lasting mode. */
@@ -62,6 +81,7 @@ export function RoleSelector({ appliedRoleId, onApply, onClear }: RoleSelectorPr
           const recommended = applicationsForRole(role, 'recommended');
           const optional = applicationsForRole(role, 'optional');
           const detailsId = `role-${role.id}-apps`;
+          const RoleIcon = CATEGORY_ICON[ROLE_CATEGORY[role.id]];
 
           return (
             <li
@@ -75,7 +95,18 @@ export function RoleSelector({ appliedRoleId, onApply, onClear }: RoleSelectorPr
             >
               <div>
                 <div className="flex items-center justify-between gap-1">
-                  <p className="text-xs font-medium truncate">{role.name}</p>
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        'flex size-5 shrink-0 items-center justify-center rounded-md transition-colors',
+                        applied ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
+                      )}
+                    >
+                      <RoleIcon className="size-3" />
+                    </span>
+                    <p className="truncate text-xs font-medium">{role.name}</p>
+                  </div>
                   {applied && (
                     <Badge variant="secondary" className="h-4 px-1 text-[9px] font-normal shrink-0">
                       <Check aria-hidden="true" className="size-2.5 mr-0.5" />

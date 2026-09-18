@@ -42,7 +42,7 @@ export function SiteHeader() {
   );
 
   return (
-    <header ref={headerRef} className="w-full border-b border-border bg-card/40 backdrop-blur-xs">
+    <header ref={headerRef} className="sticky top-0 z-30 w-full border-b border-border bg-card/40 backdrop-blur-xs">
       {/*
         Three fixed roles: brand, context, actions. A grid rather than
         `justify-between` so the middle track is the one that absorbs the

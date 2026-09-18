@@ -61,7 +61,7 @@ test('the empty state names the next step and offers no primary action', () => {
 
   // §9: nothing to build a plan from, so no plan button — the empty state
   // above it already carries the instruction.
-  assert.ok(!html.includes('Build setup plan'), 'an empty panel offers no primary action');
+  assert.ok(!html.includes('Generate setup plan'), 'an empty panel offers no primary action');
   assert.ok(!html.includes('Clear all'), 'and nothing to clear');
 });
 
@@ -99,7 +99,7 @@ test('three selected applications render three rows, and the actions appear', ()
     assert.match(html, new RegExp(name), `${name} is missing from the panel`);
   }
   assert.match(html, /Clear all/, 'clearing is offered once there is something to clear');
-  assert.match(html, /Build setup plan/, 'and the primary action is available');
+  assert.match(html, /Generate setup plan/, 'and the primary action is available');
 });
 
 test('the panel lists names only — it does not repeat the catalog card', () => {
@@ -134,7 +134,7 @@ test('a selection without a distribution keeps the button and states the reason'
   const reason = 'Choose your distribution first — commands depend on it.';
   const html = render(ids(2), { canContinue: false, blockedReason: reason });
 
-  assert.match(html, /Build setup plan/, 'the action stays visible once something is selected');
+  assert.match(html, /Generate setup plan/, 'the action stays visible once something is selected');
   assert.match(html, /aria-disabled="true"/, 'but is disabled');
   assert.match(html, new RegExp(reason.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), 'and says why');
 });
@@ -149,7 +149,7 @@ test('the panel never offers to install anything', () => {
     .concat([...html.matchAll(/aria-label="([^"]*)"/g)].map((match) => match[1]!.trim()))
     .filter(Boolean);
 
-  const allowed = /^(clear all|build setup plan|remove .+ from selected applications)$/i;
+  const allowed = /^(clear all|generate setup plan|remove .+ from selected applications)$/i;
   assert.ok(labels.length > 0, 'the panel has controls to check');
   for (const label of labels) {
     assert.match(label, allowed, `unexpected control in the selection panel: ${JSON.stringify(label)}`);

@@ -1,38 +1,59 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export type LinuxDetectionState = 'linux' | 'not-linux' | 'unknown';
 
+export interface LinuxDetection {
+  state: LinuxDetectionState;
+  /** Re-run the browser's environment signal on demand (e.g. "Detect again"). */
+  redetect: () => void;
+}
+
 /**
- * Best-effort, browser-only signal for whether the visitor is on Linux.
+ * The browser-only "is this Linux?" signal.
  *
- * This intentionally stops at "is this Linux" — normal browser APIs do not
- * reliably expose which distribution is running (Ubuntu vs. Debian vs.
- * Fedora vs. Arch), so exact distribution must always be a manual choice
- * (see `src/components/environment/distros.ts` and `DistroSelector`). Real distro detection
- * is a future local-agent capability, not something this hook should ever
- * try to fake.
+ * Best-effort and explicit about what it is not: normal browser APIs do not
+ * reliably expose which distribution is running (Ubuntu vs. Debian vs. Fedora
+ * vs. Arch), so exact distribution must always be a manual choice (see
+ * `src/components/environment/distros.ts` and `DistroSelector`). Real distro
+ * detection is a future local-agent capability, not something this hook should
+ * ever try to fake.
+ *
+ * `attempt` is a counter, not an input: the signal is deterministic for a
+ * given environment, so detection is re-run on demand via `redetect` rather
+ * than recomputed from changing data.
  */
-export function useLinuxDetection(): LinuxDetectionState {
-  return useMemo(() => {
-    if (typeof navigator === 'undefined') return 'unknown';
+export function useLinuxDetection(): LinuxDetection {
+  const [attempt, setAttempt] = useState(0);
+  const [state, setState] = useState<LinuxDetectionState>('unknown');
 
-    // Prefer the modern, structured signal where available (Chromium-based
-    // browsers). Cast because userAgentData isn't in all lib.dom versions.
-    const uaData = (navigator as Navigator & { userAgentData?: { platform?: string } })
-      .userAgentData;
-    if (uaData?.platform) {
-      return uaData.platform.toLowerCase() === 'linux' ? 'linux' : 'not-linux';
-    }
+  useEffect(() => {
+    setState(detectLinux());
+  }, [attempt]);
 
-    const ua = navigator.userAgent || '';
-    const platform = navigator.platform || '';
+  const redetect = useCallback(() => setAttempt((n) => n + 1), []);
 
-    // Android's UA/platform strings also contain "Linux" (it's Linux-based)
-    // — exclude it so Android visitors aren't told they're "on Linux".
-    if (/android/i.test(ua)) return 'not-linux';
+  return { state, redetect };
+}
 
-    if (/linux/i.test(ua) || /linux/i.test(platform)) return 'linux';
+function detectLinux(): LinuxDetectionState {
+  if (typeof navigator === 'undefined') return 'unknown';
 
-    return 'not-linux';
-  }, []);
+  // Prefer the modern, structured signal where available (Chromium-based
+  // browsers). Cast because userAgentData isn't in all lib.dom versions.
+  const uaData = (navigator as Navigator & { userAgentData?: { platform?: string } })
+    .userAgentData;
+  if (uaData?.platform) {
+    return uaData.platform.toLowerCase() === 'linux' ? 'linux' : 'not-linux';
+  }
+
+  const ua = navigator.userAgent || '';
+  const platform = navigator.platform || '';
+
+  // Android's UA/platform strings also contain "Linux" (it's Linux-based)
+  // — exclude it so Android visitors aren't told they're "on Linux".
+  if (/android/i.test(ua)) return 'not-linux';
+
+  if (/linux/i.test(ua) || /linux/i.test(platform)) return 'linux';
+
+  return 'not-linux';
 }

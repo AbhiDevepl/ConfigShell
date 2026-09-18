@@ -126,8 +126,8 @@ export function SelectionBar({
 
           {canContinue ? (
             <Button type="button" onClick={onContinue}>
-              <span className="sm:hidden">Build plan</span>
-              <span className="hidden sm:inline">Build setup plan</span>
+              <span className="sm:hidden">Generate plan</span>
+              <span className="hidden sm:inline">Generate setup plan</span>
               <ArrowRight aria-hidden="true" />
             </Button>
           ) : (
@@ -141,8 +141,8 @@ export function SelectionBar({
                   className="cursor-not-allowed opacity-60"
                   onClick={(event) => event.preventDefault()}
                 >
-                  <span className="sm:hidden">Build plan</span>
-                  <span className="hidden sm:inline">Build setup plan</span>
+                  <span className="sm:hidden">Generate plan</span>
+                  <span className="hidden sm:inline">Generate setup plan</span>
                   <ArrowRight aria-hidden="true" />
                 </Button>
               </TooltipTrigger>

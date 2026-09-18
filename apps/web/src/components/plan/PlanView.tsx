@@ -305,6 +305,24 @@ function PlanBody({ plan }: { plan: SetupPlan }) {
         </section>
       )}
 
+      {/* A privileged step deserves its own warning in its own box — it
+          changes the system, and saying so once at the top of the command
+          list is easier to miss. Not "destructive": a root command is not an
+          error, and it must not borrow the error colour. */}
+      {commands.some((c) => c.privileged) && (
+        <div className="plan-section-block">
+          <Alert>
+            <ShieldAlert aria-hidden="true" />
+            <AlertTitle>Important</AlertTitle>
+            <AlertDescription>
+              Steps marked “Runs as root” change your system — the flag is the resolver&apos;s
+              signal that a command needs elevated privileges. ConfigShell never runs a command
+              for you; read each one and execute it yourself in your own terminal.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       {commands.some((c) => c.stepKind === 'verify') && (
         <div className="plan-section-block">
           <VerificationNote />

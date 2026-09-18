@@ -7,8 +7,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppCatalog } from '@/components/applications/AppCatalog';
 import { AppDetailSheet } from '@/components/applications/AppDetailSheet';
 import { EnvironmentStep } from '@/components/environment/EnvironmentStep';
+import { AppShell } from '@/components/layout/AppShell';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { SiteHeader } from '@/components/layout/SiteHeader';
+import { PageIntro } from '@/components/layout/PageIntro';
 import { PlanView } from '@/components/plan/PlanView';
 import { RoleSelector } from '@/components/roles/RoleSelector';
 import { SelectionBar } from '@/components/selection/SelectionBar';
@@ -150,22 +151,13 @@ export default function App() {
 
   return (
     <TooltipProvider>
-      <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
-        <SiteHeader />
-
+      <AppShell>
         <PageContainer as="main" ref={mainRef} className="flex-1 pb-6">
           {view === 'build' ? (
             <>
-              <section className="motion-entrance-header pt-2.5 pb-2">
-                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                  <h1 className="text-sm font-semibold tracking-tight sm:text-base">
-                    Install the Linux apps you actually need.
-                  </h1>
-                  <p className="text-xs text-muted-foreground">
-                    Pick your distribution, choose applications, and get the exact commands. Nothing installs automatically.
-                  </p>
-                </div>
-              </section>
+              <div className="motion-entrance-header">
+                <PageIntro />
+              </div>
 
               {/*
                 The page grid. One column until there is room for two; then
@@ -246,7 +238,7 @@ export default function App() {
           onToggle={toggleApp}
           onOpenChange={(open) => !open && setDetailApp(null)}
         />
-      </div>
+      </AppShell>
     </TooltipProvider>
   );
 }

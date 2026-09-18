@@ -69,6 +69,13 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 
 ### Changed
 
+- **The web app's shell and environment steps match the V1 design spec.** A new
+  `AppShell` owns the page frame (the site header is now sticky), the page intro is its
+  own `PageIntro` component, the environment card offers a "Detect again" action, and
+  each role preset card carries its category icon. The selection panel's primary action
+  is labelled "Generate setup plan", and privileged commands get a dedicated "Important"
+  alert on the setup-plan page. No behaviour or data flow changed.
+
 - **The API server is TypeScript and lives under `apps/server/src/`.** The Express app,
   routes, controllers, services, validators and middleware moved from `apps/server/*.js`
   into `apps/server/src/**/*.ts`, and the JS-with-JSDoc typechecking (an `noImplicitAny`
