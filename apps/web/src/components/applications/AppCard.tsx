@@ -1,34 +1,12 @@
-import {
-  Brain,
-  Code,
-  Gamepad2,
-  Globe,
-  GraduationCap,
-  Info,
-  Laptop,
-  Server,
-  Star,
-  Video,
-} from 'lucide-react';
-import { type ComponentType, useRef } from 'react';
+import { Info, Star } from 'lucide-react';
+import { useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import type { Application, Category } from '@configshell/catalog';
+import type { Application } from '@configshell/catalog';
+import { CATEGORY_ICON } from './categoryIcon';
 import { gsap, useGSAP, prefersReducedMotion, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
-
-// Safe, generic per-category placeholders — unified with role-oriented filter chip navigation icons.
-const CATEGORY_ICON: Record<Category, ComponentType<{ className?: string }>> = {
-  General: Laptop,
-  Student: GraduationCap,
-  Developer: Code,
-  'Web Developer': Globe,
-  DevOps: Server,
-  'Data & AI': Brain,
-  'Content Creator': Video,
-  Gaming: Gamepad2,
-};
 
 interface AppCardProps {
   app: Application;

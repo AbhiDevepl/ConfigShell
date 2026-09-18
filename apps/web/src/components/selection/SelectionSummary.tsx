@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -77,13 +78,22 @@ export function SelectionSummary({
     <Card ref={cardRef} className="hidden lg:block border-border shadow-xs">
       <CardHeader className="flex-row items-center justify-between p-3.5 pb-2">
         <CardTitle className="text-sm font-semibold">Selected applications</CardTitle>
-        <span
+        {/*
+          A badge rather than a third line of grey text: the count is a status,
+          and giving it its own weight is what stops the heading, the count and
+          the empty-state title from all reading as the same thing. It stays a
+          live region so the number is announced when it changes, and the word
+          "selected" stays in the text so it is not a bare number to a screen
+          reader.
+        */}
+        <Badge
           ref={countRef}
-          className="text-xs font-medium text-muted-foreground inline-block"
+          variant={selectedApps.length > 0 ? 'secondary' : 'outline'}
+          className="h-5 shrink-0 px-1.5 text-[11px] font-medium tabular-nums"
           aria-live="polite"
         >
           {selectedApps.length} selected
-        </span>
+        </Badge>
       </CardHeader>
 
       <CardContent className="p-3.5 pt-1 flex flex-col gap-2.5">
@@ -97,10 +107,19 @@ export function SelectionSummary({
           </div>
         )}
 
-        <Separator className="my-0.5" />
+        {/*
+          The primary action only exists once something is selected. With an
+          empty selection there is nothing to build, and a permanently disabled
+          button under an empty list says less than the empty state above it
+          already does.
 
-        {onContinue && (
-          <div>
+          It still renders disabled-with-a-reason for the *other* blocker — a
+          selection but no distribution — because there the user has done
+          something and deserves to be told what is missing.
+        */}
+        {selectedApps.length > 0 && onContinue && (
+          <>
+            <Separator className="my-0.5" />
             {canContinue ? (
               <Button type="button" onClick={onContinue} className="build-plan-button w-full justify-center transition-colors">
                 <span>Build setup plan</span>
@@ -129,13 +148,15 @@ export function SelectionSummary({
                 {blockedReason}
               </p>
             )}
-          </div>
-        )}
 
-        <p className="border-t border-border pt-2 text-[11px] text-muted-foreground leading-tight">
-          Choose a distribution, then build the setup plan to see the exact commands.
-          ConfigShell never installs anything itself.
-        </p>
+            {/* The standing promise, kept next to the button that is about to
+                produce commands — where it is actually load-bearing. */}
+            <p className="text-[11px] leading-tight text-muted-foreground">
+              ConfigShell never installs anything itself — you get the commands and run
+              them yourself.
+            </p>
+          </>
+        )}
       </CardContent>
     </Card>
   );
