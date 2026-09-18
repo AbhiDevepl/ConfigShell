@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Empty, EmptyDescription, EmptyTitle } from '@/components/ui/empty';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Application } from '@configshell/catalog';
-import { gsap, useGSAP, prefersReducedMotion, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
+import { gsap, useGSAP, shouldSkipEntrance, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
 
 interface SelectionListProps {
   selectedApps: Application[];
@@ -18,7 +18,7 @@ export function SelectionList({ selectedApps, onRemove }: SelectionListProps) {
 
   useGSAP(
     () => {
-      if (prefersReducedMotion() || !containerRef.current) return;
+      if (shouldSkipEntrance() || !containerRef.current) return;
 
       if (selectedApps.length === 0) {
         const emptyEl = containerRef.current.querySelector('.selection-empty-state');

@@ -91,6 +91,20 @@
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
+    /*
+     * Layout scale. One home for the page-level numbers, so a component never
+     * has to invent its own container width, gutter or section gap. Everything
+     * that spans the page reads these via `PageContainer`; sections read
+     * --layout-gap for the space between them.
+     *
+     * --layout-scroll-offset is the vertical space the header, page intro and
+     * gutters take above the catalog's own scroll region on desktop. It is a
+     * measured value, not a guess — see AppCatalog.
+     */
+    --layout-max-width: 80rem;
+    --layout-gutter: 1rem;
+    --layout-gap: 0.875rem;
+    --layout-scroll-offset: 21.5rem;
     --radius: 0.625rem;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
@@ -140,6 +154,12 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+}
+
+@media (min-width: 40rem) {
+    :root {
+        --layout-gutter: 1.5rem;
+    }
 }
 
 @layer base {

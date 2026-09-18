@@ -23,7 +23,7 @@ import type { ApiRequestError, SetupPlan } from '@/lib/api';
 import { OUTCOMES, PLAN_STATUS } from '@/components/plan/outcomes';
 import { CommandBlock } from './CommandBlock';
 import { cn } from '@/lib/utils';
-import { gsap, useGSAP, prefersReducedMotion, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
+import { gsap, useGSAP, prefersReducedMotion, shouldSkipEntrance, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
 
 interface PlanViewProps {
   status: PlanStatus;
@@ -49,7 +49,7 @@ export function PlanView({ status, plan, error, onBack, onRetry }: PlanViewProps
 
   useGSAP(
     () => {
-      if (prefersReducedMotion() || !containerRef.current) return;
+      if (shouldSkipEntrance() || !containerRef.current) return;
 
       gsap.fromTo(
         '.plan-header-block',
@@ -99,7 +99,7 @@ function PlanLoading() {
 
   useGSAP(
     () => {
-      if (prefersReducedMotion() || !loadingRef.current) return;
+      if (shouldSkipEntrance() || !loadingRef.current) return;
       const skeletons = loadingRef.current.querySelectorAll('.loading-skeleton');
       if (skeletons.length > 0) {
         gsap.fromTo(
@@ -194,7 +194,7 @@ function PlanBody({ plan }: { plan: SetupPlan }) {
 
   useGSAP(
     () => {
-      if (prefersReducedMotion() || !bodyRef.current) return;
+      if (shouldSkipEntrance() || !bodyRef.current) return;
       const sections = bodyRef.current.querySelectorAll('.plan-section-block');
       if (sections.length > 0) {
         gsap.fromTo(
@@ -254,6 +254,12 @@ function PlanBody({ plan }: { plan: SetupPlan }) {
       <div className="plan-section-block">
         <PlanSummary plan={plan} />
       </div>
+
+      {plan.resolutions.length > 0 && (
+        <div className="plan-section-block">
+          <ResolutionTable resolutions={plan.resolutions} />
+        </div>
+      )}
 
       {commands.length > 0 && (
         <section aria-labelledby="commands-heading" className="plan-section-block">
@@ -348,7 +354,7 @@ function PlanSummary({ plan }: { plan: SetupPlan }) {
 
   useGSAP(
     () => {
-      if (prefersReducedMotion() || !summaryRef.current) return;
+      if (shouldSkipEntrance() || !summaryRef.current) return;
       const tiles = summaryRef.current.querySelectorAll('.plan-outcome-tile');
       if (tiles.length > 0) {
         gsap.fromTo(
@@ -418,6 +424,77 @@ function PlanSummary({ plan }: { plan: SetupPlan }) {
         </dl>
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * What happened to each selected application, one row each.
+ *
+ * The sections below this one group by outcome, which answers "what do I run"
+ * but not "what happened to the thing I picked" — with a dozen applications a
+ * user had to scan three lists to find one name. This is the same data the
+ * resolver already returned (`plan.resolutions`), in selection order.
+ *
+ * A CSS grid rather than a `<table>`: the columns need to collapse to two on a
+ * phone, which a table cannot do without losing its own semantics. The roles
+ * are declared explicitly so it is still announced as a table, and the header
+ * row is real rather than implied by styling.
+ */
+function ResolutionTable({ resolutions }: { resolutions: SetupPlan['resolutions'] }) {
+  const OUTCOME_FOR = {
+    resolved: OUTCOMES.installable,
+    manual: OUTCOMES.manual,
+    unavailable: OUTCOMES.unavailable,
+  } as const;
+
+  return (
+    <section aria-labelledby="resolutions-heading">
+      <h3 id="resolutions-heading" className="text-sm font-medium">
+        What happened to each application
+      </h3>
+
+      <div
+        role="table"
+        aria-labelledby="resolutions-heading"
+        className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 overflow-hidden rounded-lg border border-border sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]"
+      >
+        <div role="row" className="col-span-full grid grid-cols-subgrid border-b border-border bg-muted/50 px-3 py-1.5">
+          <span role="columnheader" className="text-xs font-medium text-muted-foreground">
+            Application
+          </span>
+          {/* The method is the one column worth dropping on a phone: it is
+              repeated in full next to every command further down the page. */}
+          <span role="columnheader" className="hidden text-xs font-medium text-muted-foreground sm:block">
+            Method
+          </span>
+          <span role="columnheader" className="text-right text-xs font-medium text-muted-foreground">
+            Status
+          </span>
+        </div>
+
+        {resolutions.map((resolution) => {
+          const { label, Icon, text } = OUTCOME_FOR[resolution.outcome];
+          return (
+            <div
+              key={resolution.applicationId}
+              role="row"
+              className="col-span-full grid grid-cols-subgrid items-center border-b border-border/60 px-3 py-1.5 last:border-b-0"
+            >
+              <span role="cell" className="truncate text-sm">
+                {resolution.applicationName}
+              </span>
+              <span role="cell" className="hidden truncate font-mono text-xs text-muted-foreground sm:block">
+                {resolution.source ? `${resolution.source.method} · ${resolution.source.identifier}` : '—'}
+              </span>
+              <span role="cell" className={cn('flex items-center justify-end gap-1.5 text-xs whitespace-nowrap', text)}>
+                <Icon aria-hidden="true" className="size-3.5 shrink-0" />
+                {label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

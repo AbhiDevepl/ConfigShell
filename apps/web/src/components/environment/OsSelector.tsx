@@ -23,7 +23,7 @@ export function OsSelector() {
         Operating system
       </legend>
 
-      <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+      <div className="mt-1.5 grid grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-1.5">
         {OPERATING_SYSTEMS.map((os) => (
           <div
             key={os.id}

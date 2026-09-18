@@ -105,7 +105,7 @@ test('unavailable applications are reported, never silently omitted', () => {
     id: 'nothing',
     name: 'Nothing',
     description: 'No verified sources.',
-    category: 'Utilities',
+    category: 'General',
     homepage: 'https://example.com',
     installation: [],
   };

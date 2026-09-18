@@ -1,15 +1,16 @@
 import { Github } from 'lucide-react';
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { ThemeToggle } from './ThemeToggle';
-import { gsap, useGSAP, prefersReducedMotion, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
+import { gsap, useGSAP, shouldSkipEntrance, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
 
 export function SiteHeader() {
   const headerRef = useRef<HTMLElement>(null);
 
   useGSAP(
     () => {
-      if (prefersReducedMotion()) return;
+      if (shouldSkipEntrance()) return;
 
       gsap.fromTo(
         '.header-brand',
@@ -42,7 +43,13 @@ export function SiteHeader() {
 
   return (
     <header ref={headerRef} className="w-full border-b border-border bg-card/40 backdrop-blur-xs">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
+      {/*
+        Three fixed roles: brand, context, actions. A grid rather than
+        `justify-between` so the middle track is the one that absorbs the
+        free space (and collapses first on a phone) — the brand and the
+        actions keep their own intrinsic width at every size.
+      */}
+      <PageContainer className="grid grid-cols-[auto_1fr_auto] items-center gap-3 py-2.5">
         <div className="header-brand flex items-center gap-2.5">
           <span
             aria-hidden="true"
@@ -53,10 +60,11 @@ export function SiteHeader() {
           <span className="text-sm font-semibold tracking-tight">ConfigShell</span>
         </div>
 
-        <div className="flex items-center gap-1">
-          <p className="header-action-item hidden text-xs text-muted-foreground sm:block sm:mr-2">
-            Discover Linux software. Nothing installs without your say.
-          </p>
+        <p className="header-action-item hidden min-w-0 truncate text-xs text-muted-foreground sm:block">
+          Discover Linux software. Nothing installs without your say.
+        </p>
+
+        <div className="col-start-3 flex items-center gap-1">
           <div className="header-action-item">
             <Button type="button" variant="ghost" size="icon" asChild>
               <a
@@ -73,7 +81,7 @@ export function SiteHeader() {
             <ThemeToggle />
           </div>
         </div>
-      </div>
+      </PageContainer>
     </header>
   );
 }

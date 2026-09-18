@@ -204,10 +204,14 @@ markup. `components.json` holds the shadcn config; see `CLAUDE.md`'s "shadcn/ui 
 section before adding more components or touching the `@/*` import alias.
 
 - `src/App.tsx` composes the page inside a `TooltipProvider`: `SiteHeader` (layout),
-  `LinuxDetectionCard` (detection), `DistroSelector` (distro), `AppCatalog` (applications,
-  which renders `AppCard`s), `SelectionSummary` (selection, desktop sidebar), and
-  `SelectionBar` (selection, sticky bottom bar — a sheet + inert "Continue" button on
-  mobile).
+  `EnvironmentStep` (which renders `LinuxDetectionCard` for detection, `OsSelector` and
+  `DistroSelector`), `RoleSelector` (presets), `AppCatalog` (applications, which renders
+  `AppCard`s), `SelectionSummary` (selection, desktop sidebar), and `SelectionBar`
+  (selection, sticky bottom bar — a sheet + inert "Continue" button on mobile).
+- Everything that spans the page — header, main grid, sticky selection bar — renders inside
+  `src/components/layout/PageContainer.tsx`, the single content container. Its width and
+  gutter come from `--layout-max-width` / `--layout-gutter` in `src/index.css`; a component
+  should never reintroduce its own `max-w-*` for page-level layout.
 - `src/hooks/useLinuxDetection.ts` — a browser-only signal for whether the visitor *looks
   like* they're on Linux (via `navigator.userAgentData`/`userAgent`, excluding Android).
   It never attempts to name a specific distribution — browsers can't reliably do that.

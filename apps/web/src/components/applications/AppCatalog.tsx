@@ -25,7 +25,7 @@ import {
   type Category,
 } from '@configshell/catalog';
 import { AppCard } from './AppCard';
-import { gsap, useGSAP, prefersReducedMotion, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
+import { gsap, useGSAP, shouldSkipEntrance, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
 
 interface AppCatalogProps {
   selectedIds: Set<string>;
@@ -150,7 +150,7 @@ export function AppCatalog({ selectedIds, onToggle, onOpenDetails }: AppCatalogP
 
   useGSAP(
     () => {
-      if (prefersReducedMotion() || !catalogRef.current) return;
+      if (shouldSkipEntrance() || !catalogRef.current) return;
 
       if (filtered.length === 0) {
         const emptyEl = catalogRef.current.querySelector('.catalog-empty-state');
@@ -270,7 +270,15 @@ export function AppCatalog({ selectedIds, onToggle, onOpenDetails }: AppCatalogP
 
       {/* Tabbed Navigation / Filter Chip Group */}
       <div className="mt-4">
-        <div className="-mx-6 overflow-x-auto px-6 sm:mx-0 sm:overflow-visible sm:px-0">
+        {/*
+          On a phone the strip bleeds to the container's own gutter so it can
+          scroll edge to edge. The margin and the padding have to be exactly
+          --layout-gutter, which is why both read the token: the old code bled
+          by 1.5rem against a 1rem gutter and made the whole page 8px wider
+          than the viewport. Off again from `sm`, where the chips wrap instead
+          — and where, from `lg`, a bleed would run under the selection panel.
+        */}
+        <div className="mx-[calc(var(--layout-gutter)*-1)] overflow-x-auto px-[var(--layout-gutter)] sm:mx-0 sm:overflow-visible sm:px-0">
           <div
             id={tabsListId}
             role="tablist"
@@ -423,9 +431,16 @@ export function AppCatalog({ selectedIds, onToggle, onOpenDetails }: AppCatalogP
             tabIndex={0}
             role="region"
             aria-label="Applications catalog list"
-            className="lg:max-h-[calc(100vh-21.5rem)] lg:min-h-[360px] lg:overflow-y-auto lg:pr-1.5 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none rounded-lg"
+            className="lg:max-h-[calc(100svh-var(--layout-scroll-offset))] lg:min-h-[360px] lg:overflow-y-auto lg:pr-1.5 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none rounded-lg"
           >
-            <div className="catalog-cards-grid grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+            {/*
+              auto-fill, not fixed breakpoints: the catalog sits in a column
+              whose width depends on whether the selection sidebar is showing,
+              so the card count has to follow the space it actually has. One
+              card at 320px, up to four on a 1920 desktop, without a media
+              query for each step.
+            */}
+            <div className="catalog-cards-grid grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-2.5">
               {filtered.map((app) => (
                 <AppCard
                   key={app.id}

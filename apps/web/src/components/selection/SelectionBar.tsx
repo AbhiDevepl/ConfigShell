@@ -1,11 +1,12 @@
 import { ArrowRight } from 'lucide-react';
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { APPLICATIONS } from '@configshell/catalog';
 import { SelectionList } from './SelectionList';
-import { gsap, useGSAP, prefersReducedMotion, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
+import { gsap, useGSAP, prefersReducedMotion, shouldSkipEntrance, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
 
 interface SelectionBarProps {
   selectedIds: Set<string>;
@@ -42,7 +43,7 @@ export function SelectionBar({
 
   useGSAP(
     () => {
-      if (prefersReducedMotion() || !barRef.current) return;
+      if (shouldSkipEntrance() || !barRef.current) return;
 
       // Initial slide-up entrance
       gsap.fromTo(
@@ -85,7 +86,7 @@ export function SelectionBar({
 
   return (
     <div ref={barRef} className="sticky bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur-xs lg:hidden">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
+      <PageContainer className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5">
         <div className="min-w-0">
           <p ref={countRef} className="text-sm font-medium">
             {/* Short on phones, where the bar shares a row with two buttons. */}
@@ -149,7 +150,7 @@ export function SelectionBar({
             </Tooltip>
           )}
         </div>
-      </div>
+      </PageContainer>
     </div>
   );
 }

@@ -55,7 +55,7 @@ test('an application whose only route needs a vendor repository becomes a manual
     id: 'vendor-only',
     name: 'Vendor Only',
     description: 'Only available from the vendor’s own apt repository.',
-    category: 'Utilities',
+    category: 'General',
     homepage: 'https://example.com',
     installation: [
       {
@@ -144,7 +144,7 @@ test('an application with no sources at all is unavailable, with a reason', () =
     id: 'nothing',
     name: 'Nothing',
     description: 'An application with no verified sources.',
-    category: 'Utilities',
+    category: 'General',
     homepage: 'https://example.com',
     installation: [],
   };
@@ -160,7 +160,7 @@ test('an application verified only for other distributions is unavailable here',
     id: 'debian-only',
     name: 'Debian Only',
     description: 'Verified for Debian alone.',
-    category: 'Utilities',
+    category: 'General',
     homepage: 'https://example.com',
     installation: [
       { method: 'apt', identifier: 'debian-only', origin: 'distro', distros: ['Debian'] },

@@ -2,7 +2,7 @@ import { CircleHelp, Laptop, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { useLinuxDetection } from '@/hooks/useLinuxDetection';
-import { gsap, useGSAP, prefersReducedMotion, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
+import { gsap, useGSAP, prefersReducedMotion, shouldSkipEntrance, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
 
 /**
  * Browser-only "does this look like Linux" indicator. Never attempts to
@@ -24,7 +24,7 @@ export function LinuxDetectionCard() {
 
   useGSAP(
     () => {
-      if (checking || prefersReducedMotion()) return;
+      if (checking || shouldSkipEntrance()) return;
       if (!cardRef.current) return;
 
       gsap.fromTo(

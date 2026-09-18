@@ -21,15 +21,15 @@
   "author": "AbhiDevepl",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@configshell/test-utils": "*",
+    "@configshell/test-utils": "workspace:*",
     "@types/express": "^5.0.0",
     "@types/node": "^22.14.0",
     "typescript": "~5.8.2"
   },
   "dependencies": {
-    "@configshell/catalog": "*",
-    "@configshell/installer": "*",
-    "@configshell/mcp": "*",
+    "@configshell/catalog": "workspace:*",
+    "@configshell/installer": "workspace:*",
+    "@configshell/mcp": "workspace:*",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "tsx": "^4.21.0"

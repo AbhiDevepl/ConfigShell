@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppCatalog } from '@/components/applications/AppCatalog';
 import { AppDetailSheet } from '@/components/applications/AppDetailSheet';
 import { EnvironmentStep } from '@/components/environment/EnvironmentStep';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { PlanView } from '@/components/plan/PlanView';
 import { RoleSelector } from '@/components/roles/RoleSelector';
@@ -15,7 +16,7 @@ import { SelectionSummary } from '@/components/selection/SelectionSummary';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useSetupPlan } from '@/hooks/useSetupPlan';
 import type { Application, Distro, Role } from '@configshell/catalog';
-import { gsap, useGSAP, prefersReducedMotion, MOTION_EASINGS } from '@/lib/motion';
+import { gsap, useGSAP, shouldSkipEntrance, MOTION_EASINGS } from '@/lib/motion';
 
 /**
  * The deterministic ConfigShell flow.
@@ -102,7 +103,7 @@ export default function App() {
 
   useGSAP(
     () => {
-      if (prefersReducedMotion() || !mainRef.current) return;
+      if (shouldSkipEntrance() || !mainRef.current) return;
 
       if (view === 'build') {
         const tl = gsap.timeline();
@@ -152,7 +153,7 @@ export default function App() {
       <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
         <SiteHeader />
 
-        <main ref={mainRef} className="mx-auto w-full max-w-7xl flex-1 px-4 pb-6 sm:px-6">
+        <PageContainer as="main" ref={mainRef} className="flex-1 pb-6">
           {view === 'build' ? (
             <>
               <section className="motion-entrance-header pt-2.5 pb-2">
@@ -166,8 +167,23 @@ export default function App() {
                 </div>
               </section>
 
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_310px] xl:grid-cols-[1fr_340px] lg:items-start">
-                <div className="flex min-w-0 flex-col gap-3.5">
+              {/*
+                The page grid. One column until there is room for two; then
+                primary content takes the free space and the selection panel
+                gets a bounded, readable column. `minmax(0, 1fr)` rather than
+                `1fr` on the first track: a bare `1fr` has a min-content floor,
+                so a long command or identifier inside the catalog would widen
+                the whole page instead of wrapping.
+              */}
+              <div className="grid grid-cols-1 gap-(--layout-gap) lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-start">
+                {/*
+                  `minmax(0, 1fr)` on the single column is load-bearing, not
+                  decoration: a grid item's default `min-width: auto` lets a
+                  nowrap label inside the environment cards size this track to
+                  max-content, which pushed the whole page past 1200px on a
+                  phone. An `auto` track would do it again.
+                */}
+                <div className="grid auto-rows-min grid-cols-[minmax(0,1fr)] gap-(--layout-gap)">
                   <div className="motion-entrance-env">
                     <EnvironmentStep distro={distro} onSelect={setDistro} />
                   </div>
@@ -187,7 +203,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="motion-entrance-summary lg:sticky lg:top-3">
+                <div className="motion-entrance-summary lg:sticky lg:top-3 lg:max-h-[calc(100svh-1.5rem)] lg:overflow-y-auto">
                   <SelectionSummary
                     selectedIds={selectedIds}
                     onRemove={removeApp}
@@ -210,7 +226,7 @@ export default function App() {
               />
             </div>
           )}
-        </main>
+        </PageContainer>
 
         {view === 'build' && (
           <SelectionBar

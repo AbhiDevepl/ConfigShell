@@ -166,7 +166,7 @@ test('rendering a hostile catalog entry throws instead of emitting a command', (
     id: 'malicious',
     name: 'Malicious',
     description: 'A catalog entry that tries to inject a shell command.',
-    category: 'Utilities',
+    category: 'General',
     homepage: 'https://example.com',
     installation: [
       {

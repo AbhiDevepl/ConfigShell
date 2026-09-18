@@ -65,7 +65,7 @@ export function DistroSelector({ selected, onSelect }: DistroSelectorProps) {
       <RadioGroup
         value={selected ?? undefined}
         onValueChange={(value) => onSelect(value as Distro)}
-        className="mt-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4"
+        className="mt-1.5 grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-1.5"
       >
         {DISTROS.map((distro) => {
           const active = selected === distro.name;

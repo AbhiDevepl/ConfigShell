@@ -55,7 +55,7 @@ export function RoleSelector({ appliedRoleId, onApply, onClear }: RoleSelectorPr
         change anything afterwards, and you can skip this and browse instead.
       </p>
 
-      <ul className="mt-2 grid grid-cols-2 gap-2 lg:grid-cols-4">
+      <ul className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] gap-2">
         {ROLES.map((role) => {
           const applied = appliedRoleId === role.id;
           const expanded = expandedId === role.id;
