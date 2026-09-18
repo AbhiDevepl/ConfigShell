@@ -1,6 +1,7 @@
 import {
   AlertCircle,
   ArrowLeft,
+  Check,
   CheckCircle2,
   Copy,
   ExternalLink,
@@ -9,6 +10,7 @@ import {
   ShieldAlert,
   TerminalSquare,
 } from 'lucide-react';
+import { useRef } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,6 +22,8 @@ import type { PlanStatus } from '@/hooks/useSetupPlan';
 import type { ApiRequestError, SetupPlan } from '@/lib/api';
 import { OUTCOMES, PLAN_STATUS } from '@/components/plan/outcomes';
 import { CommandBlock } from './CommandBlock';
+import { cn } from '@/lib/utils';
+import { gsap, useGSAP, prefersReducedMotion, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
 
 interface PlanViewProps {
   status: PlanStatus;
@@ -41,9 +45,30 @@ interface PlanViewProps {
  * The page never executes anything, and says so.
  */
 export function PlanView({ status, plan, error, onBack, onRetry }: PlanViewProps) {
+  const containerRef = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion() || !containerRef.current) return;
+
+      gsap.fromTo(
+        '.plan-header-block',
+        { opacity: 0, y: 6 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: MOTION_DURATIONS.normal,
+          ease: MOTION_EASINGS.subtle,
+          clearProps: 'transform',
+        },
+      );
+    },
+    { scope: containerRef },
+  );
+
   return (
-    <section aria-labelledby="plan-heading">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <section ref={containerRef} aria-labelledby="plan-heading">
+      <div className="plan-header-block flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 id="plan-heading" className="text-xl font-semibold tracking-tight">
             Your setup plan
@@ -70,15 +95,39 @@ export function PlanView({ status, plan, error, onBack, onRetry }: PlanViewProps
 }
 
 function PlanLoading() {
+  const loadingRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion() || !loadingRef.current) return;
+      const skeletons = loadingRef.current.querySelectorAll('.loading-skeleton');
+      if (skeletons.length > 0) {
+        gsap.fromTo(
+          skeletons,
+          { opacity: 0, y: 4 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: MOTION_DURATIONS.normal,
+            stagger: 0.05,
+            ease: MOTION_EASINGS.subtle,
+            clearProps: 'transform',
+          },
+        );
+      }
+    },
+    { scope: loadingRef },
+  );
+
   return (
-    <div className="flex flex-col gap-3">
+    <div ref={loadingRef} className="flex flex-col gap-3">
       <p className="flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 aria-hidden="true" className="size-4 animate-spin" />
         Resolving your selection against the catalog…
       </p>
       {/* Skeleton shaped like the result, so the layout does not jump. */}
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-16 animate-pulse rounded-lg border border-border bg-muted/40" />
+        <div key={i} className="loading-skeleton h-16 animate-pulse rounded-lg border border-border bg-muted/40" />
       ))}
     </div>
   );
@@ -140,6 +189,51 @@ function PlanBody({ plan }: { plan: SetupPlan }) {
   const { state: copyAllState, copy: copyAll } = useClipboard();
   const { commands, manualSteps, unavailable } = plan;
   const script = commands.map((c) => c.command).join('\n');
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const copyBtnRef = useRef<HTMLButtonElement>(null);
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion() || !bodyRef.current) return;
+      const sections = bodyRef.current.querySelectorAll('.plan-section-block');
+      if (sections.length > 0) {
+        gsap.fromTo(
+          sections,
+          { opacity: 0, y: 8 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: MOTION_DURATIONS.normal,
+            stagger: 0.05,
+            ease: MOTION_EASINGS.subtle,
+            clearProps: 'transform',
+          },
+        );
+      }
+    },
+    { scope: bodyRef },
+  );
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion() || copyAllState !== 'copied' || !copyBtnRef.current) return;
+      const icon = copyBtnRef.current.querySelector('.copy-all-icon');
+      if (icon) {
+        gsap.fromTo(
+          icon,
+          { scale: 0.6, opacity: 0 },
+          {
+            scale: 1,
+            opacity: 1,
+            duration: MOTION_DURATIONS.micro,
+            ease: MOTION_EASINGS.subtle,
+            clearProps: 'transform,opacity',
+          },
+        );
+      }
+    },
+    { dependencies: [copyAllState], scope: copyBtnRef },
+  );
 
   if (commands.length === 0 && manualSteps.length === 0 && unavailable.length === 0) {
     return (
@@ -156,17 +250,23 @@ function PlanBody({ plan }: { plan: SetupPlan }) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <PlanSummary plan={plan} />
+    <div ref={bodyRef} className="flex flex-col gap-6">
+      <div className="plan-section-block">
+        <PlanSummary plan={plan} />
+      </div>
 
       {commands.length > 0 && (
-        <section aria-labelledby="commands-heading">
+        <section aria-labelledby="commands-heading" className="plan-section-block">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 id="commands-heading" className="text-sm font-medium">
               Run these in your terminal, in order
             </h3>
-            <Button type="button" variant="outline" size="sm" onClick={() => copyAll(script)}>
-              <Copy aria-hidden="true" />
+            <Button ref={copyBtnRef} type="button" variant="outline" size="sm" onClick={() => copyAll(script)}>
+              {copyAllState === 'copied' ? (
+                <Check aria-hidden="true" className={cn('copy-all-icon', OUTCOMES.installable.text)} />
+              ) : (
+                <Copy aria-hidden="true" className="copy-all-icon" />
+              )}
               {copyAllState === 'copied' ? 'Copied' : 'Copy all'}
             </Button>
           </div>
@@ -199,14 +299,26 @@ function PlanBody({ plan }: { plan: SetupPlan }) {
         </section>
       )}
 
-      {commands.some((c) => c.stepKind === 'verify') && <VerificationNote />}
+      {commands.some((c) => c.stepKind === 'verify') && (
+        <div className="plan-section-block">
+          <VerificationNote />
+        </div>
+      )}
 
-      {manualSteps.length > 0 && <ManualSteps steps={manualSteps} />}
-      {unavailable.length > 0 && <UnavailableList entries={unavailable} />}
+      {manualSteps.length > 0 && (
+        <div className="plan-section-block">
+          <ManualSteps steps={manualSteps} />
+        </div>
+      )}
+      {unavailable.length > 0 && (
+        <div className="plan-section-block">
+          <UnavailableList entries={unavailable} />
+        </div>
+      )}
 
-      <Separator />
+      <Separator className="plan-section-block" />
 
-      <p className="flex items-start gap-2 text-xs text-muted-foreground">
+      <p className="plan-section-block flex items-start gap-2 text-xs text-muted-foreground">
         <ShieldAlert aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
         <span>
           {commands.length > 0 ? (
@@ -232,6 +344,29 @@ function PlanSummary({ plan }: { plan: SetupPlan }) {
   const { summary } = plan;
   const status = PLAN_STATUS[plan.status];
   const StatusIcon = status.Icon;
+  const summaryRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion() || !summaryRef.current) return;
+      const tiles = summaryRef.current.querySelectorAll('.plan-outcome-tile');
+      if (tiles.length > 0) {
+        gsap.fromTo(
+          tiles,
+          { opacity: 0, scale: 0.96 },
+          {
+            opacity: 1,
+            scale: 1,
+            duration: MOTION_DURATIONS.normal,
+            stagger: 0.03,
+            ease: MOTION_EASINGS.subtle,
+            clearProps: 'transform',
+          },
+        );
+      }
+    },
+    { scope: summaryRef },
+  );
 
   /*
    * Four counts, four outcomes, one presentation map. Each tile carries its
@@ -246,7 +381,7 @@ function PlanSummary({ plan }: { plan: SetupPlan }) {
   ];
 
   return (
-    <Card>
+    <Card ref={summaryRef}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <StatusIcon aria-hidden="true" className={`size-4 shrink-0 ${status.tone}`} />
@@ -263,7 +398,7 @@ function PlanSummary({ plan }: { plan: SetupPlan }) {
           {tiles.map(({ outcome, value }) => {
             const { label, Icon, text } = OUTCOMES[outcome];
             return (
-              <div key={outcome} className="rounded-lg bg-muted/50 px-3 py-2">
+              <div key={outcome} className="plan-outcome-tile rounded-lg bg-muted/50 px-3 py-2">
                 <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Icon aria-hidden="true" className={`size-3.5 shrink-0 ${text}`} />
                   {label}

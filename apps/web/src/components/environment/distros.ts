@@ -23,7 +23,6 @@ export interface DistroInfo {
 
 export const DISTROS: DistroInfo[] = [
   { name: 'Ubuntu', description: 'Popular, beginner-friendly Debian-based distribution.' },
-  { name: 'Debian', description: 'Stable, community-driven distribution Ubuntu is built on.' },
   { name: 'Fedora', description: 'Cutting-edge distribution backed by Red Hat.' },
   { name: 'Arch Linux', description: 'Minimal, rolling-release distribution for hands-on users.' },
   { name: 'openSUSE', description: 'Enterprise-grade distribution using the zypper package manager.' },

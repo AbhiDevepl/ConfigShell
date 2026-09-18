@@ -187,6 +187,21 @@ export function validateCatalog(applications: readonly Application[]): string[] 
       }
     }
 
+    if (app.featured !== undefined && typeof app.featured !== 'boolean') {
+      errors.push(`${app.id}: featured must be a boolean`);
+    }
+
+    if (app.popularity !== undefined) {
+      if (
+        typeof app.popularity !== 'number' ||
+        Number.isNaN(app.popularity) ||
+        app.popularity < 0 ||
+        app.popularity > 100
+      ) {
+        errors.push(`${app.id}: popularity must be a number between 0 and 100`);
+      }
+    }
+
     const seenSources = new Set<string>();
     for (const source of app.installation) {
       validateSource(source, app.id, seenSources, errors);

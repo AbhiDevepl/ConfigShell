@@ -1,9 +1,11 @@
 import { Check, Copy, X } from 'lucide-react';
+import { useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useClipboard } from '@/hooks/useClipboard';
 import { OUTCOMES } from '@/components/plan/outcomes';
 import { cn } from '@/lib/utils';
+import { gsap, useGSAP, prefersReducedMotion, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
 
 interface CommandBlockProps {
   command: string;
@@ -27,6 +29,28 @@ interface CommandBlockProps {
 export function CommandBlock({ command, privileged, summary, note }: CommandBlockProps) {
   const { state, copy } = useClipboard();
   const PrivilegedIcon = OUTCOMES.privileged.Icon;
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion() || state !== 'copied' || !buttonRef.current) return;
+      const icon = buttonRef.current.querySelector('.copy-feedback-icon');
+      if (icon) {
+        gsap.fromTo(
+          icon,
+          { scale: 0.6, opacity: 0 },
+          {
+            scale: 1,
+            opacity: 1,
+            duration: MOTION_DURATIONS.micro,
+            ease: MOTION_EASINGS.subtle,
+            clearProps: 'transform,opacity',
+          },
+        );
+      }
+    },
+    { dependencies: [state], scope: buttonRef },
+  );
 
   return (
     <div
@@ -64,6 +88,7 @@ export function CommandBlock({ command, privileged, summary, note }: CommandBloc
         </code>
 
         <Button
+          ref={buttonRef}
           type="button"
           variant="ghost"
           size="icon-sm"
@@ -74,7 +99,7 @@ export function CommandBlock({ command, privileged, summary, note }: CommandBloc
           aria-label={`Copy command: ${command}`}
         >
           {state === 'copied' ? (
-            <Check aria-hidden="true" className={OUTCOMES.installable.text} />
+            <Check aria-hidden="true" className={cn('copy-feedback-icon', OUTCOMES.installable.text)} />
           ) : state === 'failed' ? (
             <X aria-hidden="true" className="text-destructive" />
           ) : (

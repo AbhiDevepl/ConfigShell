@@ -1,0 +1,6 @@
+{
+  "name": "ConfigShell",
+  "description": "Discover Linux applications, pick a distribution, and build a selection to install yourself.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

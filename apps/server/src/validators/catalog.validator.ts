@@ -10,6 +10,7 @@
 import {
   APPLICATION_ID_PATTERN,
   CATEGORIES,
+  CATEGORY_DEFINITIONS,
   MAX_APPLICATION_ID_LENGTH,
   type Category,
 } from "@configshell/catalog";
@@ -26,12 +27,19 @@ const MAX_QUERY_LENGTH = 100;
 // belongs — the catalog validator enforces the same pattern on its own data.
 
 /**
- * Narrowing guard rather than a bare `includes` check, so the value that leaves
- * this module is typed as a catalog `Category` instead of a `string` that
- * happens to have been checked.
+ * Resolves a category name or slug to a typed catalog Category.
  */
-function isCategory(value: unknown): value is Category {
-  return typeof value === "string" && (CATEGORIES as readonly string[]).includes(value);
+function parseCategory(value: unknown): Category | undefined {
+  if (typeof value !== "string") return undefined;
+  const exact = (CATEGORIES as readonly string[]).find((c) => c === value);
+  if (exact) return exact as Category;
+  const match = (CATEGORIES as readonly string[]).find(
+    (c) => c.toLowerCase() === value.toLowerCase(),
+  );
+  if (match) return match as Category;
+  const byId = CATEGORY_DEFINITIONS.find((d) => d.id === value.toLowerCase());
+  if (byId) return byId.name;
+  return undefined;
 }
 
 export function parseSearchQuery(queryParams: { query?: unknown; category?: unknown }) {
@@ -44,11 +52,15 @@ export function parseSearchQuery(queryParams: { query?: unknown; category?: unkn
     throw ApiError.invalidRequest(`query must be at most ${MAX_QUERY_LENGTH} characters.`);
   }
 
-  if (category !== undefined && !isCategory(category)) {
-    throw ApiError.invalidRequest("Unknown category.", { supported: [...CATEGORIES] });
+  let resolvedCategory: Category | undefined;
+  if (category !== undefined) {
+    resolvedCategory = parseCategory(category);
+    if (!resolvedCategory) {
+      throw ApiError.invalidRequest("Unknown category.", { supported: [...CATEGORIES] });
+    }
   }
 
-  return { query, category };
+  return { query, category: resolvedCategory };
 }
 
 /**

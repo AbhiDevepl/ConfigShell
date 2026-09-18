@@ -10,10 +10,10 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "@configshell/catalog": "workspace:*",
-    "@configshell/mcp": "workspace:*",
+    "@configshell/catalog": "*",
+    "@configshell/mcp": "*",
     "@types/node": "^22.14.0",
-    "server": "workspace:*",
+    "server": "*",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2"
   }

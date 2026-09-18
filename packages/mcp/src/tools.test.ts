@@ -151,8 +151,9 @@ test('search_application searches and filters', () => {
     call('search_application', { query: 'vscode' }).applications.map((a: any) => a.id),
     ['vscode'],
   );
-  const browsers = call('search_application', { category: 'Browsers' });
-  assert.ok(browsers.applications.every((a: any) => a.category === 'Browsers'));
+  const general = call('search_application', { category: 'General' });
+  assert.ok(general.applications.length > 0);
+  assert.ok(general.applications.every((a: any) => a.category === 'General'));
 });
 
 test('search_application rejects an unknown category and an over-long query', () => {

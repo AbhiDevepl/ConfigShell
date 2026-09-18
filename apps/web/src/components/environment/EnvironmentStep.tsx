@@ -1,4 +1,3 @@
-import { LinuxDetectionCard } from './LinuxDetectionCard';
 import { DistroSelector } from './DistroSelector';
 import { OsSelector } from './OsSelector';
 import type { Distro } from '@configshell/catalog';
@@ -9,30 +8,18 @@ interface EnvironmentStepProps {
 }
 
 /**
- * Step 1 — establish the environment (PRD §9 FR-001, §10).
- *
- * Detection and selection sit together on purpose. The browser signal is
- * genuinely weak — it can suggest "this looks like Linux" and nothing more —
- * so it is presented as a hint directly above the control that actually decides,
- * rather than as a result the user might mistake for a detected distribution.
+ * Environment establishment — choose distribution and environment.
  */
 export function EnvironmentStep({ distro, onSelect }: EnvironmentStepProps) {
   return (
-    <section aria-labelledby="environment-heading">
-      <h2
-        id="environment-heading"
-        className="text-xs font-semibold tracking-wide text-muted-foreground"
-      >
-        1. Your environment
-      </h2>
-
-      <div className="mt-3">
-        <LinuxDetectionCard />
-      </div>
-
-      <div className="mt-5 flex flex-col gap-6">
-        <OsSelector />
-        <DistroSelector selected={distro} onSelect={onSelect} />
+    <section aria-label="Environment selection">
+      <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-12 lg:items-start">
+        <div className="lg:col-span-4">
+          <OsSelector />
+        </div>
+        <div className="lg:col-span-8">
+          <DistroSelector selected={distro} onSelect={onSelect} />
+        </div>
       </div>
     </section>
   );

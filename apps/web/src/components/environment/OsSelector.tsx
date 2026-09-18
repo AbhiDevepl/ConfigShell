@@ -1,4 +1,4 @@
-import { Check, Info } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -19,55 +19,49 @@ const OPERATING_SYSTEMS = [
 export function OsSelector() {
   return (
     <fieldset>
-      <legend className="text-sm font-medium">Operating system</legend>
+      <legend className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        Operating system
+      </legend>
 
-      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <div className="mt-1.5 grid grid-cols-3 gap-1.5">
         {OPERATING_SYSTEMS.map((os) => (
           <div
             key={os.id}
             aria-current={os.supported ? 'true' : undefined}
             className={cn(
-              'flex items-center justify-between gap-2 rounded-xl border px-3.5 py-3',
+              'flex flex-col justify-between gap-1 rounded-lg border px-2.5 py-1.5 text-xs transition-colors',
               os.supported
                 ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                : 'border-border bg-muted/40',
+                : 'border-border bg-muted/30 opacity-75',
             )}
           >
-            <span className="min-w-0">
+            <div className="flex items-center justify-between gap-1">
               <span
                 className={cn(
-                  'block text-sm font-medium',
+                  'font-medium text-xs',
                   !os.supported && 'text-muted-foreground',
                 )}
               >
                 {os.name}
               </span>
-              <span className="block text-xs text-balance text-muted-foreground">{os.note}</span>
-            </span>
 
-            {os.supported ? (
-              <span
-                aria-hidden="true"
-                className="flex size-4 shrink-0 items-center justify-center rounded-full border border-primary bg-primary text-primary-foreground"
-              >
-                <Check className="size-3" />
-              </span>
-            ) : (
-              <Badge variant="secondary" className="shrink-0">
-                Not yet
-              </Badge>
-            )}
+              {os.supported ? (
+                <span
+                  aria-hidden="true"
+                  className="flex size-3.5 shrink-0 items-center justify-center rounded-full border border-primary bg-primary text-primary-foreground"
+                >
+                  <Check className="size-2.5" />
+                </span>
+              ) : (
+                <Badge variant="secondary" className="h-4 px-1 text-[9px] shrink-0 font-normal">
+                  Planned
+                </Badge>
+              )}
+            </div>
+            <span className="block truncate text-[10px] text-muted-foreground">{os.note}</span>
           </div>
         ))}
       </div>
-
-      <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
-        <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-        <span>
-          Linux is the only supported platform today, so it is selected for you. macOS and
-          Windows are on the roadmap and have no catalog data yet.
-        </span>
-      </p>
     </fieldset>
   );
 }

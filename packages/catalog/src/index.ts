@@ -8,6 +8,9 @@
 export {
   ARCHITECTURES,
   CATEGORIES,
+  CATEGORY_DEFINITIONS,
+  categories,
+  findCategory,
   DISTROS,
   DISTRO_FAMILIES,
   ECOSYSTEM_DISTROS,
@@ -17,6 +20,8 @@ export {
   type Application,
   type Architecture,
   type Category,
+  type CategoryId,
+  type CategoryDefinition,
   type Distro,
   type DistroFamily,
   type Environment,

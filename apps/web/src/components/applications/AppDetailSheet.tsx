@@ -7,6 +7,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   ShieldQuestion,
+  Star,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -117,6 +118,29 @@ export function AppDetailSheet({
             <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline">{app.category}</Badge>
+                {app.featured && (
+                  <Badge
+                    variant="secondary"
+                    className="gap-1 border-amber-500/30 bg-amber-500/10 text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300 font-medium"
+                  >
+                    <Star aria-hidden="true" className="size-3 fill-amber-500 text-amber-500 dark:fill-amber-400 dark:text-amber-400" />
+                    Featured
+                  </Badge>
+                )}
+                {!app.featured && app.popularity !== undefined && app.popularity >= 90 && (
+                  <Badge
+                    variant="secondary"
+                    className="gap-1 border-amber-500/30 bg-amber-500/10 text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300 font-medium"
+                  >
+                    <Star aria-hidden="true" className="size-3 fill-amber-500 text-amber-500 dark:fill-amber-400 dark:text-amber-400" />
+                    High Rated
+                  </Badge>
+                )}
+                {app.popularity !== undefined && (
+                  <Badge variant="outline" className="text-muted-foreground font-normal">
+                    {app.popularity}% Popularity
+                  </Badge>
+                )}
                 <Button variant="link" size="sm" className="h-auto p-0" asChild>
                   <a href={app.homepage} target="_blank" rel="noreferrer noopener">
                     Homepage

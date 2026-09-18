@@ -15,6 +15,7 @@ import { SelectionSummary } from '@/components/selection/SelectionSummary';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useSetupPlan } from '@/hooks/useSetupPlan';
 import type { Application, Distro, Role } from '@configshell/catalog';
+import { gsap, useGSAP, prefersReducedMotion, MOTION_EASINGS } from '@/lib/motion';
 
 /**
  * The deterministic ConfigShell flow.
@@ -97,51 +98,109 @@ export default function App() {
     if (view === 'plan') planHeadingRef.current?.focus();
   }, [view]);
 
+  const mainRef = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion() || !mainRef.current) return;
+
+      if (view === 'build') {
+        const tl = gsap.timeline();
+        tl.fromTo(
+          '.motion-entrance-header',
+          { opacity: 0, y: 6 },
+          { opacity: 1, y: 0, duration: 0.25, ease: MOTION_EASINGS.subtle, clearProps: 'transform' },
+          0.0,
+        )
+          .fromTo(
+            '.motion-entrance-env',
+            { opacity: 0, y: 8 },
+            { opacity: 1, y: 0, duration: 0.28, ease: MOTION_EASINGS.subtle, clearProps: 'transform' },
+            0.05,
+          )
+          .fromTo(
+            '.motion-entrance-roles',
+            { opacity: 0, y: 8 },
+            { opacity: 1, y: 0, duration: 0.28, ease: MOTION_EASINGS.subtle, clearProps: 'transform' },
+            0.1,
+          )
+          .fromTo(
+            '.motion-entrance-catalog',
+            { opacity: 0, y: 8 },
+            { opacity: 1, y: 0, duration: 0.3, ease: MOTION_EASINGS.subtle, clearProps: 'transform' },
+            0.15,
+          )
+          .fromTo(
+            '.motion-entrance-summary',
+            { opacity: 0, y: 8 },
+            { opacity: 1, y: 0, duration: 0.3, ease: MOTION_EASINGS.subtle, clearProps: 'transform' },
+            0.2,
+          );
+      } else if (view === 'plan') {
+        gsap.fromTo(
+          planHeadingRef.current,
+          { opacity: 0, y: 8 },
+          { opacity: 1, y: 0, duration: 0.25, ease: MOTION_EASINGS.subtle, clearProps: 'transform' },
+        );
+      }
+    },
+    { dependencies: [view], scope: mainRef },
+  );
+
   return (
     <TooltipProvider>
       <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
         <SiteHeader />
 
-        <main className="mx-auto w-full max-w-5xl flex-1 px-6 pb-10 sm:px-8">
+        <main ref={mainRef} className="mx-auto w-full max-w-7xl flex-1 px-4 pb-6 sm:px-6">
           {view === 'build' ? (
             <>
-              <section className="py-6">
-                <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                  Install the Linux apps you actually need.
-                </h1>
-                <p className="mt-1.5 max-w-lg text-sm text-muted-foreground">
-                  Pick your distribution, choose applications, and get the exact commands to
-                  run. ConfigShell generates them — you run them. Nothing installs
-                  automatically.
-                </p>
+              <section className="motion-entrance-header pt-2.5 pb-2">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                  <h1 className="text-sm font-semibold tracking-tight sm:text-base">
+                    Install the Linux apps you actually need.
+                  </h1>
+                  <p className="text-xs text-muted-foreground">
+                    Pick your distribution, choose applications, and get the exact commands. Nothing installs automatically.
+                  </p>
+                </div>
               </section>
 
-              <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px] lg:items-start">
-                <div className="flex min-w-0 flex-col gap-10">
-                  <EnvironmentStep distro={distro} onSelect={setDistro} />
-                  <RoleSelector
-                    appliedRoleId={appliedRoleId}
-                    onApply={applyRole}
-                    onClear={clearAll}
-                  />
-                  <AppCatalog
-                    selectedIds={selectedIds}
-                    onToggle={toggleApp}
-                    onOpenDetails={setDetailApp}
-                  />
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_310px] xl:grid-cols-[1fr_340px] lg:items-start">
+                <div className="flex min-w-0 flex-col gap-3.5">
+                  <div className="motion-entrance-env">
+                    <EnvironmentStep distro={distro} onSelect={setDistro} />
+                  </div>
+                  <div className="motion-entrance-roles">
+                    <RoleSelector
+                      appliedRoleId={appliedRoleId}
+                      onApply={applyRole}
+                      onClear={clearAll}
+                    />
+                  </div>
+                  <div className="motion-entrance-catalog">
+                    <AppCatalog
+                      selectedIds={selectedIds}
+                      onToggle={toggleApp}
+                      onOpenDetails={setDetailApp}
+                    />
+                  </div>
                 </div>
 
-                <div className="lg:sticky lg:top-6">
+                <div className="motion-entrance-summary lg:sticky lg:top-3">
                   <SelectionSummary
                     selectedIds={selectedIds}
                     onRemove={removeApp}
                     onClear={clearAll}
+                    canContinue={canContinue}
+                    blockedReason={blockedReason}
+                    onContinue={buildPlan}
                   />
                 </div>
               </div>
             </>
           ) : (
-            <div ref={planHeadingRef} tabIndex={-1} className="py-6 outline-none">
+            <div ref={planHeadingRef} tabIndex={-1} className="py-4 outline-none">
               <PlanView
                 status={status}
                 plan={plan}

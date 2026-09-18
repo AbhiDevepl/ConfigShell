@@ -96,8 +96,8 @@ describe("GET /api/applications", () => {
       ["vscode"],
     );
 
-    const filtered = await get("/api/applications?category=Browsers");
-    assert.ok(filtered.body.data.applications.every((a) => a.category === "Browsers"));
+    const filtered = await get("/api/applications?category=General");
+    assert.ok(filtered.body.data.applications.every((a) => a.category === "General"));
   });
 
   test("rejects an unknown category and says what is supported", async () => {
@@ -181,7 +181,7 @@ describe("GET /api/applications/:id", () => {
 describe("GET /api/catalog/*", () => {
   test("categories and environments are discoverable, so clients need not hardcode them", async () => {
     const categories = await get("/api/catalog/categories");
-    assert.ok(categories.body.data.categories.includes("Browsers"));
+    assert.ok(categories.body.data.categories.includes("General"));
 
     const environments = await get("/api/catalog/environments");
     const ubuntu = environments.body.data.distros.find((d) => d.distro === "Ubuntu");

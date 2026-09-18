@@ -19,21 +19,21 @@ test('search matches id, name, description and category, case-insensitively', ()
   assert.ok(ids('vscode').includes('vscode'), 'id match');
   assert.ok(ids('Visual Studio').includes('vscode'), 'name match');
   assert.ok(ids('VERSION CONTROL').includes('git'), 'description match, case-insensitive');
-  assert.ok(ids('browsers').length >= 3, 'category match');
+  assert.ok(ids('developer').length >= 3, 'category match');
 });
 
 test('category filtering is exact and composes with the query', () => {
-  const browsers = searchApplications({ category: 'Browsers' });
-  assert.ok(browsers.length > 0);
-  assert.ok(browsers.every((a) => a.category === 'Browsers'));
+  const general = searchApplications({ category: 'General' });
+  assert.ok(general.length > 0);
+  assert.ok(general.every((a) => a.category === 'General'));
 
-  const narrowed = searchApplications({ category: 'Browsers', query: 'firefox' });
+  const narrowed = searchApplications({ category: 'General', query: 'firefox' });
   assert.deepEqual(
     narrowed.map((a) => a.id),
     ['firefox'],
   );
 
-  assert.deepEqual(searchApplications({ category: 'Browsers', query: 'git' }), []);
+  assert.deepEqual(searchApplications({ category: 'General', query: 'git' }), []);
 });
 
 test('search is a pure filter — it never mutates or reorders the catalog', () => {

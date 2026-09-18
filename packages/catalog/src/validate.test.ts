@@ -9,7 +9,7 @@ function app(overrides: Partial<Application> = {}): Application {
     id: 'example-app',
     name: 'Example App',
     description: 'An example application.',
-    category: 'Utilities',
+    category: 'General',
     homepage: 'https://example.com',
     installation: [],
     ...overrides,
@@ -45,7 +45,7 @@ test('rejects duplicate application names', () => {
 });
 
 test('rejects unknown categories', () => {
-  const errors = validateCatalog([app({ category: 'Games' as Application['category'] })]);
+  const errors = validateCatalog([app({ category: 'Nonsense' as Application['category'] })]);
   assert.ok(errors.some((error) => error.includes('unknown category')));
 });
 
@@ -296,3 +296,23 @@ test('validateCatalog accepts every identifier form the catalog actually uses', 
     assert.deepEqual(errors, [], `expected ${identifier} to be accepted`);
   }
 });
+
+test('validateCatalog validates featured and popularity', () => {
+  assert.deepEqual(
+    validateCatalog([app({ featured: true, popularity: 95 })]),
+    [],
+  );
+
+  const badFeatured = validateCatalog([app({ featured: 'yes' as unknown as boolean })]);
+  assert.ok(badFeatured.some((e) => e.includes('featured must be a boolean')));
+
+  const negativePop = validateCatalog([app({ popularity: -5 })]);
+  assert.ok(negativePop.some((e) => e.includes('popularity must be a number between 0 and 100')));
+
+  const overPop = validateCatalog([app({ popularity: 150 })]);
+  assert.ok(overPop.some((e) => e.includes('popularity must be a number between 0 and 100')));
+
+  const nanPop = validateCatalog([app({ popularity: Number.NaN })]);
+  assert.ok(nanPop.some((e) => e.includes('popularity must be a number between 0 and 100')));
+});
+

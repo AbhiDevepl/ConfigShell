@@ -1,0 +1,165 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { gsap } from 'gsap';
+import { useGSAP } from '@gsap/react';
+
+// Register GSAP plugins once at application module scope.
+gsap.registerPlugin(useGSAP);
+
+export { gsap, useGSAP };
+
+/**
+ * Standard duration tokens (in seconds) for ConfigShell.
+ * ConfigShell is a developer utility: motion must be fast, precise, and subtle.
+ *
+ * Guideline ranges:
+ * - micro / feedback: 150ms – 250ms (0.15s – 0.25s)
+ * - component / reveal: 250ms – 350ms (0.25s – 0.35s)
+ * - section / page transition: 300ms – 500ms (0.3s – 0.5s)
+ */
+export const MOTION_DURATIONS = {
+  instant: 0,
+  micro: 0.18,
+  feedback: 0.22,
+  normal: 0.28,
+  reveal: 0.35,
+  section: 0.45,
+} as const;
+
+/**
+ * Standard easing curves.
+ * Smooth deceleration without bounce or elastic exaggeration.
+ */
+export const MOTION_EASINGS = {
+  subtle: 'power2.out',
+  inOut: 'power2.inOut',
+  quick: 'power1.out',
+} as const;
+
+/**
+ * Checks if the user prefers reduced motion.
+ * Respects OS/browser accessibility preferences.
+ * Safe for SSR (defaults to true if window is undefined).
+ */
+export function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return true;
+  }
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/**
+ * Returns effective duration respecting reduced motion.
+ */
+export function getMotionDuration(normalDuration: number): number {
+  return prefersReducedMotion() ? MOTION_DURATIONS.instant : normalDuration;
+}
+
+/**
+ * Reusable animation helper for subtle element entrance.
+ * Fades in with a slight vertical translation.
+ */
+export function animateEntrance(
+  target: gsap.TweenTarget,
+  options?: {
+    y?: number;
+    duration?: number;
+    delay?: number;
+    clearProps?: string;
+  },
+): gsap.core.Tween | null {
+  if (prefersReducedMotion()) {
+    gsap.set(target, { opacity: 1, y: 0, clearProps: options?.clearProps ?? 'all' });
+    return null;
+  }
+
+  return gsap.fromTo(
+    target,
+    { opacity: 0, y: options?.y ?? 6 },
+    {
+      opacity: 1,
+      y: 0,
+      duration: options?.duration ?? MOTION_DURATIONS.reveal,
+      delay: options?.delay ?? 0,
+      ease: MOTION_EASINGS.subtle,
+      clearProps: options?.clearProps ?? 'transform',
+    },
+  );
+}
+
+/**
+ * Reusable animation helper for staggered lists (e.g. catalog cards, summary items).
+ */
+export function animateStagger(
+  targets: gsap.TweenTarget,
+  options?: {
+    y?: number;
+    stagger?: number;
+    duration?: number;
+    delay?: number;
+    clearProps?: string;
+  },
+): gsap.core.Tween | null {
+  if (prefersReducedMotion()) {
+    gsap.set(targets, { opacity: 1, y: 0, clearProps: options?.clearProps ?? 'all' });
+    return null;
+  }
+
+  return gsap.fromTo(
+    targets,
+    { opacity: 0, y: options?.y ?? 6 },
+    {
+      opacity: 1,
+      y: 0,
+      duration: options?.duration ?? MOTION_DURATIONS.normal,
+      stagger: options?.stagger ?? 0.03,
+      delay: options?.delay ?? 0,
+      ease: MOTION_EASINGS.subtle,
+      clearProps: options?.clearProps ?? 'transform',
+    },
+  );
+}
+
+/**
+ * Reusable animation helper for selection feedback (micro-pop on click/check).
+ */
+export function animateSelectionPop(target: gsap.TweenTarget): gsap.core.Tween | null {
+  if (prefersReducedMotion()) {
+    return null;
+  }
+
+  return gsap.fromTo(
+    target,
+    { scale: 0.985 },
+    {
+      scale: 1,
+      duration: MOTION_DURATIONS.feedback,
+      ease: MOTION_EASINGS.subtle,
+      clearProps: 'transform',
+    },
+  );
+}
+
+/**
+ * Reusable animation helper for icon feedback (e.g., copy checkmark).
+ */
+export function animateIconFeedback(target: gsap.TweenTarget): gsap.core.Tween | null {
+  if (prefersReducedMotion()) {
+    return null;
+  }
+
+  return gsap.fromTo(
+    target,
+    { scale: 0.7, opacity: 0 },
+    {
+      scale: 1,
+      opacity: 1,
+      duration: MOTION_DURATIONS.micro,
+      ease: MOTION_EASINGS.subtle,
+      clearProps: 'transform,opacity',
+    },
+  );
+}

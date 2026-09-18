@@ -40,7 +40,7 @@ export function RoleSelector({ appliedRoleId, onApply, onClear }: RoleSelectorPr
           id="role-heading"
           className="text-xs font-semibold tracking-wide text-muted-foreground"
         >
-          2. What is this machine for?
+          What is this machine for?
         </h2>
         {appliedRoleId && (
           <Button type="button" variant="ghost" size="sm" onClick={onClear}>
@@ -55,7 +55,7 @@ export function RoleSelector({ appliedRoleId, onApply, onClear }: RoleSelectorPr
         change anything afterwards, and you can skip this and browse instead.
       </p>
 
-      <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <ul className="mt-2 grid grid-cols-2 gap-2 lg:grid-cols-4">
         {ROLES.map((role) => {
           const applied = appliedRoleId === role.id;
           const expanded = expandedId === role.id;
@@ -67,37 +67,31 @@ export function RoleSelector({ appliedRoleId, onApply, onClear }: RoleSelectorPr
             <li
               key={role.id}
               className={cn(
-                'flex flex-col gap-3 rounded-xl border p-4 transition-colors',
+                'flex flex-col justify-between gap-1.5 rounded-lg border p-2.5 transition-colors',
                 applied
                   ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                  : 'border-border bg-card',
+                  : 'border-border bg-card hover:border-foreground/20',
               )}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{role.name}</p>
-                  <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                    {role.description}
-                  </p>
+              <div>
+                <div className="flex items-center justify-between gap-1">
+                  <p className="text-xs font-medium truncate">{role.name}</p>
+                  {applied && (
+                    <Badge variant="secondary" className="h-4 px-1 text-[9px] font-normal shrink-0">
+                      <Check aria-hidden="true" className="size-2.5 mr-0.5" />
+                      Applied
+                    </Badge>
+                  )}
                 </div>
-                {applied && (
-                  <Badge variant="secondary" className="shrink-0">
-                    <Check aria-hidden="true" className="size-3" />
-                    Applied
-                  </Badge>
-                )}
+                <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground line-clamp-1">
+                  {role.description}
+                </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                {/*
-                  Both buttons carry the role name in their accessible name.
-                  Visually the heading above supplies the context; to someone
-                  tabbing through, five buttons all reading "Add 5 apps" or
-                  "Show what it adds" are indistinguishable.
-                */}
+              <div className="flex items-center justify-between gap-1 pt-1">
                 <Button
                   type="button"
-                  size="sm"
+                  size="xs"
                   variant={applied ? 'outline' : 'default'}
                   aria-label={
                     applied
@@ -105,13 +99,14 @@ export function RoleSelector({ appliedRoleId, onApply, onClear }: RoleSelectorPr
                       : `Add ${recommended.length} ${role.name} applications to your selection`
                   }
                   onClick={() => onApply(role)}
+                  className="h-6 px-2 text-[11px]"
                 >
-                  <Sparkles aria-hidden="true" />
-                  {applied ? 'Apply again' : `Add ${recommended.length} apps`}
+                  <Sparkles aria-hidden="true" className="size-2.5" />
+                  {applied ? 'Re-apply' : `+${recommended.length} apps`}
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
+                  size="xs"
                   variant="ghost"
                   aria-expanded={expanded}
                   aria-controls={detailsId}
@@ -121,31 +116,26 @@ export function RoleSelector({ appliedRoleId, onApply, onClear }: RoleSelectorPr
                       : `Show what the ${role.name} preset adds`
                   }
                   onClick={() => setExpandedId(expanded ? null : role.id)}
+                  className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
                 >
-                  {expanded ? 'Hide' : 'Show what it adds'}
-                  {/*
-                    Without this the control is visually indistinguishable from
-                    static helper text beside the Add button. A rotating chevron
-                    signals both "interactive" and the current open state; an
-                    underline would read as a link, and this navigates nowhere.
-                  */}
+                  {expanded ? 'Hide' : 'Details'}
                   <ChevronDown
                     aria-hidden="true"
-                    className={cn('size-3.5 transition-transform', expanded && 'rotate-180')}
+                    className={cn('size-3 transition-transform', expanded && 'rotate-180')}
                   />
                 </Button>
               </div>
 
               {expanded && (
-                <div id={detailsId} className="border-t border-border pt-3 text-xs">
-                  <p className="font-medium">Added to your selection</p>
-                  <p className="mt-1 text-muted-foreground">
+                <div id={detailsId} className="border-t border-border pt-1.5 text-[10px]">
+                  <p className="font-medium text-foreground">Adds:</p>
+                  <p className="mt-0.5 text-muted-foreground">
                     {recommended.map((app) => app.name).join(', ')}
                   </p>
                   {optional.length > 0 && (
                     <>
-                      <p className="mt-3 font-medium">Often useful too — browse and add these yourself</p>
-                      <p className="mt-1 text-muted-foreground">
+                      <p className="mt-1 font-medium text-foreground">Also recommended:</p>
+                      <p className="mt-0.5 text-muted-foreground">
                         {optional.map((app) => app.name).join(', ')}
                       </p>
                     </>

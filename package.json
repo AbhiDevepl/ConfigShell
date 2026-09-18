@@ -4,20 +4,23 @@
   "private": true,
   "description": "ConfigShell — open-source Linux software discovery and setup-plan generation",
   "type": "module",
-  "packageManager": "pnpm@9.15.5",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter web --filter server dev",
-    "build": "pnpm --filter web build",
-    "start": "pnpm --filter server start",
+    "dev": "npm run build --workspace=web && npm run start --workspace=server",
+    "build": "npm run build --workspace=web",
+    "start": "npm run start --workspace=server",
     "lint": "eslint .",
-    "typecheck": "pnpm --filter web typecheck && pnpm --filter @configshell/catalog typecheck && pnpm --filter @configshell/installer typecheck && pnpm --filter @configshell/test-utils typecheck && pnpm --filter @configshell/mcp typecheck && pnpm --filter server typecheck && pnpm --filter @configshell/contract-tests typecheck",
-    "test": "pnpm --filter @configshell/test-utils test && pnpm --filter @configshell/catalog test && pnpm --filter @configshell/installer test && pnpm --filter @configshell/mcp test && pnpm --filter server test && pnpm --filter @configshell/contract-tests test && pnpm --filter web test",
-    "check": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build",
-    "dev:web": "pnpm --filter web dev",
-    "mcp": "pnpm --filter @configshell/mcp start"
+    "typecheck": "npm run typecheck --workspace=web && npm run typecheck --workspace=@configshell/catalog && npm run typecheck --workspace=@configshell/installer && npm run typecheck --workspace=@configshell/test-utils && npm run typecheck --workspace=@configshell/mcp && npm run typecheck --workspace=server && npm run typecheck --workspace=@configshell/contract-tests",
+    "test": "npm run test --workspace=@configshell/test-utils && npm run test --workspace=@configshell/catalog && npm run test --workspace=@configshell/installer && npm run test --workspace=@configshell/mcp && npm run test --workspace=server && npm run test --workspace=@configshell/contract-tests && npm run test --workspace=web",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "dev:web": "npm run dev --workspace=web",
+    "mcp": "npm run start --workspace=@configshell/mcp"
   },
   "license": "Apache-2.0",
   "devDependencies": {
@@ -25,6 +28,12 @@
     "eslint": "^10.10.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.12.0",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2",
     "typescript-eslint": "^8.46.0"
+  },
+  "dependencies": {
+    "@gsap/react": "^2.1.2",
+    "gsap": "^3.15.0"
   }
 }

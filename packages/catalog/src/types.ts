@@ -9,23 +9,99 @@
  */
 
 export type Category =
-  | 'Browsers'
-  | 'Code Editors'
-  | 'CLI Tools'
-  | 'Development'
-  | 'Utilities'
-  | 'Media'
-  | 'Communication';
+  | 'General'
+  | 'Student'
+  | 'Developer'
+  | 'Web Developer'
+  | 'DevOps'
+  | 'Data & AI'
+  | 'Content Creator'
+  | 'Gaming';
 
 export const CATEGORIES: readonly Category[] = [
-  'Browsers',
-  'Code Editors',
-  'CLI Tools',
-  'Development',
-  'Utilities',
-  'Media',
-  'Communication',
+  'General',
+  'Student',
+  'Developer',
+  'Web Developer',
+  'DevOps',
+  'Data & AI',
+  'Content Creator',
+  'Gaming',
 ] as const;
+
+export type CategoryId =
+  | 'general'
+  | 'student'
+  | 'developer'
+  | 'web-developer'
+  | 'devops'
+  | 'data-ai'
+  | 'content-creator'
+  | 'gaming';
+
+export interface CategoryDefinition {
+  id: CategoryId;
+  name: Category;
+  description: string;
+}
+
+export const CATEGORY_DEFINITIONS: readonly CategoryDefinition[] = [
+  {
+    id: 'general',
+    name: 'General',
+    description:
+      'Everyday desktop essentials — browsing, email, media, communication, and utilities.',
+  },
+  {
+    id: 'student',
+    name: 'Student',
+    description:
+      'Study and coursework — note-taking, documents, research, PDFs, presentations, and collaboration.',
+  },
+  {
+    id: 'developer',
+    name: 'Developer',
+    description:
+      'Software development essentials — code editors, Git, terminals, runtimes, databases, and developer utilities.',
+  },
+  {
+    id: 'web-developer',
+    name: 'Web Developer',
+    description:
+      'Web development stack — browsers, Node.js, frontend tooling, API clients, databases, and web utilities.',
+  },
+  {
+    id: 'devops',
+    name: 'DevOps',
+    description:
+      'Infrastructure and deployment — containers, Kubernetes, SSH, cloud CLIs, monitoring, and server tools.',
+  },
+  {
+    id: 'data-ai',
+    name: 'Data & AI',
+    description:
+      'Data science and AI development — Python, Jupyter, ML tools, notebooks, model tooling, and data utilities.',
+  },
+  {
+    id: 'content-creator',
+    name: 'Content Creator',
+    description:
+      'Video, audio, streaming, and content production — editors, recording tools, codecs, and media utilities.',
+  },
+  {
+    id: 'gaming',
+    name: 'Gaming',
+    description:
+      'Gaming essentials — game clients, compatibility layers, performance tools, and controllers.',
+  },
+] as const;
+
+export const categories = CATEGORY_DEFINITIONS;
+
+export function findCategory(idOrName: string): CategoryDefinition | undefined {
+  const lower = idOrName.toLowerCase();
+  return CATEGORY_DEFINITIONS.find((c) => c.id === lower || c.name.toLowerCase() === lower);
+}
 
 export type Distro = 'Ubuntu' | 'Debian' | 'Fedora' | 'Arch Linux' | 'openSUSE';
 
@@ -235,4 +311,12 @@ export interface Application {
    * between distributions is omitted rather than guessed at.
    */
   verify?: Verification;
+  /**
+   * Popularity score (0 to 100) reflecting relative adoption and community rating.
+   */
+  popularity?: number;
+  /**
+   * Whether this application is a highlighted, curated, or high-rated tool.
+   */
+  featured?: boolean;
 }

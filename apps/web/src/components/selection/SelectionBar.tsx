@@ -1,9 +1,11 @@
 import { ArrowRight } from 'lucide-react';
+import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { APPLICATIONS } from '@configshell/catalog';
 import { SelectionList } from './SelectionList';
+import { gsap, useGSAP, prefersReducedMotion, MOTION_DURATIONS, MOTION_EASINGS } from '@/lib/motion';
 
 interface SelectionBarProps {
   selectedIds: Set<string>;
@@ -34,12 +36,58 @@ export function SelectionBar({
 }: SelectionBarProps) {
   const selectedApps = APPLICATIONS.filter((app) => selectedIds.has(app.id));
   const count = selectedApps.length;
+  const barRef = useRef<HTMLDivElement>(null);
+  const countRef = useRef<HTMLParagraphElement>(null);
+  const prevCountRef = useRef(count);
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion() || !barRef.current) return;
+
+      // Initial slide-up entrance
+      gsap.fromTo(
+        barRef.current,
+        { y: '100%', opacity: 0 },
+        {
+          y: '0%',
+          opacity: 1,
+          duration: MOTION_DURATIONS.normal,
+          ease: MOTION_EASINGS.subtle,
+          clearProps: 'transform,opacity',
+        },
+      );
+    },
+    { scope: barRef },
+  );
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion() || prevCountRef.current === count || !countRef.current) {
+        prevCountRef.current = count;
+        return;
+      }
+      prevCountRef.current = count;
+
+      gsap.fromTo(
+        countRef.current,
+        { opacity: 0.6, y: -2 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: MOTION_DURATIONS.micro,
+          ease: MOTION_EASINGS.subtle,
+          clearProps: 'transform,opacity',
+        },
+      );
+    },
+    { dependencies: [count], scope: barRef },
+  );
 
   return (
-    <div className="sticky bottom-0 z-20 border-t border-border bg-background">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-6 py-3 sm:px-8">
+    <div ref={barRef} className="sticky bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur-xs lg:hidden">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
         <div className="min-w-0">
-          <p className="text-sm font-medium">
+          <p ref={countRef} className="text-sm font-medium">
             {/* Short on phones, where the bar shares a row with two buttons. */}
             <span className="sm:hidden">{count} selected</span>
             <span className="hidden sm:inline">

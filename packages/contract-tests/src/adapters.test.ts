@@ -93,8 +93,8 @@ test('search returns the same results through both adapters', async () => {
 });
 
 test('category filtering agrees', async () => {
-  const viaHttp = await http('/api/applications?category=Browsers');
-  const viaMcp = mcp('search_application', { category: 'Browsers' });
+  const viaHttp = await http('/api/applications?category=General');
+  const viaMcp = mcp('search_application', { category: 'General' });
   assert.deepEqual(
     viaHttp.data.applications.map((a: any) => a.id),
     viaMcp.applications.map((a: any) => a.id),
