@@ -1,0 +1,51 @@
+# =============================================================================
+# configshell — .dockerignore
+# Docker build context is sent to the builder for every COPY. Everything here
+# keeps the context small (source + manifests only) and, more importantly,
+# prevents host state from leaking into the image.
+#
+# Patterns without a leading slash match at any depth, matching the .gitignore
+# convention of this repository.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Dependencies — installed inside the build stage, never copied from the host
+# -----------------------------------------------------------------------------
+node_modules/
+**/node_modules/
+
+# -----------------------------------------------------------------------------
+# Environment & secrets — never enter a build context
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# -----------------------------------------------------------------------------
+# Build & generated output — rebuilt inside the build stage
+# -----------------------------------------------------------------------------
+dist/
+build/
+.turbo/
+coverage/
+.vite/
+.cache/
+
+# -----------------------------------------------------------------------------
+# Logs & tmp
+# -----------------------------------------------------------------------------
+*.log
+.tmp/
+tmp/
+
+# -----------------------------------------------------------------------------
+# VCS & tooling state that is noise in a build context
+# -----------------------------------------------------------------------------
+.git/
+.gitignore
+.agents/
+.claude/
+.github/
+.antideploy.json

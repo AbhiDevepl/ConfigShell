@@ -80,7 +80,7 @@ From the repository root:
 | ------- | ------------ |
 | `pnpm lint` | ESLint across the repo (flat config in `eslint.config.js`) |
 | `pnpm typecheck` | `tsc --noEmit` for every TypeScript workspace (web, catalog, installer, mcp, test-utils, server, contract-tests) |
-| `pnpm test` | 271 tests across seven workspaces — see [`testing.md`](testing.md) |
+| `pnpm test` | 285 tests across seven workspaces — see [`testing.md`](testing.md) |
 | `pnpm build` | production build of the web app → `apps/web/dist` |
 | `pnpm check` | all four, in that order — run this before opening a pull request |
 
@@ -100,7 +100,7 @@ pnpm --filter server typecheck
 
 ### Testing
 
-`pnpm test` runs all 271 across seven workspaces. Coverage per workspace, the security test
+`pnpm test` runs all 285 across seven workspaces. Coverage per workspace, the security test
 cases, and what is deliberately **not** tested are documented in
 [`testing.md`](testing.md) — the authority on this.
 
@@ -182,7 +182,6 @@ apps/server       planning API — Express app in apps/server/src (no build step
 packages/catalog  verified application catalog (single source of truth)
 packages/installer deterministic resolution + setup plans + command generation
 packages/mcp      stdio MCP server over the catalog and installer (read-only)
-packages/ai       placeholder, empty
 packages/test-utils architecture-enforcement tests shared across workspaces
 docs/             architecture, catalog, security-model, development, ai, mcp, agent,
                   the PRD and technical audit, plus the community-health documents

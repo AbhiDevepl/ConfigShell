@@ -1,8 +1,0 @@
-{
-  "name": "@configshell/ai",
-  "version": "0.0.0",
-  "private": true,
-  "description": "AI planning layer — placeholder, nothing implemented yet (see docs/ai.md)",
-  "type": "module",
-  "license": "Apache-2.0"
-}

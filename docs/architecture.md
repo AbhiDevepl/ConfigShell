@@ -312,10 +312,11 @@ still a tool a caller must handle; one that returns a plausible guess would be a
 
 See `docs/mcp.md`.
 
-### `packages/ai`
+### The AI planning layer
 
-Reserves the package name for the AI planning layer: a `package.json` and a README saying so,
-and nothing else. No source, and deliberately no empty controller or route anywhere in
+There is no `packages/ai`. An empty placeholder workspace reserved the name for a while and
+was removed as scaffolding that cost a lockfile importer and a build-context line in every
+Dockerfile while implementing nothing. There is deliberately no empty controller or route in
 `apps/server` either — a placeholder that looks like code makes a repository seem more
 finished than it is. The design lives in `docs/ai.md` until there is something to put in it.
 
@@ -329,9 +330,9 @@ than merely described here — a boundary a test does not check is a comment.
                         │
               @configshell/catalog           (1) trusted data + domain model
                         │
-        ┌───────────────┴───────────────┐
-  @configshell/installer (2)      @configshell/ai (2)
-  resolve · plan · commands        recommendations — future
+                        │
+  @configshell/installer (2)
+  resolve · plan · commands
         │
   ┌─────┴──────┐
 apps/server  @configshell/mcp      (3) adapters over the core
@@ -346,11 +347,14 @@ Four rules, each with a test:
 2. **The graph is acyclic.**
 3. **`packages/catalog` depends on nothing.** It is the trusted data; it must not acquire a
    dependency that could influence what the catalog says.
-4. **Two edges are forbidden outright**, because layering alone would permit them:
+4. **One edge is forbidden outright**, because layering alone would permit it:
    - `apps/web` → `installer`: command generation must not reach the browser bundle. The web
      app gets resolution through the API.
-   - `packages/ai` → `installer`: an AI layer emits **application ids**, which flow through
-     the ordinary resolver. It must never reach command generation.
+
+   A second forbidden edge — `packages/ai` → `installer`, because an AI layer emits
+   **application ids** and must never reach command generation — was retired with the empty
+   `packages/ai` workspace. Reinstate it in `architecture.test.ts` alongside the package when
+   there is AI code to constrain.
 
 A fifth test asserts that **package-manager command syntax appears only in
 `packages/installer`** — `apt-get install`, `dnf install`, `pacman -S` and `zypper install`

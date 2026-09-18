@@ -242,14 +242,3 @@ export async function fetchApplicationResolution(
   }
   return data.resolution;
 }
-
-export interface ApiHealth {
-  status: 'ok' | 'degraded';
-  catalog: { valid: boolean; errorCount: number };
-  capabilities: { plansInstallations: boolean; executesCommands: boolean };
-}
-
-/** Used to tell "API is down" from "this request was bad" before planning. */
-export function checkHealth(): Promise<ApiHealth> {
-  return request<ApiHealth>('/health');
-}

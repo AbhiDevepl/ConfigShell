@@ -2,7 +2,7 @@
   "name": "configshell",
   "version": "0.1.0",
   "private": true,
-  "description": "ConfigShell — open-source Linux software discovery and setup-plan generation",
+  "description": "ConfigShell \u2014 open-source Linux software discovery and setup-plan generation",
   "type": "module",
   "workspaces": [
     "apps/*",
@@ -11,6 +11,7 @@
   "engines": {
     "node": ">=20"
   },
+  "packageManager": "pnpm@12.3.4",
   "scripts": {
     "dev": "pnpm --parallel --filter web --filter server dev",
     "build": "npm run build --workspace=web",
@@ -31,9 +32,5 @@
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "typescript-eslint": "^8.46.0"
-  },
-  "dependencies": {
-    "@gsap/react": "^2.1.2",
-    "gsap": "^3.15.0"
   }
 }

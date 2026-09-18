@@ -60,6 +60,20 @@ version is below `1.0.0`, the public surface may change in a minor release — s
 
 ### Added
 
+- **Production deployment with Docker & Docker Compose.** Multi-stage, non-root images
+  package the existing single-process architecture unchanged (web app + `/api/*` +
+  `/mcp` in one container, mirroring `pnpm build && pnpm start`): `docker/server.Dockerfile`
+  (the product), `docker/web.Dockerfile` (optional nginx reverse-proxy front, with
+  `compose.web.yml`), and `docker/mcp.Dockerfile` (the stdio MCP tool for hosts that
+  launch it as a container). `compose.yml` runs the product with a `/health` healthcheck,
+  published-port override and the security posture (non-root, no-new-privileges, dropped
+  capabilities, read-only rootfs); a root `.dockerignore` keeps host `node_modules` and
+  `.env` files out of every build context; the pnpm version is pinned via the new
+  `packageManager` field in `package.json` (Corepack/CI already depended on it); and
+  `docs/deployment.md` documents the runtime graph, configuration, security model and the
+  exact validation matrix. A new `apps/server/.env.example` documents what
+  `src/config/env.ts` reads (it was referenced but missing).
+
 - **The MCP `list_environments` tool reports catalog coverage**, the same resolver-derived
   counts `GET /api/catalog/environments` already returned. Without it an MCP host could not
   tell a well-covered distribution from one where the catalog has no native route — it would

@@ -3,8 +3,11 @@
 ## Status: not started
 
 Nothing in this repository implements AI functionality. There is no model client, no
-prompt, no API key handling, and no AI dependency. `packages/ai` reserves the package name
-and nothing else — there is no source, and no empty controller or route pretends otherwise.
+prompt, no API key handling, no AI dependency — and no package. An empty `packages/ai`
+workspace reserved the name for a while and was removed: it implemented nothing while
+costing a lockfile importer and a line in every Dockerfile's build context. No empty
+controller or route pretends otherwise either. This document is the design; the code does
+not exist yet.
 
 This document records the constraints an implementation must satisfy, so that the first
 pull request in this area starts from the project's rules rather than from scratch. It
@@ -40,15 +43,16 @@ grants no shortcut.
 4. **No secrets in the browser.** If a hosted model is ever used, the key lives
    server-side. A provider key must never reach `apps/web`'s bundle or `import.meta.env`.
 5. **Provider-agnostic by default.** Keep the model client behind a narrow interface in
-   `packages/ai` so a provider swap does not reach into the UI.
+   the AI package so a provider swap does not reach into the UI.
 6. **Cost and failure are normal.** The product must remain fully usable with the AI layer
    unavailable, disabled, or erroring. AI is additive, never load-bearing for discovery.
 
 ## Where it would live
 
-`packages/ai` — a workspace package consumed by the server (not directly by the browser,
-which must never hold provider credentials). The UI would render plans it receives; it
-would not talk to a model itself.
+A `packages/ai` workspace consumed by the server (not directly by the browser, which must
+never hold provider credentials) — created when there is code for it, together with its
+`ai → installer` forbidden-edge rule in `packages/test-utils/src/architecture.test.ts`. The
+UI would render plans it receives; it would not talk to a model itself.
 
 ## Before you start
 

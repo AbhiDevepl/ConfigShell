@@ -29,11 +29,6 @@ const REPO_ROOT = join(new URL('.', import.meta.url).pathname, '..', '..', '..')
  *     ↓
  *   contract-tests cross-adapter tests — depends on both, ships nothing
  *
- * `ai` sits beside `installer`, not above it: an AI layer reads the catalog and
- * emits application ids, which then flow through the ordinary resolver. It has
- * no business reaching command generation, so that edge is forbidden outright
- * below rather than merely discouraged by ordering.
- *
  * `web` is likewise beside the adapters rather than above `installer`: it may
  * use the catalog only. Command generation must not reach the browser.
  */
@@ -41,7 +36,6 @@ type WorkspaceName =
   | '@configshell/test-utils'
   | '@configshell/catalog'
   | '@configshell/installer'
-  | '@configshell/ai'
   | '@configshell/mcp'
   | 'server'
   | 'web'
@@ -57,7 +51,6 @@ const LAYER: Record<WorkspaceName, number> = {
   '@configshell/test-utils': 0,
   '@configshell/catalog': 1,
   '@configshell/installer': 2,
-  '@configshell/ai': 2,
   '@configshell/mcp': 3,
   server: 3,
   web: 3,
@@ -69,19 +62,19 @@ const LAYER: Record<WorkspaceName, number> = {
 /**
  * Edges that must never exist, regardless of layering.
  *
- * Same-layer dependencies are otherwise allowed, so these two are stated
- * outright — they are security boundaries, not architectural preferences.
+ * Same-layer dependencies are otherwise allowed, so this one is stated
+ * outright — it is a security boundary, not an architectural preference.
+ *
+ * A second edge lived here until `packages/ai` was removed as empty
+ * scaffolding: an AI layer emits application ids, never commands, so it must
+ * never reach `installer`. Reinstate that rule alongside the workspace when
+ * there is AI code to constrain.
  */
 const FORBIDDEN_EDGES = [
   {
     from: 'web',
     to: '@configshell/installer',
     why: 'apps/web must reach resolution through the API; command generation must not enter the browser bundle',
-  },
-  {
-    from: '@configshell/ai',
-    to: '@configshell/installer',
-    why: 'AI emits application ids, never commands — it must not reach command generation',
   },
 ];
 

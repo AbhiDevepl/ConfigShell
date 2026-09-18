@@ -127,8 +127,9 @@ not represented by empty files.
     entry point binds Streamable HTTP and registers the same tools. Keep `tools.ts` ignorant
     of transport — the integration tests depend on it by using an in-memory pair.
   - Interoperability is tested with the **official MCP client**, not asserted from the spec.
-- **`packages/ai`**: a `package.json` and a README, no source — placeholder for the AI
-  planning layer. **AI is future scope: do not implement it.**
+- **There is no `packages/ai`.** The empty placeholder workspace was removed; the design for
+  the AI planning layer lives in `docs/ai.md` until there is code to put in it. **AI is future
+  scope: do not implement it**, and do not recreate the empty package to "reserve the seam".
 - **`docs/*.md`**: `architecture.md`, `catalog.md`, `security-model.md` and `development.md` are
   the source of truth for the implementation state, the V1 flow boundary, the security
   model, and the commands — read them before making architecture-adjacent changes.
@@ -146,9 +147,9 @@ not represented by empty files.
   options (`strict`, `moduleResolution: "bundler"`, `noEmit`, …); every workspace
   `tsconfig.json` extends it and adds only its own `include` (and on the server, a
   `types: ["node"]`). Keep shared options there rather than per-workspace.
-- **Tests**: **271**, on Node's built-in runner via `tsx`, in seven workspaces —
-  `packages/test-utils` (6), `packages/catalog` (48), `packages/installer` (79),
-  `packages/mcp` (52), `apps/server` (53), `packages/contract-tests` (13), `apps/web` (20). `docs/testing.md` is the
+- **Tests**: **285**, on Node's built-in runner via `tsx`, in seven workspaces —
+  `packages/test-utils` (6), `packages/catalog` (49), `packages/installer` (79),
+  `packages/mcp` (57), `apps/server` (53), `packages/contract-tests` (13), `apps/web` (28). `docs/testing.md` is the
   authority on coverage and gaps. `test-utils` holds the **architecture enforcement** tests:
   dependency direction, acyclicity, and that command syntax stays inside the installer.
   They exercise real data and the real app, not fixtures and mocks. **`apps/web` has no DOM
@@ -210,7 +211,7 @@ pnpm build                       # == pnpm --filter web build
 pnpm start                       # == pnpm --filter server start (API + apps/web/dist)
 pnpm lint                        # eslint . across the whole repo (real ESLint)
 pnpm typecheck                   # tsc --noEmit for every TS workspace (strict, shared base)
-pnpm test                        # 271 tests across seven workspaces
+pnpm test                        # 285 tests across seven workspaces
 pnpm mcp                         # start the MCP server on stdio
 pnpm check                       # lint -> typecheck -> test -> build (what CI runs)
 ```

@@ -119,7 +119,7 @@ See [Security](#security) and [`docs/security-model.md`](docs/security-model.md)
   **No model is involved anywhere.**
 
 - **Repository tooling** — pnpm workspaces, repository-wide ESLint, per-workspace
-  typechecking, 271 tests across seven workspaces, and CI that runs all of it on Node 20
+  typechecking, 285 tests across seven workspaces, and CI that runs all of it on Node 20
   and 22.
 
 **Not implemented (planned):** system detection beyond "does the browser look like Linux",
@@ -367,7 +367,7 @@ pnpm check       # lint → typecheck → test → build (what CI runs)
 
 pnpm lint        # ESLint across the repository
 pnpm typecheck   # tsc --noEmit for every TypeScript workspace
-pnpm test        # 271 tests across seven workspaces
+pnpm test        # 285 tests across seven workspaces
 pnpm build       # production build of apps/web → apps/web/dist
 ```
 
@@ -389,9 +389,23 @@ no CORS.
 Without a build the API still runs on its own and serves JSON only — useful for a CLI or MCP
 client that does not need the interface.
 
+## Run with Docker
+
+Production Docker images and a Compose stack package the same product — one container
+serves the web app, the API and the MCP endpoint, exactly as `pnpm build && pnpm start` does:
+
+```sh
+docker compose up -d --build   # http://localhost:3000 (override host port: API_PORT=8080 ...)
+```
+
+An optional nginx reverse-proxy front is provided for deployments that want a dedicated web
+tier; the MCP stdio tool is packaged separately for MCP hosts that launch it as a container.
+Everything — images, topologies, configuration, security, and the exact validation commands —
+is in [`docs/deployment.md`](docs/deployment.md).
+
 ## Testing
 
-**271 tests** across seven workspaces, on Node's built-in runner via `tsx`.
+**285 tests** across seven workspaces, on Node's built-in runner via `tsx`.
 
 ```sh
 pnpm test        # all of them
